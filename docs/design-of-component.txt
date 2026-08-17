@@ -1,0 +1,598 @@
+================================================================================
+COMMUNITY READING CLUB & LIBRARY MANAGEMENT PLATFORM
+Design of Components — Mapped to User Stories (Views, APIs, Jobs)
+Team 041, May 2026 Term
+Authors: Rohan G / Sarvottam Grover
+================================================================================
+
+1. PURPOSE AND SCOPE
+--------------------------------------------------------------------------------
+This document is the completed version of the "Design of Components" section
+already drafted in SOFTWARE ENGINEERING PROJECT.docx (the Milestone 2
+report). That draft lists ten components (Sections 1–10 below) and states
+each one's Responsibilities and Key Functions; three of the ten (API Layer,
+Database Component, Notification & Background Jobs) were left as empty
+headings. This document keeps the draft's module breakdown and wording
+intact, fills in those three gaps, and — per the M2-06 task — adds to every
+module the piece the draft did not yet have: which user stories it fulfils,
+which frontend views implement it, which APIs it exposes, and which
+background jobs it runs.
+
+Sources this document stays aligned with:
+  - SOFTWARE ENGINEERING PROJECT.docx — the Milestone 2 draft; module names,
+    responsibilities, and key functions below are taken from its "Design of
+    Components" and Sprint Schedule sections.
+  - user-identification.txt — role tiers (Primary: Admin/Librarian/Manager;
+    Secondary: Member/Guardian; Tertiary: IT-Head).
+  - docs/PROJECT_SPECIFICATION.md — module list (Section 11), API style
+    (Section 12), architecture layering (Section 7).
+  - docs/Database_Design.md — the twelve-table core schema.
+  - docs/System_Components.md — a complementary, backend-service-oriented view
+    of the same system (Auth, Book Management, Borrowing, Seat Management,
+    Notification, AI). Where a module below needs implementation-level
+    detail (endpoint bodies, sequence diagrams, state machines), it is
+    cross-referenced there rather than duplicated.
+  - Team041_MOM_Milestone2_Review.pdf — the TA feedback and AI-feature
+    discussion folded into Sections 3 and 10 below.
+
+User story IDs use the scheme US-<MODULE>-<NN>, tagged with the role from
+user-identification.txt.
+
+IMPLEMENTATION STATUS: Per docs/PROJECT_SPECIFICATION.md, Section 17, Milestone 2
+was frontend-first with backend "project foundation only". Milestone 3
+backend work has since started: the Section 3 (Library Staff or Manager
+Module) below now has a real, tested `/api/v1/members` API (MM-02) backed
+by the migrated `User`/`Role` schema and a JWT + role-guard dependency —
+everything else is still planned. Each module below marks its APIs/Jobs as
+IMPLEMENTED or planned individually; don't assume a whole section is done
+just because one line in it is. The VIEWS columns are a build-progress note
+only — they record
+where each module currently lives in the frontend, not what the module is.
+Responsibilities, Key Functions, and role scope throughout this document
+come from docs/PROJECT_SPECIFICATION.md, the Milestone 2 draft, and the MOM;
+if the current frontend build ever differs from those documents, the
+documents govern, not the build.
+
+--------------------------------------------------------------------------------
+2. ADMINISTRATOR OR OWNER MODULE (Admin Control)  — role: admin, Primary
+--------------------------------------------------------------------------------
+Responsibilities (from the Milestone 2 draft):
+  - See a summary of seat usage, books on loan, and revenue collected.
+  - Add, change, or remove books and copies from the catalogue.
+  - Update membership plans and seat/desk subscription plans with pricing.
+  - Choose which Indian languages are supported; toggle voice input / TTS.
+  - Review which genres and reading trends are popular among members.
+  - Control the Telegram bot (channels, commands, user groups).
+  - Approve, save, or delete important records.
+
+Key Functions (from the draft): book/catalogue management, membership and
+seat-plan configuration, analytics reporting dashboard, accessibility
+settings, Telegram bot admin console.
+
+User Stories
+  US-ADMIN-01  As an admin, I want a summary of active seats, loaned books,
+               and revenue so that I can gauge platform health at a glance.
+  US-ADMIN-02  As an admin, I want to configure membership and seat-plan
+               pricing so that I can adjust revenue policy without a
+               developer's involvement.
+  US-ADMIN-03  As an admin, I want to approve or reject pending requests
+               (e.g. book donations) so that I control what enters the
+               catalogue and accounts.
+  US-ADMIN-04  As an admin, I want an audit log of platform-level changes
+               so that I have accountability across staff actions.
+  US-ADMIN-05  As an admin, I want to choose supported languages and toggle
+               voice/TTS so that the platform serves a linguistically
+               diverse membership (feeds the Accessibility & Multilingual
+               Component, Section 11).
+
+Views (frontend/src)
+  /admin   features/admin/pages/AdminDashboardPage.tsx — CashFlowBreakdown,
+           BudgetExpenses, PendingRequests, AuditLog components; a static
+           reports list. Built and backed by mock data.
+  Not yet built as dedicated screens: catalogue CRUD, membership/seat-plan
+  pricing editor, language/accessibility settings, Telegram bot console —
+  these are planned per the draft's Key Functions but have no frontend
+  route yet.
+
+APIs (/api/v1, planned)
+  GET   /admin/summary                (seats, loans, revenue — US-ADMIN-01)
+  PATCH /membership-plans/{plan_id}    (pricing — US-ADMIN-02, shared with
+                                        the Membership component)
+  GET   /admin/requests                (US-ADMIN-03)
+  POST  /admin/requests/{id}/approve
+  POST  /admin/requests/{id}/reject
+  GET   /admin/audit-log               (US-ADMIN-04)
+  PATCH /platform/settings/languages   (US-ADMIN-05)
+
+Jobs
+  None owned directly. Reads pre-aggregated analytics snapshots produced by
+  the Analytics component rather than computing them live (Project_
+  Specification_V2.md, Section 3).
+
+--------------------------------------------------------------------------------
+3. LIBRARY STAFF OR MANAGER MODULE (Operational Management)
+   — roles: librarian, manager, both Primary
+--------------------------------------------------------------------------------
+The Milestone 2 draft treats "Library Staff" and "Manager" as one module.
+docs/PROJECT_SPECIFICATION.md, Section 3 splits the underlying responsibilities
+across two named roles: Librarian (Book Management, Inventory, Issue &
+Return Books, Reservations, Fine Management, QR Code Borrowing) and
+Manager (Event Management, Attendance, Reading Sessions, Community
+Activities, plus the front-desk/operational duties the draft's Module 2
+adds — member sign-up, seat/desk allocation, payment recording). Both
+roles are described together here, matching the draft's combined module,
+with their user stories tagged by role and their frontend views (where
+built) called out separately below.
+
+Responsibilities (from the Milestone 2 draft):
+  - Sign up members and renew existing ones.
+  - Lend out and return books; automatically calculate fines for late
+    returns.
+  - Give members desks or seats; record check-in and check-out.
+  - Record payments of fees and fines.
+  - Send date/fine reminders to members via Telegram.
+
+Key Functions (from the draft): member sign-up and renewal; borrow,
+return, and renew books; seat attendance; payment recording; targeted
+Telegram notifications.
+
+User Stories
+  US-STAFF-01 (librarian) As a librarian, I want to issue a book by
+              scanning its copy or entering member/copy IDs so that
+              circulation is fast and accurate.
+  US-STAFF-02 (librarian) As a librarian, I want to process a return so
+              that the copy becomes available again and any waiting
+              reservation is triggered.
+  US-STAFF-03 (librarian) As a librarian, I want fines calculated
+              automatically for late returns so that I don't compute them
+              by hand.
+  US-STAFF-04 (manager)   As a manager, I want to register a walk-in
+              visitor as a new member so that they can start borrowing
+              the same day.
+  US-STAFF-05 (manager)   As a manager, I want to book a seat or issue a
+              book on behalf of a member at the counter so that walk-ins
+              without the app can still be served.
+  US-STAFF-06 (manager)   As a manager, I want to record a fee or fine
+              payment at the counter so that cash/in-person payments are
+              reflected in the member's account.
+  US-STAFF-07 (librarian, As a librarian/manager, I want members to
+              manager)    receive a Telegram reminder about due dates and
+              fines so that I don't have to follow up manually.
+
+Views (frontend/src)
+  /dashboard   features/dashboard/pages/LibrarianDashboard.tsx —
+               OverdueBooks, PendingReservationQueue; quick actions:
+               issue book, return book, scan QR.
+  /dashboard   features/dashboard/pages/ManagerDashboard.tsx —
+               WalkInAssistance, NewRegistrations, PendingPayments; quick
+               actions: book seat for member, issue book for member,
+               register new member.
+  (Both render from the same /dashboard route, dispatched by role in
+  features/dashboard/pages/DashboardPage.tsx.)
+
+APIs (/api/v1 — see docs/System_Components.md, Steps 2–3, for the Borrowing/Book
+Management endpoint detail; MM-02 below is implemented, the rest are still
+planned)
+  GET   /members                       (MM-02, IMPLEMENTED — search + pagination)
+  POST  /members                       (US-STAFF-04, MM-02, IMPLEMENTED — registration,
+                                        defaults new members to the "member" role)
+  PUT   /members/{member_id}           (MM-02, IMPLEMENTED)
+  POST  /loans                         (US-STAFF-01, planned)
+  POST  /loans/{loan_id}/return        (US-STAFF-02, planned)
+  POST  /seat-bookings                 (US-STAFF-05, planned, staff-assisted)
+  POST  /books/{book_id}/copies/issue  (US-STAFF-05, planned, staff-assisted)
+  POST  /payments                      (US-STAFF-06, planned)
+
+  Implemented so far (backend/src/app): a JWT + role-guard dependency
+  (require_role("admin", "librarian", "manager")) gates all three /members
+  routes — this guard is reused as-is by every other endpoint in this
+  document once built, so it is not a Members-specific detail.
+
+Jobs
+  Overdue sweep (US-STAFF-03) and no-show sweep — see docs/System_Components.md,
+  Steps 3–4. Telegram reminder dispatch (US-STAFF-07) runs through the
+  Notification & Background Jobs component (Section 9), not owned here.
+
+--------------------------------------------------------------------------------
+4. MEMBER MODULE (Student or Reader Dashboard) — role: member, Secondary
+--------------------------------------------------------------------------------
+Responsibilities (from the Milestone 2 draft):
+  - Check desk availability before travelling to the library.
+  - Browse, search, borrow, reserve, and return books.
+  - Book a study seat/desk; check booking history.
+  - View borrowing history, dues, and fee status.
+  - Receive due-date, expiry, and community-announcement alerts.
+  - Use the app in a preferred Indian language with voice search and TTS.
+  - View a reading profile; take part in reading challenges/reviews.
+
+Key Functions (from the draft): catalogue search & reservation API, seat
+booking API, notification feed and reviews/community-discussion API, a
+Bhashini-powered multilingual/voice-search API, an AI reading-
+recommendation widget.
+
+User Stories
+  US-MEMBER-01  As a member, I want to search and filter the catalogue by
+                title, author, or category so that I can find a book to
+                borrow.
+  US-MEMBER-02  As a member, I want to see live seat availability before
+                travelling to the library so that I don't make a wasted
+                trip.
+  US-MEMBER-03  As a member, I want to book a seat and view my booking
+                history so that I have a guaranteed study space.
+  US-MEMBER-04  As a member, I want to see my current loans, dues, and fee
+                status on one dashboard so that I know what I owe.
+  US-MEMBER-05  As a member, I want due-date and community-announcement
+                alerts so that I don't miss a deadline or an event.
+  US-MEMBER-06  As a member, I want book recommendations on my dashboard so
+                that I discover titles I'm likely to enjoy.
+
+Views (frontend/src)
+  /dashboard          MemberDashboard.tsx
+  /books               BooksListPage.tsx (US-MEMBER-01)
+  /books/:bookId       BookDetailsPage.tsx
+  /seat-booking        SeatBookingPage.tsx (US-MEMBER-02, US-MEMBER-03)
+  /reservations        ReservationsPage.tsx
+  /reading-progress    ReadingProgressPage.tsx
+  /reviews             ReviewsPage.tsx
+  /leaderboard         LeaderboardPage.tsx
+  /notifications       NotificationsPage.tsx (US-MEMBER-05)
+
+APIs (/api/v1, planned — see docs/System_Components.md, Steps 2–6)
+  GET  /books, GET /books/{book_id}          (US-MEMBER-01)
+  GET  /seats/availability                    (US-MEMBER-02)
+  POST /seat-bookings, GET /seat-bookings     (US-MEMBER-03)
+  GET  /loans                                 (US-MEMBER-04)
+  GET  /notifications                         (US-MEMBER-05)
+  GET  /ai/recommendations                    (US-MEMBER-06)
+
+Jobs
+  None owned by this module directly; consumes jobs owned by Borrowing,
+  Seat Management, Notification, and AI (docs/System_Components.md).
+
+--------------------------------------------------------------------------------
+5. PARENT / GUARDIAN MODULE (Monitoring Interface) — role: guardian, Secondary
+--------------------------------------------------------------------------------
+Responsibilities (from the Milestone 2 draft):
+  - Remotely view a dependent's active membership and seat subscription.
+  - Check outstanding fees/fines.
+  - Get notified when a membership is expiring or a new fine is issued.
+
+Key Functions (from the draft): a read-only API for parent dashboards,
+fee & fine tracking view, alert subscription service.
+
+User Stories
+  US-PARENT-01  As a guardian, I want to see my dependent's active
+                membership and seat subscription so that I know their
+                account status without asking them.
+  US-PARENT-02  As a guardian, I want to see outstanding fees/fines so
+                that I can settle them on my dependent's behalf.
+  US-PARENT-03  As a guardian, I want an alert when membership is expiring
+                or a new fine is issued so that I can act before it lapses.
+
+Views (frontend/src)
+  /guardian   features/guardian/pages/GuardianDashboardPage.tsx —
+              ChildrenPresence, BorrowedBooksByChild, SubscriptionAndFines,
+              SeatReservationForChild
+
+APIs (/api/v1, planned — read-only per the draft's own scoping)
+  GET  /guardians/{guardian_id}/dependents             (US-PARENT-01)
+  GET  /guardians/{guardian_id}/dependents/{id}/fines  (US-PARENT-02)
+  GET  /guardians/{guardian_id}/notifications          (US-PARENT-03)
+  (No write endpoints beyond payment settlement and seat booking, both of
+  which reuse the Payment and Seat Management APIs on the dependent's
+  behalf rather than duplicating them here.)
+
+Jobs
+  None owned by this module; consumes Notification jobs (Section 9) for
+  expiry/fine alerts.
+
+--------------------------------------------------------------------------------
+6. IT SUPPORT MODULE (System Maintenance) — role: it-head, Tertiary
+--------------------------------------------------------------------------------
+Responsibilities (from the Milestone 2 draft):
+  - Keep data consistent with business rules; restrict access by role.
+  - Watch for degradation in third-party API integrations.
+  - Keep activity/audit logs for deletions, payment updates, role changes.
+  - Troubleshoot technical errors in the system.
+
+Key Functions (from the draft): access control management console, backup
+& recovery tools, a monitoring tool for third-party APIs, an audit-log
+viewer.
+
+Restriction (explicit in the draft): cannot remove institutional
+information required for the Administrator account.
+
+User Stories
+  US-ITSUP-01  As IT Support, I want an access-control console so that I
+               can grant or revoke system access without a code change.
+  US-ITSUP-02  As IT Support, I want to deactivate a user account so that
+               compromised or abandoned accounts can be locked out.
+  US-ITSUP-03  As IT Support, I want an audit-log viewer for deletions,
+               payment updates, and role changes so that I can trace who
+               did what.
+  US-ITSUP-04  As IT Support, I want to monitor third-party API health
+               (Bhashini, Cloudinary, Telegram, the LLM provider) so that
+               a degraded integration is caught before members notice.
+  US-ITSUP-05  As IT Support, I want a technical issue-resolution queue so
+               that reported problems are tracked to closure.
+
+Views (frontend/src)
+  /it-head   features/it-head/pages/ITHeadDashboardPage.tsx —
+             AccessControl, IssueResolution, BookRecords, FeeStatus,
+             LateReturnFines; quick actions: grant access, deactivate
+             user, resolve issue, log book change.
+
+APIs (/api/v1, planned)
+  GET   /access-control/entries         (US-ITSUP-01)
+  POST  /users/{user_id}/deactivate     (US-ITSUP-02)
+  GET   /audit-log                      (US-ITSUP-03 — shared log with
+                                         Admin's audit view, Section 2)
+  GET   /system/integrations/status     (US-ITSUP-04)
+  GET   /support/tickets                (US-ITSUP-05)
+  PATCH /support/tickets/{id}
+
+Jobs
+  Third-party integration health check (scheduled poll of Bhashini/
+  Cloudinary/Telegram/LLM-provider status, feeding US-ITSUP-04).
+  Backup/recovery job (per the draft's Key Functions; schedule and
+  retention policy not yet decided — flagged in docs/Project_Specification_V2.md,
+  Section 2, "Backup/restore policy" as a pre-go-live decision).
+
+--------------------------------------------------------------------------------
+7. API LAYER (System Services)
+--------------------------------------------------------------------------------
+(Left blank in the Milestone 2 draft; filled in here.)
+
+The API layer is the single entry point every module above talks through.
+Conventions are fixed in docs/PROJECT_SPECIFICATION.md, Section 12, and apply
+uniformly — no module defines its own style:
+
+  - REST, versioned under /api/v1.
+  - JWT-protected on every route except register/login/forgot-password
+    and public catalogue reads (GET /books, GET /books/{id}).
+  - OpenAPI/Swagger documentation generated from the FastAPI app.
+  - Layering per Section 7: Router -> Service -> Repository -> Prisma ORM
+    -> PostgreSQL (see docs/System_Components.md's "Request Flow Through the
+    Layers" diagram).
+
+Route prefix per module (consolidating the per-module API lists above and
+in docs/System_Components.md):
+  /api/v1/auth/...             Auth (docs/System_Components.md, Step 1) — one
+                                Auth component serves all six roles alike:
+                                Admin, Staff (Librarian/Manager), Member,
+                                Guardian, and IT-Head all authenticate
+                                through the same endpoints.
+  /api/v1/books/...             Book Management (docs/System_Components.md, Step 2)
+  /api/v1/loans/...             Borrowing (docs/System_Components.md, Step 3)
+  /api/v1/seats/..., /seat-bookings/...
+                                Seat Management (docs/System_Components.md, Step 4)
+  /api/v1/notifications/...    Notification (docs/System_Components.md, Step 5)
+  /api/v1/ai/...                AI (docs/System_Components.md, Step 6)
+  /api/v1/members/...           Library Staff or Manager Module (Section 3,
+                                MM-02) — IMPLEMENTED: GET/POST/PUT, staff-only
+  /api/v1/admin/...             Admin Module (Section 2)
+  /api/v1/guardians/...         Parent/Guardian Module (Section 5)
+  /api/v1/access-control/..., /support/..., /system/...
+                                IT Support Module (Section 6)
+  /api/v1/reviews/..., /leaderboard/...
+                                Community & Reading Club (Section 10)
+
+Only /api/v1/members (Section 3, MM-02) and GET /health are implemented
+against real business logic today. Every other route above is still
+planned — there is no mock-auth stub in backend/src/app; the only auth
+building block that exists so far is the JWT + role-guard dependency
+(app/api/deps.py) that /members already uses and every future route will
+reuse unchanged.
+
+--------------------------------------------------------------------------------
+8. DATABASE COMPONENT
+--------------------------------------------------------------------------------
+(Left blank in the Milestone 2 draft; filled in here.)
+
+  - Engine: PostgreSQL, accessed through Prisma ORM (Prisma Client Python),
+    per docs/PROJECT_SPECIFICATION.md, Sections 6 and 13.
+  - Schema: the twelve-table core subset defined in docs/Database_Design.md —
+    User, Role, MembershipPlan, Membership, Book, BookCopy, Loan,
+    Reservation, Seat, SeatBooking, Payment, Review — with relationships,
+    indexing strategy, and soft-delete policy all fixed there. The
+    accompanying class diagram (assets/class-diagram.png / assets/class-diagram.mmd)
+    renders the same twelve entities as a UML class diagram with
+    attributes, representative methods, and relationships.
+  - Current state: backend/prisma/schema.prisma only defines a placeholder
+    User model today (id, email, name, timestamps) — the full core schema
+    lands in Milestone 3 per the Sprint Schedule (Sprint 4: "Design
+    Books/BookCopies (BK-01) and Members (MM-01) DB schemas").
+  - Full v1 schema: docs/Database_Design.md notes two simplifications versus a
+    fuller design not yet built — no Publisher table (Book.publisher_id
+    omitted) and a flattened Seat (no Branch/SeatZone hierarchy). The
+    Community & Reading Club Module's book-donation feature (Section 10)
+    is likewise "planned for the full v1 schema," not the current subset.
+
+--------------------------------------------------------------------------------
+9. NOTIFICATION & BACKGROUND JOBS (Async Services)
+--------------------------------------------------------------------------------
+(Left blank in the Milestone 2 draft; filled in here, consolidating
+docs/System_Components.md Step 5 with the scheduled-job behaviour described
+under Borrowing, Seat Management, and Staff above.)
+
+This is a cross-cutting service, not a persona-facing module: other
+components publish events to it, and it owns delivery. Per Project_
+Specification_V2.md, Section 1, this was a deliberate consolidation of what
+the original feature list called four separate things (Reservation
+Notification, Email Notifications, Telegram Notifications, an admin
+"Configure Notifications" screen) into one subsystem.
+
+User Stories
+  US-NOTIF-01 (member)     As a member, I want an in-app notification list
+                           so that I see reservation, due-date, and
+                           seat-booking alerts in one place.
+  US-NOTIF-02 (member)     As a member, I want an email when a reserved
+                           book becomes available so that I don't have to
+                           keep checking manually.
+  US-NOTIF-03 (guardian)   As a guardian, I want to be notified of my
+                           dependent's overdue items and fines (US-PARENT-03).
+  US-NOTIF-04 (librarian,  As staff, I want members reminded of due dates
+              manager)     and fines via Telegram so that I don't have to
+                           follow up manually (US-STAFF-07).
+
+Views (frontend/src)
+  /notifications   features/notifications/pages/NotificationsPage.tsx
+
+APIs (/api/v1, planned — see docs/System_Components.md, Step 5)
+  GET   /notifications
+  PATCH /notifications/{id}/read
+  GET   /notifications/preferences     (Phase 2)
+  PATCH /notifications/preferences     (Phase 2)
+  (No public POST — notifications are only created internally, by another
+  component calling this service's publish function.)
+
+Jobs
+  - Email delivery worker with retry-on-failure (Core MVP).
+  - Telegram delivery adapter, behind the same channel interface (Advanced,
+    Phase 3) — serves two distinct purposes that both route through this
+    one integration: outbound reminders pushed by Staff/Notification
+    (US-STAFF-07, US-NOTIF-04), and inbound chat-based queries handled by
+    the Accessibility & Multilingual Component's bot (Section 11,
+    US-ACCESS-04) — one Telegram bot, two directions of traffic.
+  - Consumes the Overdue sweep (Borrowing) and No-show sweep (Seat
+    Management) events published by those components (docs/System_Components.md,
+    Steps 3–4) to trigger delivery; does not compute due/overdue state
+    itself.
+
+--------------------------------------------------------------------------------
+10. COMMUNITY & READING CLUB COMPONENT
+--------------------------------------------------------------------------------
+Responsibilities (from the Milestone 2 draft):
+  - Adds a reader's community layer to the platform, differentiating it
+    from a plain catalogue system.
+
+Key Functions (from the draft): book reviews and star ratings (one review
+per member per book); reading-goal progress and a reading-challenge
+leaderboard; requesting or donating a book (planned for the full v1
+schema, per Section 8 above).
+
+User Stories
+  US-COMM-01 (member)  As a member, I want to leave one review and rating
+             per book so that other members get trustworthy, non-spammy
+             feedback.
+  US-COMM-02 (member)  As a member, I want to track progress toward
+             reading goals and see a leaderboard so that reading feels
+             like a shared challenge, not a solitary task.
+  US-COMM-03 (member)  As a member, I want to request or donate a book so
+             that the catalogue grows from the community, not only staff
+             acquisitions (planned — full v1 schema, not yet built).
+
+Views (frontend/src)
+  /reviews             features/reviews/pages/ReviewsPage.tsx —
+                       RatingSummary.tsx (US-COMM-01)
+  /reading-progress    features/reading-progress/pages/ReadingProgressPage.tsx —
+                       BookProgressList.tsx
+  /leaderboard         features/leaderboard/pages/LeaderboardPage.tsx
+                       (US-COMM-02)
+  /community           route reserved, currently renders PlaceholderPage.tsx
+                       (app/router/AppRouter.tsx) — discussion rooms and
+                       book request/donation UI not yet built.
+
+APIs (/api/v1, planned)
+  GET  /books/{book_id}/reviews, POST /books/{book_id}/reviews
+                                                         (US-COMM-01; the
+       UNIQUE(book_id, member_id) constraint on Review in
+       docs/Database_Design.md enforces "one review per member per book"
+       at the database level, not just in application code)
+  GET  /reading-progress, PATCH /reading-progress        (US-COMM-02)
+  GET  /leaderboard                                       (US-COMM-02)
+  POST /donations, GET /donations                         (US-COMM-03,
+       Phase 2+, blocked on the full v1 schema per Section 8)
+
+Jobs
+  Leaderboard/ranking recomputation (scheduled, feeds US-COMM-02 — same
+  "pre-aggregate, don't compute live" pattern used for Analytics per
+  docs/Project_Specification_V2.md, Section 3).
+
+--------------------------------------------------------------------------------
+11. ACCESSIBILITY & MULTILINGUAL COMPONENT
+--------------------------------------------------------------------------------
+Responsibilities (from the Milestone 2 draft):
+  - Solves the language-barrier and visual-accessibility issues raised in
+    the Milestone 1 interviews.
+
+Key Functions (from the draft): future integration with the Bhashini API
+for translation and voice recognition; text-to-speech for book
+descriptions and announcements; voice-based catalogue search; a Telegram
+bot for low-friction, chat-based queries (dues, due dates, seat
+availability).
+
+This is a distinct component from AI/Recommendations (docs/System_Components.md,
+Step 6) in the Milestone 2 draft — recommendations are about *what* to
+read; this component is about *how* the platform is read, heard, and
+queried, in whichever language and interface a member prefers. Both were
+raised together in the TA's Milestone 2 review call (Team041_MOM_
+Milestone2_Review.pdf, Section 4: "Use of the Bhashini API to enable
+accessibility for differently abled participants").
+
+User Stories
+  US-ACCESS-01 (member)  As a member, I want to use the platform in my
+               preferred Indian language so that language isn't a barrier
+               to using the library.
+  US-ACCESS-02 (member)  As a member with a visual impairment, I want
+               text-to-speech on book descriptions and announcements so
+               that I can access content without reading it myself.
+  US-ACCESS-03 (member)  As a member, I want voice-based catalogue search
+               so that I can find a book hands-free or without typing.
+  US-ACCESS-04 (member)  As a member, I want to ask a Telegram bot for my
+               dues, due dates, or seat availability so that I don't need
+               to open the app for a quick check.
+  US-ACCESS-05 (admin)   As an admin, I want to choose which languages are
+               supported and toggle voice/TTS platform-wide (US-ADMIN-05).
+
+Views (frontend/src)
+  Not yet implemented — no dedicated feature module exists for this
+  component as of this document. Per the Milestone 2 draft, Bhashini
+  integration is explicitly "future"; Sprint 9 of the Sprint Schedule
+  ("Integration for language/voice/TTS (AC-01), language selector (AC-02),
+  bot (AC-03)") is where this is planned to be built.
+
+APIs (/api/v1, planned)
+  GET   /platform/languages            (US-ACCESS-01)
+  POST  /tts/synthesize                (US-ACCESS-02)
+  GET   /ai/search?voice=true          (US-ACCESS-03, reuses the Smart
+                                        Search endpoint from
+                                        docs/System_Components.md, Step 6,
+                                        with a voice-input front end rather
+                                        than a separate backend path)
+  POST  /telegram/webhook              (US-ACCESS-04, inbound bot queries)
+  PATCH /platform/settings/languages   (US-ACCESS-05, same endpoint listed
+                                        under Admin, Section 2)
+
+Jobs
+  Bhashini API health/latency check (feeds IT Support's US-ITSUP-04).
+  Telegram webhook processing (inbound half of the shared bot integration
+  described in Section 9's Jobs — outbound reminders vs. inbound queries,
+  one bot, two flows).
+
+--------------------------------------------------------------------------------
+12. TRACEABILITY SUMMARY
+--------------------------------------------------------------------------------
+Module                          | User Story IDs        | Role(s) / Tier
+---------------------------------|------------------------|------------------
+Administrator/Owner              | US-ADMIN-01..05        | admin (Primary)
+Library Staff or Manager         | US-STAFF-01..07        | librarian,
+                                  |                        | manager (Primary)
+Member                           | US-MEMBER-01..06       | member (Secondary)
+Parent/Guardian                  | US-PARENT-01..03       | guardian (Secondary)
+IT Support                       | US-ITSUP-01..05        | it-head (Tertiary)
+API Layer                        | (infrastructure — no direct user stories)
+Database Component               | (infrastructure — no direct user stories)
+Notification & Background Jobs   | US-NOTIF-01..04        | member, guardian,
+                                  |                        | librarian, manager
+Community & Reading Club         | US-COMM-01..03         | member (Secondary)
+Accessibility & Multilingual     | US-ACCESS-01..05       | member, admin
+
+Every role in user-identification.txt is served by at least one module
+above. This document supersedes the earlier six-domain-component version
+of design-of-component.txt (Auth/Book Management/Borrowing/Seat Management/
+Notification/AI); that decomposition is preserved as-is in
+docs/System_Components.md as the backend-engineering view of the same system —
+the two documents describe the same platform from two different angles
+and are cross-referenced throughout rather than duplicated.
+================================================================================

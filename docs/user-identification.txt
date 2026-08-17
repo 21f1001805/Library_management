@@ -1,0 +1,205 @@
+================================================================================
+COMMUNITY READING CLUB & LIBRARY MANAGEMENT PLATFORM
+User Identification — Primary, Secondary, and Tertiary Users
+Team 041, May 2026 Term
+Author: Rohan G
+================================================================================
+
+1. PURPOSE AND SCOPE
+--------------------------------------------------------------------------------
+This document identifies the platform's user population and classifies each
+user type into Primary, Secondary, or Tertiary tiers. It is grounded in the
+team's own project documents, not in the current frontend build — the
+frontend is one implementation of these roles and may lag or diverge from
+what the documents specify; where that happens, the documents govern.
+
+Sources used, in order of authority:
+
+  - docs/PROJECT_SPECIFICATION.md, Section 3 ("User Roles"), which fixes four
+    named roles — Admin, Librarian, Member, Manager — as the project's
+    single source of truth ("Do NOT redesign the architecture unless
+    explicitly instructed", Section 18).
+  - Team 041 – Milestone 1 Submission Details.pdf, which assigned Rajat
+    "Section 4.1 (Primary User Stories – Administrator & Staff)" and
+    "Section 2.1 (Primary Users)", and assigned Sarvottam "Section 4.2 & 4.3
+    (Secondary & Tertiary User Stories)".
+  - Team041_MOM_Milestone2_Review.pdf, Section 5, Action Item 1, which adds
+    a fifth role, "Parent", to the four in docs/PROJECT_SPECIFICATION.md, and
+    directs the team to give "Administrator, Staff, Member, Parent" each a
+    distinct, role-appropriate set of capabilities.
+  - SOFTWARE ENGINEERING PROJECT.docx (the Milestone 2 draft), whose
+    "Design of Components" section formalizes five persona modules —
+    Administrator/Owner, Library Staff or Manager, Member, Parent/Guardian,
+    IT Support — and whose Sprint 2 entry states the tiering explicitly:
+        Write primary user stories   -- Admin & Staff
+        Write secondary user stories -- Member & Parent
+        Write tertiary user stories  -- IT Support
+
+Read together, these four documents establish six named users — Admin,
+Librarian, Manager, Member, Guardian/Parent, IT Support — and the tiering
+used throughout this document:
+
+    PRIMARY:   Admin, Librarian, Manager   (jointly "Administrator & Staff")
+    SECONDARY: Member, Guardian            ("Member & Parent")
+    TERTIARY:  IT Support                  ("IT-Head" in the current build)
+
+This supersedes an earlier draft of this document that used frequency-of-
+use reasoning to place Member/Librarian as Primary and Admin as Secondary.
+That reasoning was not grounded in any of the four documents above and has
+been corrected here.
+
+--------------------------------------------------------------------------------
+2. CLASSIFICATION CRITERIA
+--------------------------------------------------------------------------------
+The Problem Statement (docs/PROJECT_SPECIFICATION.md) frames this platform as
+digitizing library *operations* first ("Community libraries still rely
+heavily on paper registers, spreadsheets, WhatsApp groups... to manage
+books, members, borrowing..."). The team's own tiering follows that framing:
+
+Tier        Definition
+----        ----------
+Primary     Runs the platform as part of their day-to-day operational work.
+            The paper registers and spreadsheets being digitized were their
+            tools; the platform now is. Admin owns oversight and
+            configuration; Librarian and Manager (jointly "Staff") own
+            circulation and front-desk operations.
+
+Secondary   Uses the platform to meet a personal need — borrowing, reading,
+            reserving seats — or to act on behalf of someone who does.
+            Member is the direct beneficiary; Guardian (Parent) monitors a
+            Member's account on their behalf.
+
+Tertiary    Keeps the system itself running. Interacts only when a
+            technical or access-control intervention is needed, not as
+            part of routine library use.
+
+--------------------------------------------------------------------------------
+3. PRIMARY USERS — "Administrator & Staff"
+--------------------------------------------------------------------------------
+
+3.1 Admin / Owner (role: "admin")
+    Per docs/PROJECT_SPECIFICATION.md, Section 3, responsible for User
+    Management, Roles & Permissions, Analytics, Reports, Platform
+    Configuration, and Audit Logs. The Milestone 2 draft's Admin/Owner
+    Module ("Admin Control") elaborates this into concrete
+    responsibilities:
+      - See a summary of seat usage, books on loan, and revenue collected.
+      - Add, change, or remove books and copies from the catalogue.
+      - Update membership plans and seat/desk subscription pricing.
+      - Choose which Indian languages are supported and toggle voice
+        input / text-to-speech.
+      - Review which genres and reading trends are popular among members.
+      - Control the Telegram bot (channels, commands, user groups).
+      - Approve, save, or delete important records.
+
+3.2 Librarian (role: "librarian")
+    Per docs/PROJECT_SPECIFICATION.md, Section 3, responsible for Book
+    Management, Inventory, Issue & Return Books, Reservations, Fine
+    Management, and QR Code Borrowing. This is the circulation-desk half
+    of the Milestone 2 draft's combined "Library Staff or Manager Module":
+    lending and returning books, automatic fine calculation on late
+    returns, and QR-code-based borrowing.
+
+3.3 Manager (role: "manager")
+    Per docs/PROJECT_SPECIFICATION.md, Section 3, responsible for Event
+    Management, Attendance, Reading Sessions, and Community Activities.
+    The Milestone 2 draft's "Library Staff or Manager Module" additionally
+    describes operational duties shared with Librarian under this same
+    module heading: signing up and renewing members, allocating desks or
+    seats and recording check-in/check-out, recording fee and fine
+    payments, and sending date/fine reminders via Telegram. Taken
+    together, Manager's scope spans both community/event coordination
+    (per the spec) and front-desk/operational support (per the draft) —
+    the two documents describe two complementary halves of one role
+    rather than conflicting definitions.
+
+--------------------------------------------------------------------------------
+4. SECONDARY USERS — "Member & Parent"
+--------------------------------------------------------------------------------
+
+4.1 Member (role: "member")
+    Per docs/PROJECT_SPECIFICATION.md, Section 3, responsible for Borrow Books,
+    Reserve Books, Seat Booking, Book Reviews, Reading Progress, Reading
+    Challenges, and Community Discussions. The Milestone 2 draft's Member
+    Module ("Student or Reader Dashboard") elaborates this into concrete
+    responsibilities:
+      - Check desk/seat availability before travelling to the library.
+      - Browse, search, borrow, reserve, and return books.
+      - Book a study seat/desk and review booking history.
+      - View borrowing history, dues, and fee status.
+      - Receive due-date, expiry, and community-announcement alerts.
+      - Use the app in a preferred Indian language, with voice search and
+        text-to-speech (Accessibility & Multilingual Component — see
+        design-of-component.txt, Section 11).
+      - View a personal reading profile and take part in reading
+        challenges and reviews.
+
+4.2 Guardian / Parent (role: "guardian")
+    Introduced in Team041_MOM_Milestone2_Review.pdf, Section 5, Action
+    Item 1 (originally named "Parent") and formalized in the Milestone 2
+    draft's Parent/Guardian Module ("Monitoring Interface"):
+      - Remotely view a dependent's active membership and seat
+        subscription.
+      - Check outstanding fees/fines.
+      - Get notified when a membership is expiring or a new fine is
+        issued.
+    The draft explicitly scopes this to a "read-only API to access parent
+    dashboards" — Guardian monitors, it does not transact on the platform
+    in its own right.
+
+--------------------------------------------------------------------------------
+5. TERTIARY USERS — "IT Support"
+--------------------------------------------------------------------------------
+
+5.1 IT Support (role: "it-head")
+    Introduced in the Milestone 2 draft's IT Support Module ("System
+    Maintenance") — this role does not appear in docs/PROJECT_SPECIFICATION.md,
+    Section 3's original four-role list, and is a Milestone 2 addition
+    alongside Guardian:
+      - Keep data consistent with business rules; restrict access based
+        on user role.
+      - Watch for degradation in third-party API integrations.
+      - Keep audit/activity logs for deletions, payment updates, role
+        changes, etc.
+      - Troubleshoot technical errors in the system.
+    Restriction (explicit in the draft): cannot remove institutional
+    information required for the Administrator account — IT Support
+    manages access and integrity, it does not override Admin ownership.
+
+--------------------------------------------------------------------------------
+6. SUMMARY TABLE
+--------------------------------------------------------------------------------
+Tier      | Role       | Source                      | Interaction Pattern
+----------|------------|------------------------------|------------------
+Primary   | admin      | PROJECT_SPECIFICATION.md §3,  | Operational
+          |            | M2 draft Module 1             | oversight & config
+----------|------------|------------------------------|------------------
+Primary   | librarian  | PROJECT_SPECIFICATION.md §3,  | Continuous —
+          |            | M2 draft Module 2             | circulation desk
+----------|------------|------------------------------|------------------
+Primary   | manager    | PROJECT_SPECIFICATION.md §3,  | Continuous — events
+          |            | M2 draft Module 2             | + front-desk support
+----------|------------|------------------------------|------------------
+Secondary | member     | PROJECT_SPECIFICATION.md §3,  | Daily/weekly —
+          |            | M2 draft Module 3             | personal borrowing
+----------|------------|------------------------------|------------------
+Secondary | guardian   | MOM Action Item 1,            | Occasional —
+          |            | M2 draft Module 4             | read-only monitoring
+----------|------------|------------------------------|------------------
+Tertiary  | it-head    | M2 draft Module 5             | Exception-driven —
+          |            |                                | access & technical
+
+--------------------------------------------------------------------------------
+7. NOTES
+--------------------------------------------------------------------------------
+- This classification directly informs design-of-component.txt, which maps
+  each of the five persona modules above (plus API Layer, Database,
+  Notification & Background Jobs, Community & Reading Club, and
+  Accessibility & Multilingual) to user stories, views, APIs, and jobs.
+- The current frontend build (frontend/src) is one implementation of the
+  six roles above and is not treated as authoritative here; where the
+  build's behavior differs from docs/PROJECT_SPECIFICATION.md or the Milestone 2
+  draft, this document follows the documents. design-of-component.txt notes
+  frontend implementation status separately, as a build-progress detail,
+  not as a definition of any role's scope.
+================================================================================
