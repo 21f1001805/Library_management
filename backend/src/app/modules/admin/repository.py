@@ -52,30 +52,84 @@ async def count_seat_bookings(*, date: datetime, hour: int) -> int:
     return await prisma.seatbooking.count(where={"date": date, "hour": hour})
 
 
-async def list_plan_payments() -> list[Payment]:
-    return await prisma.payment.find_many(
-        where={"status": "success", "planMonths": {"not": None}}
+# The dashboard needs one figure per opening hour. Asking per hour was a dozen round
+# trips for one day's bookings — fetch the day once and bucket it here instead, the
+# same fetch-then-aggregate shape sum_expenses above already uses.
+async def count_seat_bookings_by_hour(*, date: datetime) -> dict[int, int]:
+    bookings = await prisma.seatbooking.find_many(where={"date": date})
+    counts: dict[int, int] = {}
+    for booking in bookings:
+        counts[booking.hour] = counts.get(booking.hour, 0) + 1
+    return counts
+
+
+# Same idea for the budget panel: one scan of the month's expenses, bucketed by
+# category, rather than one filtered scan per category.
+async def sum_expenses_by_category(*, start: datetime) -> dict[str, int]:
+    expenses = await prisma.expense.find_many(where={"createdAt": {"gte": start}})
+    totals: dict[str, int] = {}
+    for expense in expenses:
+        totals[expense.category] = totals.get(expense.category, 0) + expense.amount
+    return totals
+
+
+async def revenue_by_plan_label() -> list[dict]:
+    """Revenue and count per plan label, grouped in SQL.
+
+    Was: load every successful plan payment ever made and total them in Python.
+    """
+    return await prisma.query_raw(
+        """SELECT label, SUM(amount)::bigint AS amount, COUNT(*)::bigint AS count
+           FROM payments
+           WHERE status = 'success' AND plan_months IS NOT NULL
+           GROUP BY label
+           ORDER BY amount DESC"""
     )
 
 
 async def list_payments_since(start: datetime) -> list[Payment]:
-    return await prisma.payment.find_many(
-        where={"status": "success", "createdAt": {"gte": start}}
+    return await prisma.payment.find_many(where={"status": "success", "createdAt": {"gte": start}})
+
+
+async def list_expenses(*, start: datetime) -> list[Expense]:
+    """Expenses since `start`. Bounded on purpose — the unbounded variant was only
+    ever used to build a category breakdown, which expense_totals_by_category now
+    does in SQL."""
+    return await prisma.expense.find_many(where={"createdAt": {"gte": start}})
+
+
+async def expense_totals_by_category() -> list[dict]:
+    """Lifetime spend per category, grouped in SQL rather than by loading every row."""
+    return await prisma.query_raw(
+        """SELECT category, SUM(amount)::bigint AS amount
+           FROM expenses
+           GROUP BY category
+           ORDER BY amount DESC"""
     )
 
 
-async def list_expenses(*, start: datetime | None = None) -> list[Expense]:
-    where: dict = {}
-    if start is not None:
-        where["createdAt"] = {"gte": start}
-    return await prisma.expense.find_many(where=where)
+async def count_members_by_month(*, since: datetime) -> dict[str, int]:
+    """New members per YYYY-MM since `since`, bucketed in SQL.
 
-
-async def list_member_created_dates() -> list[datetime]:
-    members = await prisma.user.find_many(
-        where={"role": {"name": Role.MEMBER}, "deletedAt": None}
+    Replaces loading every member row to read one timestamp off each. Grouping in SQL
+    also sidesteps query_raw returning timestamps as strings — the counts come back as
+    numbers and the month is already the key the caller wants.
+    """
+    # $2 arrives as text over the query protocol, and created_at is `timestamp without
+    # time zone` holding UTC — so parse it as timestamptz and convert, rather than
+    # letting Postgres compare a timestamp against a string (it refuses) or silently
+    # reinterpreting an offset.
+    rows = await prisma.query_raw(
+        """SELECT to_char(u.created_at, 'YYYY-MM') AS month, COUNT(*)::bigint AS count
+           FROM users u JOIN roles r ON r.id = u.role_id
+           WHERE r.name = $1
+             AND u.deleted_at IS NULL
+             AND u.created_at >= ($2::timestamptz AT TIME ZONE 'UTC')
+           GROUP BY 1""",
+        Role.MEMBER.value,
+        since,
     )
-    return [member.createdAt for member in members]
+    return {row["month"]: int(row["count"]) for row in rows}
 
 
 async def list_member_ids() -> list[str]:
@@ -84,7 +138,14 @@ async def list_member_ids() -> list[str]:
 
 
 async def list_members(
-    *, search: str | None, page: int, page_size: int
+    *,
+    search: str | None,
+    page: int,
+    page_size: int,
+    role: str | None = None,
+    status: str | None = None,
+    sort_by: str = "joined",
+    sort_dir: str = "desc",
 ) -> tuple[list[User], int]:
     # Unlike count_members/list_member_ids (which are strictly about the "member" role
     # for stats/announcements), this powers the admin's account-management table, so it
@@ -95,19 +156,38 @@ async def list_members(
             {"fullName": {"contains": search, "mode": "insensitive"}},
             {"email": {"contains": search, "mode": "insensitive"}},
         ]
+    if role:
+        where["role"] = {"name": role}
+    if status == "active":
+        where["isActive"] = True
+    elif status == "inactive":
+        where["isActive"] = False
+
+    direction = "desc" if sort_dir == "desc" else "asc"
+    if sort_by == "role":
+        order: dict = {"role": {"name": direction}}
+    elif sort_by == "name":
+        order = {"fullName": direction}
+    else:
+        order = {"createdAt": direction}
 
     return await paginate(
         prisma.user,
         where=where,
         include={"role": True},
-        order={"createdAt": "desc"},
+        order=order,
         skip=(page - 1) * page_size,
         take=page_size,
     )
 
 
 async def list_payments(
-    *, search: str | None, page: int, page_size: int
+    *,
+    search: str | None,
+    page: int,
+    page_size: int,
+    start: datetime | None = None,
+    end: datetime | None = None,
 ) -> tuple[list[Payment], int]:
     where: dict = {}
     if search:
@@ -119,6 +199,8 @@ async def list_payments(
                 ]
             }
         }
+    if start is not None:
+        where["createdAt"] = {"gte": start, "lt": end}
 
     return await paginate(
         prisma.payment,
@@ -143,6 +225,29 @@ async def list_latest_payments(member_ids: list[str]) -> dict[str, Payment]:
     for payment in payments:
         latest.setdefault(payment.userId, payment)
     return latest
+
+
+async def list_membership_payments_by_member(member_ids: list[str]) -> dict[str, list[Payment]]:
+    """All successful plan payments per member, oldest first.
+
+    Ascending order matches what payments.calculate_membership_expiry expects, so the
+    admin view can share that function instead of re-deriving expiry from the single
+    latest payment (which ignored renewals and drifted days off on longer plans).
+    """
+    if not member_ids:
+        return {}
+    payments = await prisma.payment.find_many(
+        where={
+            "userId": {"in": member_ids},
+            "status": "success",
+            "planMonths": {"not": None},
+        },
+        order={"createdAt": "asc"},
+    )
+    grouped: dict[str, list[Payment]] = {}
+    for payment in payments:
+        grouped.setdefault(payment.userId, []).append(payment)
+    return grouped
 
 
 async def list_latest_membership_payments(member_ids: list[str]) -> dict[str, Payment]:
@@ -188,9 +293,7 @@ async def find_reported_member_ids(member_ids: list[str]) -> set[str]:
 async def count_event_registrations(member_ids: list[str]) -> dict[str, int]:
     if not member_ids:
         return {}
-    registrations = await prisma.eventregistration.find_many(
-        where={"memberId": {"in": member_ids}}
-    )
+    registrations = await prisma.eventregistration.find_many(where={"memberId": {"in": member_ids}})
     counts: dict[str, int] = {}
     for registration in registrations:
         counts[registration.memberId] = counts.get(registration.memberId, 0) + 1

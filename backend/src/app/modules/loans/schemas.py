@@ -50,3 +50,10 @@ class LoanOut(BaseModel):
             fine_paid=loan.finePaid,
             status=loan_status,
         )
+
+
+class LoanListResponse(BaseModel):
+    items: list[LoanOut]
+    total: int
+    page: int
+    page_size: int

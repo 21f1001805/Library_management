@@ -1,7 +1,6 @@
 from fastapi import HTTPException, status
 from prisma.models import SupportTicket, User
 
-from app.db.prisma import prisma
 from app.modules.notifications import service as notifications_service
 from app.modules.support_tickets import repository
 from app.modules.support_tickets.constants import CATEGORIES_BY_ROLE, STAFF_ROLES
@@ -23,11 +22,7 @@ _CATEGORY_LABELS = {
 
 
 async def _notify_staff(notification_type: str, message: str) -> None:
-    staff = await prisma.user.find_many(
-        where={"role": {"name": {"in": list(STAFF_ROLES)}}, "deletedAt": None}
-    )
-    for member in staff:
-        await notifications_service.create_notification(member.id, notification_type, message)
+    await notifications_service.notify_roles(STAFF_ROLES, notification_type, message)
 
 
 async def create_ticket(user: User, payload: SupportTicketCreate) -> SupportTicketOut:
@@ -69,9 +64,11 @@ async def resolve_ticket(
             status_code=status.HTTP_409_CONFLICT, detail="Only an open ticket can be resolved"
         )
 
-    ticket = await repository.resolve(
+    ticket = await repository.resolve_if_open(
         ticket_id, resolved_by_id=staff_user.id, resolution_note=payload.resolution_note
     )
+    if ticket is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only an open ticket can be resolved")
     await notifications_service.create_notification(
         existing.raisedById,
         "support-ticket-resolved",
@@ -82,13 +79,17 @@ async def resolve_ticket(
 
 async def confirm_ticket(ticket_id: str, user: User) -> SupportTicketOut:
     await _get_owned_resolved_ticket(ticket_id, user)
-    ticket = await repository.close(ticket_id)
+    ticket = await repository.close_if_resolved(ticket_id)
+    if ticket is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This ticket was already updated")
     return SupportTicketOut.from_prisma(ticket)
 
 
 async def reopen_ticket(ticket_id: str, user: User) -> SupportTicketOut:
     await _get_owned_resolved_ticket(ticket_id, user)
-    ticket = await repository.reopen(ticket_id)
+    ticket = await repository.reopen_if_resolved(ticket_id)
+    if ticket is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This ticket was already updated")
     await _notify_staff(
         "support-ticket-reopened",
         f"{user.fullName} reopened a support ticket — the fix didn't work.",
@@ -101,9 +102,7 @@ async def _get_owned_resolved_ticket(ticket_id: str, user: User) -> SupportTicke
     if existing is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     if existing.raisedById != user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="This isn't your ticket"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This isn't your ticket")
     if existing.status != "resolved":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="This ticket isn't awaiting confirmation"

@@ -5,10 +5,13 @@ import { Badge, Button, Drawer } from '@/components/ui';
 import type { Event } from '../pages/EventsPage';
 import { useAuth } from '@/providers/AuthProvider';
 
+import { EventAnalyticsPanel } from './EventAnalyticsPanel';
+
 export interface EventDetailsDrawerProps {
   event: Event | null;
   onClose: () => void;
   onToggleRegistration: (event: Event) => void;
+  registrationBusy?: boolean;
   /** IT Head-only: removes an attendee from the event's registrant list. */
   onRemoveRegistrant?: (eventId: string, memberId: string) => void;
   /** Admin/manager-only: opens the edit form for this event. */
@@ -19,14 +22,20 @@ export function EventDetailsDrawer({
   event,
   onClose,
   onToggleRegistration,
+  registrationBusy = false,
   onRemoveRegistrant,
   onEdit,
 }: EventDetailsDrawerProps) {
   const { t } = useTranslation();
-  const { role } = useAuth();
-  const isStaff = role === 'admin' || role === 'manager' || role === 'it-head';
-  const canModerate = role === 'admin' || role === 'it-head';
-  const canManage = role === 'admin' || role === 'manager';
+  const { role, token } = useAuth();
+  const isStaff =
+    role === 'admin' || role === 'manager' || role === 'librarian' || role === 'it-head';
+  const hasHappened = event ? new Date(event.date).getTime() < new Date().getTime() : false;
+  const canModerate = (role === 'admin' || role === 'it-head') && !hasHappened;
+  const canManage = role === 'admin' || role === 'manager' || role === 'librarian';
+  const isAdmin = role === 'admin';
+  const isFull = Boolean(event && event.attendees >= event.capacity);
+  const registrationBlocked = Boolean(event && !event.registered && (hasHappened || isFull));
 
   return (
     <Drawer
@@ -110,12 +119,21 @@ export function EventDetailsDrawer({
                   size="sm"
                   variant={event.registered ? 'outline' : 'primary'}
                   onClick={() => onToggleRegistration(event)}
+                  isLoading={registrationBusy}
+                  disabled={registrationBlocked}
                 >
                   {event.registered
                     ? t('events.details.cancelRegistration')
                     : t('events.details.register')}
                 </Button>
               </div>
+              {registrationBlocked && (
+                <p className="mt-2 text-xs text-muted-foreground" role="status">
+                  {hasHappened
+                    ? 'Registration is closed because this event has started.'
+                    : 'Registration is closed because this event is full.'}
+                </p>
+              )}
             </div>
           )}
 
@@ -137,6 +155,10 @@ export function EventDetailsDrawer({
               </ul>
             )}
           </div>
+
+          {isAdmin && hasHappened && token && (
+            <EventAnalyticsPanel eventId={event.id} eventTitle={event.title} token={token} />
+          )}
         </div>
       )}
     </Drawer>

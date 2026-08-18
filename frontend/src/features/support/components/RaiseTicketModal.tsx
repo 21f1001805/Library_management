@@ -2,7 +2,7 @@ import { Check, PartyPopper } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Button, Checkbox, Modal } from '@/components/ui';
+import { Button, Checkbox, Modal, Textarea } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import {
   useAuth,
@@ -102,14 +102,13 @@ export function RaiseTicketModal({ open, onClose, categories, onCreated }: Raise
         {step === 2 && (
           <>
             <p className="text-sm font-medium text-foreground">{t('support.wizard.step2Title')}</p>
-            <textarea
+            <Textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={5}
               maxLength={MAX_LENGTH}
               placeholder={t('support.wizard.step2Placeholder')}
               autoFocus
-              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             />
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>{t('support.wizard.step2Hint')}</span>

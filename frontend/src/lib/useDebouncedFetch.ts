@@ -12,19 +12,29 @@ export function useDebouncedFetch<T>(
   deps: unknown[],
   fallback: T,
   debounceMs = SEARCH_DEBOUNCE_MS,
-): { data: T; refresh: () => void } {
+): { data: T; isLoading: boolean; error: unknown; refresh: () => void } {
   const [data, setData] = useState<T>(fallback);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     const timer = setTimeout(() => {
+      setIsLoading(true);
       fetcher()
         .then((result) => {
-          if (!cancelled) setData(result);
+          if (cancelled) return;
+          setData(result);
+          setError(null);
         })
-        .catch(() => {
-          if (!cancelled) setData(fallback);
+        .catch((err) => {
+          if (cancelled) return;
+          setData(fallback);
+          setError(err);
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoading(false);
         });
     }, debounceMs);
 
@@ -35,5 +45,5 @@ export function useDebouncedFetch<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, reloadKey]);
 
-  return { data, refresh: () => setReloadKey((key) => key + 1) };
+  return { data, isLoading, error, refresh: () => setReloadKey((key) => key + 1) };
 }

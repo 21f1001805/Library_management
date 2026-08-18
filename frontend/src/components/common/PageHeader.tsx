@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 import { cn } from '@/lib/cn';
+import { usePageHeadingSlot } from '@/providers/PageHeadingProvider';
+
+import { TopBarHeading } from './TopBarHeading';
 
 export interface PageHeaderProps {
   title: string;
@@ -10,6 +14,22 @@ export interface PageHeaderProps {
 }
 
 export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
+  const headingSlot = usePageHeadingSlot();
+
+  // Inside the app shell the heading belongs in the TopBar, so the card collapses to just
+  // its actions (which stay with the page — they're page controls, not chrome). Outside it
+  // — public pages, which have no TopBar — the original card still renders.
+  if (headingSlot?.slot) {
+    return (
+      <>
+        {createPortal(<TopBarHeading title={title} description={description} />, headingSlot.slot)}
+        {actions && (
+          <div className="flex min-w-0 flex-wrap items-center gap-2">{actions}</div>
+        )}
+      </>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -23,7 +43,11 @@ export function PageHeader({ title, description, actions, className }: PageHeade
           <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
           {description && <p className="mt-1 text-muted-foreground">{description}</p>}
         </div>
-        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+        {actions && (
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
+            {actions}
+          </div>
+        )}
       </div>
     </div>
   );

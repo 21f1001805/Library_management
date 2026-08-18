@@ -1,14 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CalendarCheck, CalendarPlus, CalendarX, Percent, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { StatisticCard, EventCard, PageHeader } from '@/components/common';
-import { Button, EmptyState, Loader } from '@/components/ui';
-import { apiGet, apiPost, apiDelete, ApiError } from '@/lib/api';
+import { StatisticCard, EventCard, PageHeader, Pagination } from '@/components/common';
+import { ErrorState } from '@/components/feedback';
+import { Button, EmptyState, Loader, Select } from '@/components/ui';
+import { apiGet, apiPost, apiDelete, getErrorMessage } from '@/lib/api';
+import { usePagedList } from '@/lib/usePagedList';
 import { useAuth } from '@/providers/AuthProvider';
+import { toast } from 'sonner';
 
 import { CreateEventModal } from '../components/CreateEventModal';
 import { EventDetailsDrawer } from '../components/EventDetailsDrawer';
+
+const EVENTS_PAGE_SIZE = 10;
+type EventTimeFilter = 'all' | 'upcoming' | 'past';
+type EventSort = 'dateAsc' | 'dateDesc' | 'attendeesDesc' | 'attendeesAsc';
 
 interface Registrant {
   id: string;
@@ -40,10 +47,30 @@ interface AttendanceSummary {
   average_attendance_rate: number;
 }
 
+function getEventStatus(eventDate: string, now: number): 'ongoing' | 'upcoming' | 'closed' {
+  const start = new Date(eventDate).getTime();
+  const nowDate = new Date(now);
+  const startDate = new Date(start);
+  const isSameDay =
+    startDate.getFullYear() === nowDate.getFullYear() &&
+    startDate.getMonth() === nowDate.getMonth() &&
+    startDate.getDate() === nowDate.getDate();
+
+  if (isSameDay && start <= now) return 'ongoing';
+  if (start > now) return 'upcoming';
+  return 'closed';
+}
+
+const STATUS_PRIORITY: Record<'ongoing' | 'upcoming' | 'closed', number> = {
+  ongoing: 0,
+  upcoming: 1,
+  closed: 2,
+};
+
 export function EventsPage() {
   const { t } = useTranslation();
   const { token, role } = useAuth();
-  const canManage = role === 'admin' || role === 'manager';
+  const canManage = role === 'admin' || role === 'manager' || role === 'librarian';
   const [events, setEvents] = useState<Event[]>([]);
   const [summary, setSummary] = useState<AttendanceSummary>({
     total_events_this_month: 0,
@@ -51,31 +78,45 @@ export function EventsPage() {
     average_attendance_rate: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [registrationBusyId, setRegistrationBusyId] = useState<string | null>(null);
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [timeFilter, setTimeFilter] = useState<EventTimeFilter>('all');
+  const [eventSort, setEventSort] = useState<EventSort>('dateAsc');
 
   const activeEvent = events.find((e) => e.id === activeEventId) ?? null;
+  const now = new Date().getTime();
 
-  useEffect(() => {
-    fetchEvents();
-  }, [token]);
+  // timeFilter is a dependency because the server does the filtering now: events are
+  // paginated by date across the whole table, so filtering a fetched page client-side
+  // meant filtering the oldest 100 events and showing nothing under "Upcoming".
+  useEffect(fetchEvents, [token, t, timeFilter]);
 
   function fetchEvents() {
     setLoading(true);
+    setLoadError(null);
     Promise.all([
-      apiGet<EventListResponse>('/events?page_size=100', token ?? undefined),
+      apiGet<EventListResponse>(
+        `/events?page_size=100&timeframe=${timeFilter}`,
+        token ?? undefined,
+      ),
       apiGet<AttendanceSummary>('/events/summary'),
     ])
       .then(([list, s]) => {
         setEvents(list.items);
         setSummary(s);
       })
+      .catch((error) => setLoadError(getErrorMessage(error, t('common.errors.generic'))))
       .finally(() => setLoading(false));
   }
 
   async function toggleRegistration(event: Event) {
     if (!token) return;
+    const hasStarted = new Date(event.date).getTime() <= Date.now();
+    if (!event.registered && (hasStarted || event.attendees >= event.capacity)) return;
+    setRegistrationBusyId(event.id);
     try {
       let updated: Event;
       if (event.registered) {
@@ -85,7 +126,9 @@ export function EventsPage() {
       }
       setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
     } catch (err) {
-      if (err instanceof ApiError) console.error(err.message);
+      toast.error(getErrorMessage(err, t('common.errors.generic')));
+    } finally {
+      setRegistrationBusyId(null);
     }
   }
 
@@ -95,15 +138,54 @@ export function EventsPage() {
       const updated = await apiDelete<Event>(`/events/${eventId}/registrants/${memberId}`, token);
       setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
     } catch (err) {
-      if (err instanceof ApiError) console.error(err.message);
+      toast.error(getErrorMessage(err, t('common.errors.generic')));
     }
   }
+
+
+
+  const visibleEvents = useMemo(() => {
+    // No timeframe filter here — the server already applied it. Sorting stays local
+    // because it only reorders what this page received.
+    return [...events].sort((a, b) => {
+      const statusDiff =
+        STATUS_PRIORITY[getEventStatus(a.date, now)] - STATUS_PRIORITY[getEventStatus(b.date, now)];
+      if (statusDiff !== 0) return statusDiff;
+
+      switch (eventSort) {
+        case 'dateDesc':
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case 'attendeesDesc':
+          return b.attendees - a.attendees;
+        case 'attendeesAsc':
+          return a.attendees - b.attendees;
+        case 'dateAsc':
+        default:
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+      }
+    });
+  }, [events, eventSort, now]);
+
+  const { page, setPage, totalPages, pageItems: pagedEvents } = usePagedList(
+    visibleEvents,
+    EVENTS_PAGE_SIZE,
+  );
 
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader />
       </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <ErrorState
+        title="Events unavailable"
+        description={loadError}
+        onRetry={fetchEvents}
+      />
     );
   }
 
@@ -146,29 +228,84 @@ export function EventsPage() {
           description={t('events.empty.description')}
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {events.map((event) => (
-            <EventCard
-              key={event.id}
-              title={event.title}
-              date={new Date(event.date).toLocaleString('en-IN', {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              })}
-              location={event.location}
-              attendees={event.attendees}
-              capacity={event.capacity}
-              registered={event.registered}
-              onViewDetails={() => setActiveEventId(event.id)}
+        <>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Select
+              label={t('events.filters.timeLabel')}
+              value={timeFilter}
+              onChange={(event) => {
+                setTimeFilter(event.target.value as EventTimeFilter);
+                setPage(1);
+              }}
+              className="w-full sm:w-44"
+              options={[
+                { value: 'all', label: t('events.filters.timeAll') },
+                { value: 'upcoming', label: t('events.filters.timeUpcoming') },
+                { value: 'past', label: t('events.filters.timePast') },
+              ]}
             />
-          ))}
-        </div>
+
+            <Select
+              label={t('events.sort.label')}
+              value={eventSort}
+              onChange={(event) => {
+                setEventSort(event.target.value as EventSort);
+                setPage(1);
+              }}
+              className="w-full sm:w-48"
+              options={[
+                { value: 'dateAsc', label: t('events.sort.dateAsc') },
+                { value: 'dateDesc', label: t('events.sort.dateDesc') },
+                { value: 'attendeesDesc', label: t('events.sort.attendeesDesc') },
+                { value: 'attendeesAsc', label: t('events.sort.attendeesAsc') },
+              ]}
+            />
+          </div>
+
+          {visibleEvents.length === 0 ? (
+            <EmptyState
+              icon={CalendarX}
+              title={t('events.empty.title')}
+              description={t('events.empty.description')}
+            />
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {pagedEvents.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    title={event.title}
+                    date={new Date(event.date).toLocaleString('en-IN', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
+                    location={event.location}
+                    attendees={event.attendees}
+                    capacity={event.capacity}
+                    registered={event.registered}
+                    status={getEventStatus(event.date, now)}
+                    onViewDetails={() => setActiveEventId(event.id)}
+                  />
+                ))}
+              </div>
+
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={visibleEvents.length}
+                pageSize={EVENTS_PAGE_SIZE}
+                onPageChange={setPage}
+              />
+            </>
+          )}
+        </>
       )}
 
       <EventDetailsDrawer
         event={activeEvent}
         onClose={() => setActiveEventId(null)}
         onToggleRegistration={toggleRegistration}
+        registrationBusy={registrationBusyId === activeEvent?.id}
         onRemoveRegistrant={removeRegistrant}
         onEdit={(event) => {
           setActiveEventId(null);
@@ -188,4 +325,3 @@ export function EventsPage() {
     </div>
   );
 }
-

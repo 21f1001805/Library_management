@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { Button, Input, Modal } from '@/components/ui';
+import { Button, Input, Modal, Textarea } from '@/components/ui';
 import { getErrorMessage } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -53,18 +53,13 @@ export function RequestPermissionModal({ open, onClose }: RequestPermissionModal
           error={errors.permission?.message}
           {...register('permission')}
         />
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="permission-reason" className="text-sm font-medium text-foreground">
-            {t('managerDashboard.requestPermission.reasonLabel')}
-          </label>
-          <textarea
-            id="permission-reason"
-            rows={3}
-            className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            {...register('reason')}
-          />
-          {errors.reason?.message && <p className="text-sm text-danger">{errors.reason.message}</p>}
-        </div>
+        <Textarea
+          id="permission-reason"
+          label={t('managerDashboard.requestPermission.reasonLabel')}
+          rows={3}
+          error={errors.reason?.message}
+          {...register('reason')}
+        />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>
             {t('common.actions.cancel')}

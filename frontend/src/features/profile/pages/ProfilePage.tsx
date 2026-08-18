@@ -4,35 +4,43 @@ import {
   Award,
   BookOpen,
   ClipboardList,
-  Clock,
-  FileText,
   IndianRupee,
   KeyRound,
+  Lock,
   TicketCheck,
+  Trophy,
   UserPlus,
   Wallet,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ProgressBar, StatisticCard } from '@/components/common';
+import { ExportButton, ProgressBar, StatisticCard } from '@/components/common';
 import { Badge, Card, CardContent, CardHeader, CardTitle, EmptyState } from '@/components/ui';
+import { cn } from '@/lib/cn';
 import { formatCurrency } from '@/lib/format';
-import { guardianStats } from '@/mocks/guardian';
+import { guardianStats, type Child, type ChildBorrowedBook } from '@/mocks/guardian';
 import type { RegistrationRequest, WalkInRequest } from '@/mocks/manager';
 import {
   useAuth,
   type AuditLogEntry,
   type GuardianChild,
+  type LeaderboardEntry,
+  type LoanRecord,
+  type ManagerDashboardStats,
   type MemberRecord,
-  type Membership,
-  type PaymentRecord,
   type PermissionRequestRecord,
   type ReadingProgressEntry,
   type SupportTicketRecord,
 } from '@/providers/AuthProvider';
 
 import { AuditLog } from '@/features/admin/components/AuditLog';
+import {
+  useMembershipQuery,
+  useMyPaymentsQuery,
+} from '@/features/payment/hooks/useMembershipQuery';
+import { BookSeatForMemberModal } from '@/features/dashboard/components/BookSeatForMemberModal';
+import { IssueBookForMemberModal } from '@/features/dashboard/components/IssueBookForMemberModal';
 import { NewRegistrations } from '@/features/dashboard/components/NewRegistrations';
 import { RegisterMemberModal } from '@/features/dashboard/components/RegisterMemberModal';
 import { WalkInAssistance } from '@/features/dashboard/components/WalkInAssistance';
@@ -44,6 +52,45 @@ import { ResolveTicketModal } from '@/features/it-head/components/ResolveTicketM
 
 import { ProfileHeader } from '../components/ProfileHeader';
 
+const ACHIEVEMENT_DEFINITIONS = [
+  {
+    key: 'bookworm',
+    icon: '📚',
+    titleKey: 'leaderboard.badges.bookworm',
+    descKey: 'leaderboard.badges.bookwormDesc',
+  },
+  {
+    key: '7_day_streak',
+    icon: '🔥',
+    titleKey: 'leaderboard.badges.7_day_streak',
+    descKey: 'leaderboard.badges.7_day_streakDesc',
+  },
+  {
+    key: 'top_reviewer',
+    icon: '⭐',
+    titleKey: 'leaderboard.badges.top_reviewer',
+    descKey: 'leaderboard.badges.top_reviewerDesc',
+  },
+  {
+    key: 'perfect_returner',
+    icon: '🎯',
+    titleKey: 'leaderboard.badges.perfect_returner',
+    descKey: 'leaderboard.badges.perfect_returnerDesc',
+  },
+  {
+    key: 'reading_champion',
+    icon: '🏆',
+    titleKey: 'leaderboard.badges.reading_champion',
+    descKey: 'leaderboard.badges.reading_championDesc',
+  },
+  {
+    key: 'community_star',
+    icon: '🌟',
+    titleKey: 'leaderboard.badges.community_star',
+    descKey: 'leaderboard.badges.community_starDesc',
+  },
+];
+
 // No online flow yet lets a visitor submit a walk-in/registration request, so
 // these queues have nothing real to show — kept empty rather than mocked
 // (mirrors ManagerDashboard.tsx, the primary manager view for this).
@@ -52,7 +99,7 @@ const NO_REGISTRATIONS: RegistrationRequest[] = [];
 
 function AdminProfile() {
   const { t } = useTranslation();
-  const { userId, getAuditLog } = useAuth();
+  const { fullName, email, getAuditLog } = useAuth();
   const [entries, setEntries] = useState<AuditLogEntry[]>([]);
 
   useEffect(() => {
@@ -60,22 +107,18 @@ function AdminProfile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const myActivity = useMemo(
-    () => entries.filter((entry) => entry.actor_id === userId),
-    [entries, userId],
-  );
-  const expensesApproved = myActivity.filter((entry) => entry.action === 'expenseApproved').length;
-  const feesWaived = myActivity.filter((entry) => entry.action === 'feeWaived').length;
+  const expensesApproved = entries.filter((entry) => entry.action === 'expenseApproved').length;
+  const feesWaived = entries.filter((entry) => entry.action === 'feeWaived').length;
 
   return (
     <div className="flex flex-col gap-6">
-      <ProfileHeader name={t('auth.login.roles.admin')} />
+      <ProfileHeader name={fullName || t('auth.login.roles.admin')} email={email ?? undefined} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <StatisticCard
           icon={ClipboardList}
           label={t('profile.adminStats.actionsThisMonth')}
-          value={String(myActivity.length)}
+          value={String(entries.length)}
         />
         <StatisticCard
           icon={IndianRupee}
@@ -89,7 +132,7 @@ function AdminProfile() {
         />
       </div>
 
-      <AuditLog entries={myActivity} />
+      <AuditLog entries={entries} />
     </div>
   );
 }
@@ -100,7 +143,7 @@ function AdminProfile() {
 // instead of fabricated per-child data (mirrors GuardianDashboardPage).
 function GuardianProfile() {
   const { t } = useTranslation();
-  const { getGuardianChildren } = useAuth();
+  const { fullName, email, getGuardianChildren } = useAuth();
   const [realChildren, setRealChildren] = useState<GuardianChild[]>([]);
 
   useEffect(() => {
@@ -108,38 +151,106 @@ function GuardianProfile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const totalDues = useMemo(
+    () => realChildren.reduce((sum, c) => sum + (c.outstanding_fine || 0), 0),
+    [realChildren],
+  );
+
+  const mappedChildren: Child[] = useMemo(
+    () =>
+      realChildren.map((c) => ({
+        id: c.id,
+        name: c.full_name,
+        membershipId: c.id.slice(0, 8).toUpperCase(),
+        presenceStatus: 'left' as const,
+        presenceTime: 'Not checked in today',
+        subscriptionExpiresOn: 'Active',
+        outstandingFine: c.outstanding_fine > 0 ? formatCurrency(c.outstanding_fine) : '₹0',
+      })),
+    [realChildren],
+  );
+
+  const borrowedBooks: ChildBorrowedBook[] = useMemo(() => {
+    const list: ChildBorrowedBook[] = [];
+    realChildren.forEach((child) => {
+      child.currently_reading.forEach((book) => {
+        list.push({
+          id: book.id,
+          childId: child.id,
+          title: book.book_title,
+          author: 'Library Collection',
+          dueDate: 'Active loan',
+          status: 'on-time',
+        });
+      });
+      if (child.fine_book_title) {
+        list.push({
+          id: `fine-${child.id}`,
+          childId: child.id,
+          title: child.fine_book_title,
+          author: 'Library Collection',
+          dueDate: child.fine_due_date ? new Date(child.fine_due_date).toLocaleDateString() : 'Overdue',
+          status: 'overdue',
+          fineAccrued: child.outstanding_fine > 0 ? formatCurrency(child.outstanding_fine) : undefined,
+        });
+      }
+    });
+    return list;
+  }, [realChildren]);
+
   return (
     <div className="flex flex-col gap-6">
-      <ProfileHeader name={t('auth.login.roles.guardian')} />
+      <ProfileHeader name={fullName || t('auth.login.roles.guardian')} email={email ?? undefined} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {guardianStats.map((stat) => (
-          <StatisticCard
-            key={stat.labelKey}
-            icon={stat.icon}
-            label={t(stat.labelKey)}
-            value={
-              stat.labelKey === 'guardian.stats.linkedChildren'
-                ? String(realChildren.length)
-                : stat.value
-            }
-          />
-        ))}
+        <StatisticCard
+          icon={guardianStats[0].icon}
+          label={t('guardian.stats.linkedChildren')}
+          value={String(realChildren.length)}
+        />
+        <StatisticCard
+          icon={guardianStats[1].icon}
+          label={t('guardian.stats.currentlyInLibrary')}
+          value="0"
+        />
+        <StatisticCard
+          icon={guardianStats[2].icon}
+          label={t('guardian.stats.booksBorrowed')}
+          value={String(borrowedBooks.length)}
+        />
+        <StatisticCard
+          icon={guardianStats[3].icon}
+          label={t('guardian.stats.totalDues')}
+          value={formatCurrency(totalDues)}
+        />
       </div>
 
-      <ChildrenPresence children={[]} />
-      <BorrowedBooksByChild books={[]} children={[]} />
+      <ChildrenPresence children={mappedChildren} />
+      <BorrowedBooksByChild books={borrowedBooks} children={mappedChildren} />
     </div>
   );
 }
 
 function ManagerProfile() {
   const { t } = useTranslation();
+  const { fullName, email, getManagerDashboard } = useAuth();
+  const [stats, setStats] = useState<ManagerDashboardStats | null>(null);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [isBookSeatOpen, setIsBookSeatOpen] = useState(false);
+  const [isIssueBookOpen, setIsIssueBookOpen] = useState(false);
+
+  function refreshStats() {
+    getManagerDashboard().then(setStats).catch(() => setStats(null));
+  }
+
+  useEffect(() => {
+    refreshStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex flex-col gap-6">
-      <ProfileHeader name={t('auth.login.roles.manager')} />
+      <ProfileHeader name={fullName || t('auth.login.roles.manager')} email={email ?? undefined} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <StatisticCard
@@ -153,19 +264,33 @@ function ManagerProfile() {
           value={String(NO_REGISTRATIONS.length)}
         />
         <StatisticCard
-          icon={IndianRupee}
-          label={t('profile.managerStats.pendingPayments')}
-          value="0"
+          icon={ClipboardList}
+          label={t('managerDashboard.stats.pendingTasks')}
+          value={stats ? String(stats.pending_tasks) : '0'}
         />
       </div>
 
-      <WalkInAssistance requests={NO_WALK_INS} />
+      <WalkInAssistance
+        requests={NO_WALK_INS}
+        onBookSeat={() => setIsBookSeatOpen(true)}
+        onIssueBook={() => setIsIssueBookOpen(true)}
+      />
       <NewRegistrations requests={NO_REGISTRATIONS} onRegister={() => setIsRegisterOpen(true)} />
 
       <RegisterMemberModal
         open={isRegisterOpen}
         onClose={() => setIsRegisterOpen(false)}
-        onRegistered={() => {}}
+        onRegistered={refreshStats}
+      />
+      <BookSeatForMemberModal
+        open={isBookSeatOpen}
+        onClose={() => setIsBookSeatOpen(false)}
+        onBooked={refreshStats}
+      />
+      <IssueBookForMemberModal
+        open={isIssueBookOpen}
+        onClose={() => setIsIssueBookOpen(false)}
+        onIssued={refreshStats}
       />
     </div>
   );
@@ -175,7 +300,7 @@ const IT_HEAD_ACCESS_ROLES = new Set(['member', 'manager']);
 
 function ITHeadProfile() {
   const { t } = useTranslation();
-  const { getMembers, getPermissionRequests, getStaffSupportTickets } = useAuth();
+  const { fullName, email, getMembers, getPermissionRequests, getStaffSupportTickets } = useAuth();
   const [members, setMembers] = useState<MemberRecord[]>([]);
   const [permissionRequests, setPermissionRequests] = useState<PermissionRequestRecord[]>([]);
   const [tickets, setTickets] = useState<SupportTicketRecord[]>([]);
@@ -211,7 +336,7 @@ function ITHeadProfile() {
 
   return (
     <div className="flex flex-col gap-6">
-      <ProfileHeader name={t('auth.login.roles.it-head')} />
+      <ProfileHeader name={fullName || t('auth.login.roles.it-head')} email={email ?? undefined} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <StatisticCard
@@ -259,27 +384,61 @@ function formatPaymentDate(iso: string) {
   });
 }
 
-// ponytail: booksRead comes from real ReadingProgress (status=completed); pagesRead
-// and hoursRead have no tracking source at all (no page counts, no time tracking)
-// so they show honest zeros instead of fabricated numbers. Achievements and borrow
-// history have no backend yet (gamification/Loan out of scope for now) — honest
-// empty states rather than the old mock badges/table rows.
 function MemberProfile() {
   const { t } = useTranslation();
-  const { fullName, email, getMembership, getMyReadingProgress, getMyPayments } = useAuth();
-  const [membership, setMembership] = useState<Membership | null>(null);
+  const {
+    fullName,
+    email,
+    userId,
+    getMyReadingProgress,
+    getLeaderboard,
+    getMyLoans,
+  } = useAuth();
+  const { membership } = useMembershipQuery();
+  const { payments } = useMyPaymentsQuery();
   const [progress, setProgress] = useState<ReadingProgressEntry[]>([]);
-  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [loans, setLoans] = useState<LoanRecord[]>([]);
+  const [myLeaderboardEntry, setMyLeaderboardEntry] = useState<LeaderboardEntry | null>(null);
 
   useEffect(() => {
-    getMembership().then(setMembership).catch(() => setMembership(null));
     getMyReadingProgress().then(setProgress).catch(() => setProgress([]));
-    getMyPayments().then(setPayments).catch(() => setPayments([]));
+    getMyLoans().then(setLoans).catch(() => setLoans([]));
+    getLeaderboard()
+      .then((entries) => {
+        const me = entries.find((e) => e.is_current_user || e.member_id === userId);
+        setMyLeaderboardEntry(me ?? null);
+      })
+      .catch(() => setMyLeaderboardEntry(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userId]);
 
-  const currentlyReading = progress.filter((entry) => entry.status === 'reading');
-  const booksRead = progress.filter((entry) => entry.status === 'completed').length;
+  const activeLoans = useMemo(
+    () => loans.filter((loan) => loan.status === 'active' || loan.status === 'overdue'),
+    [loans],
+  );
+
+  const currentlyReading = useMemo(() => {
+    const items: Array<{ id: string; book_title: string; percent_complete: number }> = [];
+    progress.forEach((p) => {
+      if (p.status === 'reading') {
+        items.push({ id: p.id, book_title: p.book_title, percent_complete: p.percent_complete });
+      }
+    });
+    activeLoans.forEach((l) => {
+      if (!items.some((i) => i.book_title === l.book_title)) {
+        items.push({ id: l.id, book_title: l.book_title, percent_complete: 50 });
+      }
+    });
+    return items;
+  }, [progress, activeLoans]);
+
+  const booksReadCount = useMemo(() => {
+    const completedFromProgress = progress.filter((entry) => entry.status === 'completed').length;
+    const returnedLoansCount = loans.filter((l) => l.status === 'returned').length;
+    return Math.max(completedFromProgress, returnedLoansCount);
+  }, [progress, loans]);
+
+  const earnedBadges = new Set(myLeaderboardEntry?.badges ?? []);
 
   return (
     <div className="flex flex-col gap-6">
@@ -291,14 +450,40 @@ function MemberProfile() {
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-        <StatisticCard icon={BookOpen} label={t('profile.stats.booksRead')} value={String(booksRead)} />
-        <StatisticCard icon={FileText} label={t('profile.stats.pagesRead')} value="0" />
-        <StatisticCard icon={Clock} label={t('profile.stats.hoursRead')} value="0" />
+        <StatisticCard icon={BookOpen} label={t('profile.stats.booksRead')} value={String(booksReadCount)} />
+        <StatisticCard
+          icon={Trophy}
+          label="Leaderboard Score"
+          value={myLeaderboardEntry ? `${myLeaderboardEntry.score} pts` : '0 pts'}
+        />
+        <StatisticCard
+          icon={Award}
+          label="Leaderboard Rank"
+          value={myLeaderboardEntry ? `#${myLeaderboardEntry.rank}` : '—'}
+        />
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between">
           <CardTitle>{t('profile.paymentHistory.title')}</CardTitle>
+          {payments.length > 0 && (
+            <ExportButton
+              filename="payment-history"
+              title={t('profile.paymentHistory.title')}
+              headers={[
+                t('profile.paymentHistory.table.label'),
+                t('profile.paymentHistory.table.amount'),
+                t('profile.paymentHistory.table.status'),
+                t('profile.paymentHistory.table.date'),
+              ]}
+              rows={payments.map((payment) => [
+                payment.label,
+                formatCurrency(payment.amount),
+                payment.status,
+                formatPaymentDate(payment.created_at),
+              ])}
+            />
+          )}
         </CardHeader>
         <CardContent>
           {payments.length === 0 ? (
@@ -336,15 +521,64 @@ function MemberProfile() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>{t('profile.achievements.title')}</CardTitle>
+        <CardHeader className="flex-row items-center justify-between">
+          <div>
+            <CardTitle>{t('profile.achievements.title')}</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Badges earned through community participation, reading goals, and reviews.
+            </p>
+          </div>
+          {myLeaderboardEntry && (
+            <Badge variant="outline" className="gap-1 font-semibold text-primary">
+              <Trophy className="size-3.5" /> Score: {myLeaderboardEntry.score.toLocaleString()} pts (Rank #{myLeaderboardEntry.rank})
+            </Badge>
+          )}
         </CardHeader>
         <CardContent>
-          <EmptyState
-            icon={Award}
-            title={t('profile.achievements.empty.title')}
-            description={t('profile.achievements.empty.description')}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {ACHIEVEMENT_DEFINITIONS.map((ach) => {
+              const unlocked = earnedBadges.has(ach.key);
+              return (
+                <div
+                  key={ach.key}
+                  className={cn(
+                    'flex items-start gap-3 rounded-xl border p-3.5 transition-all',
+                    unlocked
+                      ? 'border-emerald-500/40 bg-emerald-500/5 shadow-xs'
+                      : 'border-dashed border-border bg-card'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'flex size-10 shrink-0 items-center justify-center rounded-lg text-lg',
+                      unlocked ? 'bg-emerald-500/10' : 'bg-muted'
+                    )}
+                  >
+                    {ach.icon}
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-semibold text-xs text-foreground truncate">
+                        {t(ach.titleKey)}
+                      </span>
+                      {unlocked ? (
+                        <Badge variant="success" className="text-[10px] px-1.5 py-0">
+                          Unlocked
+                        </Badge>
+                      ) : (
+                        <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-0.5">
+                          <Lock className="size-2.5" /> Locked
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {t(ach.descKey)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
 
@@ -377,11 +611,45 @@ function MemberProfile() {
           <CardTitle>{t('profile.borrowHistory.title')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <EmptyState
-            icon={ClipboardList}
-            title={t('profile.borrowHistory.empty.title')}
-            description={t('profile.borrowHistory.empty.description')}
-          />
+          {loans.length === 0 ? (
+            <EmptyState
+              icon={ClipboardList}
+              title={t('profile.borrowHistory.empty.title')}
+              description={t('profile.borrowHistory.empty.description')}
+            />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {loans.map((loan) => (
+                <div
+                  key={loan.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-border p-3 text-sm"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground truncate">{loan.book_title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Borrowed: {new Date(loan.borrowed_at).toLocaleDateString()}
+                      {loan.returned_at
+                        ? ` · Returned: ${new Date(loan.returned_at).toLocaleDateString()}`
+                        : ` · Due: ${new Date(loan.due_date).toLocaleDateString()}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge
+                      variant={
+                        loan.status === 'returned'
+                          ? 'success'
+                          : loan.status === 'overdue'
+                          ? 'danger'
+                          : 'outline'
+                      }
+                    >
+                      {loan.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -392,7 +660,7 @@ export function ProfilePage() {
   const { role } = useAuth();
 
   if (role === 'admin') return <AdminProfile />;
-  if (role === 'manager') return <ManagerProfile />;
+  if (role === 'manager' || role === 'librarian') return <ManagerProfile />;
   if (role === 'it-head') return <ITHeadProfile />;
   if (role === 'guardian') return <GuardianProfile />;
 

@@ -1,3 +1,7 @@
+# Tracks which schema.prisma the local Prisma client was generated from
+# (see start_backend.py) — describes this machine's .venv, not the project.
+backend/.prisma-client-schema-hash
+
 # Python
 __pycache__/
 *.py[cod]

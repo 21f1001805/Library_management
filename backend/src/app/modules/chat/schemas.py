@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ChatMessage(BaseModel):
@@ -7,10 +7,9 @@ class ChatMessage(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    message: str
-    history: list[ChatMessage] = []
+    message: str = Field(min_length=1, max_length=2000)
 
 
 class ChatResponse(BaseModel):
     reply: str
-    source: str  # "rag" | "tag" | "llm"
+    source: str  # "rag" | "tag" | "llm" | "error"

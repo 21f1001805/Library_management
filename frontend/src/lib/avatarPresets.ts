@@ -1,27 +1,32 @@
-import female1 from '@/assets/avatars/female_1.png';
-import female2 from '@/assets/avatars/female_2.png';
-import female3 from '@/assets/avatars/female_3.png';
-import female4 from '@/assets/avatars/female_4.png';
-import female5 from '@/assets/avatars/female_5.png';
-import male1 from '@/assets/avatars/male_1.png';
-import male2 from '@/assets/avatars/male_2.png';
-import male3 from '@/assets/avatars/male_3.png';
-import male4 from '@/assets/avatars/male_4.png';
-import male5 from '@/assets/avatars/male_5.png';
+import type { Role } from '@/providers/AuthProvider';
 
-const AVATAR_PRESETS = [
-  female1,
-  male1,
-  female2,
-  male2,
-  female3,
-  male3,
-  female4,
-  male4,
-  female5,
-  male5,
-];
+// Every avatar file under src/assets/avatars/<folder>/, keyed by its full path.
+// Vite resolves each to its built asset URL (same as a normal `import img from '...'`).
+const avatarModules = import.meta.glob<string>('../assets/avatars/**/*.{jpg,jpeg,png}', {
+  eager: true,
+  import: 'default',
+});
 
-export function getAvatarPresets(): string[] {
-  return AVATAR_PRESETS;
+// Only 5 avatar sets exist. 'librarian' has no dedicated folder — librarians share the
+// same staff dashboard/context as managers, so they draw from the 'staff' pool too.
+const ROLE_FOLDERS: Record<Role, string> = {
+  admin: 'admin',
+  manager: 'staff',
+  librarian: 'staff',
+  member: 'member',
+  guardian: 'guardian',
+  'it-head': 'it-head',
+};
+
+function loadFolder(folder: string): string[] {
+  return Object.keys(avatarModules)
+    .filter((path) => path.includes(`/avatars/${folder}/`))
+    .sort()
+    .map((path) => avatarModules[path]);
+}
+
+/** Returns the avatar preset image URLs for the given role's picker. */
+export function getAvatarPresets(role: Role): string[] {
+  const folder = ROLE_FOLDERS[role];
+  return loadFolder(folder);
 }

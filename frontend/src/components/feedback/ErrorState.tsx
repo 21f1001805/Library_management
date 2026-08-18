@@ -7,7 +7,7 @@ import { cn } from '@/lib/cn';
 export interface ErrorStateProps {
   title?: string;
   description?: string;
-  /** Retry button placeholder — frontend only, no real recovery logic behind it. */
+  /** Optional recovery action for retryable failures. */
   onRetry?: () => void;
   className?: string;
 }

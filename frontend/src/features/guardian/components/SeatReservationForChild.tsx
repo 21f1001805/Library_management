@@ -1,9 +1,9 @@
-import { Armchair, Bell, BellRing } from 'lucide-react';
+import { Bell, BellRing } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { IconBadge, SeatCard } from '@/components/common';
+import { SeatCard } from '@/components/common';
 import { Button, Card, CardContent, CardHeader, CardTitle, Select } from '@/components/ui';
 import { SeatLegend } from '@/features/seat-booking/components/SeatLegend';
 import { getErrorMessage } from '@/lib/api';
@@ -45,19 +45,30 @@ export function SeatReservationForChild({ children }: { children: GuardianChild[
       .catch(() => setSeats(null));
   }
 
+  // Refetches periodically, not just on mount — a mount-only fetch pins the schedule to
+  // whichever hour the card happened to open in, so bookings made elsewhere (and the
+  // wall clock crossing into the next hour) never appeared on an already-open card.
   useEffect(() => {
     let cancelled = false;
-    getSeatSchedule(toDateInputValue(now), now.getHours())
-      .then((schedule) => {
-        if (!cancelled) setSeats(schedule.seats);
-      })
-      .catch(() => {
-        if (!cancelled) setSeats(null);
-      });
+
+    function fetchSchedule() {
+      const current = new Date();
+      getSeatSchedule(toDateInputValue(current), current.getHours())
+        .then((schedule) => {
+          if (!cancelled) setSeats(schedule.seats);
+        })
+        .catch(() => {
+          if (!cancelled) setSeats(null);
+        });
+    }
+
+    fetchSchedule();
+    const interval = setInterval(fetchSchedule, 60_000);
+
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getSeatSchedule]);
 
   function toggleSeat(seatLabel: string) {
@@ -106,9 +117,8 @@ export function SeatReservationForChild({ children }: { children: GuardianChild[
   }
 
   return (
-    <Card className="rounded-2xl shadow-panel">
-      <CardHeader className="flex-row items-center gap-3 space-y-0">
-        <IconBadge icon={Armchair} size={9} />
+    <Card>
+      <CardHeader>
         <CardTitle>{t('guardian.seatReservation.title')}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -138,6 +148,7 @@ export function SeatReservationForChild({ children }: { children: GuardianChild[
                       key={label}
                       label={label}
                       status={visualStatus}
+                      avatarUrl={seat?.booked_by_avatar_url}
                       selected={selectedSeatLabel === label}
                       onSelect={() => toggleSeat(label)}
                     />

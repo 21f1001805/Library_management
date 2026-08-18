@@ -1,6 +1,21 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def _reject_past_dates(value: datetime | None) -> datetime | None:
+    """Events are scheduled, not recorded — a past date at creation is always a typo.
+
+    Left unchecked, a mistyped year also pins the bad record to the top of every
+    listing, since events are ordered by date ascending.
+
+    Deliberately applied to creation only. Events legitimately become past ones by
+    elapsing, and the edit form resends every field including `date` — so enforcing
+    this on update would make a finished event impossible to edit at all.
+    """
+    if value is not None and value < datetime.now(UTC):
+        raise ValueError("Event date must be in the future")
+    return value
 
 
 class EventCreate(BaseModel):
@@ -10,6 +25,8 @@ class EventCreate(BaseModel):
     date: datetime
     capacity: int = Field(gt=0)
     manager_ids: list[str] = Field(default_factory=list)
+
+    _future_date = field_validator("date")(_reject_past_dates)
 
 
 class EventUpdate(BaseModel):
@@ -83,3 +100,28 @@ class AttendanceSummary(BaseModel):
     total_events_this_month: int
     total_attendees: int
     average_attendance_rate: float
+
+
+class EventAnalyticsRegistrant(BaseModel):
+    id: str
+    full_name: str
+    email: str
+    role: str
+    registered_at: datetime
+
+
+class RoleBreakdown(BaseModel):
+    role: str
+    count: int
+
+
+class EventAnalytics(BaseModel):
+    event_id: str
+    title: str
+    date: datetime
+    location: str
+    capacity: int
+    total_registered: int
+    fill_rate: float
+    registrants_by_role: list[RoleBreakdown]
+    registrants: list[EventAnalyticsRegistrant]

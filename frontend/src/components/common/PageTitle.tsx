@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 import { cn } from '@/lib/cn';
+import { usePageHeadingSlot } from '@/providers/PageHeadingProvider';
+
+import { TopBarHeading } from './TopBarHeading';
 
 export interface PageTitleProps {
   title: ReactNode;
@@ -21,6 +25,24 @@ export function PageTitle({
   actions,
   className,
 }: PageTitleProps) {
+  const headingSlot = usePageHeadingSlot();
+
+  // Same split as PageHeader: heading goes up to the TopBar inside the app shell, actions
+  // and the adornment (e.g. an unread badge) stay with the page.
+  if (headingSlot?.slot) {
+    return (
+      <>
+        {createPortal(<TopBarHeading title={title} description={description} />, headingSlot.slot)}
+        {(actions || titleAdornment) && (
+          <div className={cn('flex flex-wrap items-center justify-end gap-3', className)}>
+            {titleAdornment}
+            {actions}
+          </div>
+        )}
+      </>
+    );
+  }
+
   const heading = titleAdornment ? (
     <div className="flex items-center gap-3">
       <h1 className="text-2xl font-semibold text-foreground">{title}</h1>

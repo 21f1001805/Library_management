@@ -1,5 +1,5 @@
 import { Bookmark, Flag, Heart, MessageCircle, Pencil, Send, Trash2, UserX } from 'lucide-react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Avatar, Badge, Card, CardContent, CardHeader } from '@/components/ui';
@@ -8,23 +8,34 @@ import { formatRelativeTime } from '@/lib/formatRelativeTime';
 import type { CommunityPost, PostComment } from '@/providers/AuthProvider';
 import { useAuth } from '@/providers/AuthProvider';
 
+// If a member reported a comment themselves, hide it from their view.
+// Other members will still see it (marked as [Reported]), and staff see all comments.
+function hideSelfReportedComments(comments: PostComment[]): PostComment[] {
+  return comments
+    .filter((comment) => !comment.reported_by_me)
+    .map((comment) => ({ ...comment, replies: hideSelfReportedComments(comment.replies) }));
+}
+
 export interface PostCardProps {
   post: CommunityPost;
-  onToggleLike: () => void;
-  onToggleSave?: () => void;
-  onAddComment: (content: string) => void;
-  onAddReply: (commentId: string, content: string) => void;
-  onEdit?: () => void;
-  onDelete?: () => void;
+  isBanned: boolean;
+  /** True when the post itself wasn't reported but one of its comments was —
+   * used to flag the card and auto-expand comments so staff can find it. */
+  hasReportedComment: boolean;
+  onToggleLike: (postId: string) => void;
+  onToggleSave: (postId: string) => void;
+  onAddComment: (postId: string, content: string) => void;
+  onAddReply: (postId: string, commentId: string, content: string) => void;
+  onEdit: (post: CommunityPost) => void;
+  onDelete: (postId: string) => void;
   /** Staff-only: lets a reported comment be removed. */
-  onDeleteComment?: (commentId: string) => void;
+  onDeleteComment: (postId: string, commentId: string) => void;
   /** IT Head-only: temporarily bans the post's author from Community. */
-  onBan?: () => void;
-  isBanned?: boolean;
+  onBan: (authorId: string, authorName: string) => void;
   /** Member/Manager-only: flags this post for admin review. */
-  onReportPost?: () => void;
+  onReportPost: (postId: string) => void;
   /** Member/Manager-only: flags a comment on this post for admin review. */
-  onReportComment?: (commentId: string) => void;
+  onReportComment: (postId: string, commentId: string) => void;
 }
 
 function CommentRow({
@@ -135,8 +146,10 @@ function CommentRow({
   );
 }
 
-export function PostCard({
+export const PostCard = memo(function PostCard({
   post,
+  isBanned,
+  hasReportedComment,
   onToggleLike,
   onToggleSave,
   onAddComment,
@@ -145,20 +158,36 @@ export function PostCard({
   onDelete,
   onDeleteComment,
   onBan,
-  isBanned,
   onReportPost,
   onReportComment,
 }: PostCardProps) {
   const { t } = useTranslation();
-  const { userId } = useAuth();
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const { userId, role } = useAuth();
+  const isStaff =
+    role === 'admin' || role === 'manager' || role === 'librarian' || role === 'it-head';
+  const canModerate = role === 'admin' || role === 'it-head';
+  const canReport = role === 'member';
+  const isMember = role === 'member';
+  // Members never see reported comments (or their replies) at all — strip them
+  // before anything downstream (count, list, auto-expand) touches the thread.
+  const visibleComments = isStaff ? post.comments : hideSelfReportedComments(post.comments);
+  // Only staff get the "something here was reported" signal — a member can't
+  // see the reported comment anyway, so the badge/auto-open would just be noise.
+  const flagReportedComment = hasReportedComment && !isMember;
+  // null means "no manual choice yet" — comments default open whenever this post
+  // has a reported comment (even one reported later, since the list polls every
+  // 30s), so staff land on the flagged comment instead of a card that looks clean
+  // until they think to expand it. Once the user toggles it themselves, that
+  // explicit choice wins until the reported-comment state changes again.
+  const [manualCommentsOpen, setManualCommentsOpen] = useState<boolean | null>(null);
+  const isCommentsOpen = manualCommentsOpen ?? flagReportedComment;
   const [commentDraft, setCommentDraft] = useState('');
 
   function handleAddComment(event: React.FormEvent) {
     event.preventDefault();
     const content = commentDraft.trim();
     if (!content) return;
-    onAddComment(content);
+    onAddComment(post.id, content);
     setCommentDraft('');
   }
 
@@ -171,44 +200,47 @@ export function PostCard({
             <p className="text-sm font-semibold text-foreground">{post.author_name}</p>
             {isBanned && <Badge variant="danger">{t('community.post.bannedBadge')}</Badge>}
             {post.reported && <Badge variant="danger">{t('community.post.reportedBadge')}</Badge>}
+            {!post.reported && flagReportedComment && (
+              <Badge variant="danger">{t('community.post.reportedCommentBadge')}</Badge>
+            )}
           </div>
           <p className="text-xs text-muted-foreground">{formatRelativeTime(post.created_at)}</p>
         </div>
         {post.book_title && <Badge variant="outline">{post.book_title}</Badge>}
-        {onReportPost && !post.reported && (
+        {canReport && !post.is_own && !post.reported && (
           <button
             type="button"
-            onClick={onReportPost}
+            onClick={() => onReportPost(post.id)}
             aria-label={t('community.post.reportAria', { author: post.author_name })}
             className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
           >
             <Flag className="size-4" />
           </button>
         )}
-        {onBan && (
+        {canModerate && !post.is_own && (
           <button
             type="button"
-            onClick={onBan}
+            onClick={() => onBan(post.author_id, post.author_name)}
             aria-label={t('community.post.banAria', { author: post.author_name })}
             className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
           >
             <UserX className="size-4" />
           </button>
         )}
-        {onEdit && (
+        {post.is_own && (
           <button
             type="button"
-            onClick={onEdit}
+            onClick={() => onEdit(post)}
             aria-label={t('community.post.editAria')}
             className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             <Pencil className="size-4" />
           </button>
         )}
-        {onDelete && (
+        {(post.is_own || canModerate) && (
           <button
             type="button"
-            onClick={onDelete}
+            onClick={() => onDelete(post.id)}
             aria-label={t('community.post.deleteAria')}
             className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
           >
@@ -235,7 +267,7 @@ export function PostCard({
         <div className="flex items-center gap-1 border-t border-border pt-2">
           <button
             type="button"
-            onClick={onToggleLike}
+            onClick={() => onToggleLike(post.id)}
             aria-pressed={post.is_liked}
             aria-label={t(post.is_liked ? 'community.post.unlikeAria' : 'community.post.likeAria')}
             className={cn(
@@ -249,19 +281,19 @@ export function PostCard({
 
           <button
             type="button"
-            onClick={() => setIsCommentsOpen((open) => !open)}
+            onClick={() => setManualCommentsOpen(!isCommentsOpen)}
             aria-expanded={isCommentsOpen}
             aria-label={t('community.post.commentAria')}
             className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary"
           >
             <MessageCircle className="size-4" />
-            {post.comments.length}
+            {visibleComments.length}
           </button>
 
-          {onToggleSave && (
+          {!isStaff && (
             <button
               type="button"
-              onClick={onToggleSave}
+              onClick={() => onToggleSave(post.id)}
               aria-pressed={post.is_saved}
               aria-label={t(post.is_saved ? 'community.post.unsaveAria' : 'community.post.saveAria')}
               className={cn(
@@ -276,14 +308,18 @@ export function PostCard({
 
         {isCommentsOpen && (
           <div className="flex flex-col gap-3 border-t border-border pt-3">
-            {post.comments.map((comment) => (
+            {visibleComments.map((comment) => (
               <CommentRow
                 key={comment.id}
                 comment={comment}
                 currentUserId={userId}
-                onReply={onAddReply}
-                onDeleteComment={onDeleteComment}
-                onReportComment={onReportComment}
+                onReply={(commentId, content) => onAddReply(post.id, commentId, content)}
+                onDeleteComment={
+                  isStaff ? (commentId) => onDeleteComment(post.id, commentId) : undefined
+                }
+                onReportComment={
+                  canReport ? (commentId) => onReportComment(post.id, commentId) : undefined
+                }
               />
             ))}
 
@@ -309,4 +345,4 @@ export function PostCard({
       </CardContent>
     </Card>
   );
-}
+});

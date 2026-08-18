@@ -1,14 +1,12 @@
-from typing import Any, Protocol, TypeVar
-
-T = TypeVar("T")
+from typing import Any, Protocol
 
 
-class _PaginatableModel(Protocol[T]):
+class _PaginatableModel[T](Protocol):
     async def count(self, *, where: dict) -> int: ...
     async def find_many(self, **kwargs: Any) -> list[T]: ...
 
 
-async def paginate(
+async def paginate[T](
     model: _PaginatableModel[T],
     *,
     where: dict,

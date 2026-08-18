@@ -9,7 +9,7 @@ from prisma.models import User
 
 from app.core.config import get_settings
 from app.core.constants import Role
-from app.core.mail import send_email
+from app.core.mail import send_email_async
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -105,20 +105,28 @@ async def google_login(payload: GoogleLoginRequest) -> TokenResponse:
             detail="Google account email is not verified",
         )
 
-    email: str = claims["email"]
+    email = str(claims["email"]).strip().lower()
     user = await repository.find_by_email(email)
     is_new_user = user is None
 
     if user is None:
         role = await repository.upsert_role(Role.MEMBER.value)
-        user = await repository.create_member(
-            email=email,
-            password_hash=None,
-            full_name=claims.get("name") or email.split("@")[0],
-            phone=None,
-            avatar_url=claims.get("picture"),
-            role_id=role.id,
-        )
+        try:
+            user = await repository.create_member(
+                email=email,
+                password_hash=None,
+                full_name=claims.get("name") or email.split("@")[0],
+                phone=None,
+                avatar_url=claims.get("picture"),
+                role_id=role.id,
+            )
+        except UniqueViolationError:
+            # Another callback for the same first-time Google identity won the
+            # create race. Reuse that canonical account instead of returning 500.
+            user = await repository.find_by_email(email)
+            if user is None:
+                raise
+            is_new_user = False
     elif not user.isActive or user.deletedAt is not None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="This account is disabled"
@@ -136,7 +144,26 @@ async def update_profile(user: User, payload: UpdateProfileRequest) -> TokenResp
     if "phone" in fields_set:
         data["phone"] = payload.phone
     if payload.password is not None:
+        # Changing an existing password requires proving you know it. Possession of a
+        # 15-minute access token is not proof of identity — it can be lifted from a
+        # shared machine or a borrowed session — and without this check that token
+        # became a permanent takeover that also locked the real owner out, because
+        # the tokenVersion bump below kills their sessions.
+        #
+        # A Google-created account has no hash yet: CompleteProfileModal sets its first
+        # password, and there is nothing to confirm against. Only that first set is
+        # exempt; every later change goes through the check.
+        if user.passwordHash is not None and (
+            not payload.current_password
+            or not verify_password(payload.current_password, user.passwordHash)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Current password is incorrect"
+            )
         data["passwordHash"] = hash_password(payload.password)
+        # Invalidate every refresh token issued before this password change in
+        # the same write that stores the new password.
+        data["tokenVersion"] = {"increment": 1}
     if "avatar_url" in fields_set:
         data["avatarUrl"] = payload.avatar_url
 
@@ -198,11 +225,12 @@ async def forgot_password(payload: ForgotPasswordRequest) -> None:
 
     token = create_reset_token(user.id, user.tokenVersion)
     reset_link = f"{get_settings().frontend_url}/reset-password?token={token}"
-    send_email(
+    await send_email_async(
         user.email,
         "Reset your library password",
         f"Reset your password: {reset_link}\n\nThis link expires in "
-        f"{get_settings().reset_token_expire_minutes} minutes. If you didn't request this, ignore it.",
+        f"{get_settings().reset_token_expire_minutes} minutes. "
+        "If you didn't request this, ignore it.",
     )
 
 

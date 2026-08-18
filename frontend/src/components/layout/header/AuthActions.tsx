@@ -28,12 +28,22 @@ export function AuthActions({
   const { t } = useTranslation();
   const isMobile = variant === 'mobile';
   const size = isMobile ? 'md' : 'sm';
+  const roleHome = role
+    ? {
+        admin: ROUTES.ADMIN,
+        member: ROUTES.DASHBOARD,
+        manager: ROUTES.DASHBOARD,
+        librarian: ROUTES.DASHBOARD,
+        'it-head': ROUTES.IT_HEAD,
+        guardian: ROUTES.GUARDIAN,
+      }[role]
+    : ROUTES.DASHBOARD;
 
   if (isAuthenticated && role) {
     return (
       <>
         <Link
-          to={role === 'admin' ? ROUTES.ADMIN : ROUTES.DASHBOARD}
+          to={roleHome}
           onClick={onNavigate}
           className={cn(buttonVariants({ variant: 'ghost', size }), isMobile && 'justify-start')}
         >

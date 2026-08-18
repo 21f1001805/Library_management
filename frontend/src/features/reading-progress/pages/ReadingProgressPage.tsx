@@ -1,5 +1,5 @@
 import { Award, Flame, Target } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { PageTitle, ProgressBar } from '@/components/common';
@@ -92,8 +92,14 @@ function MemberReadingProgress() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const currentlyReading = progress.filter((entry) => entry.status === 'reading');
-  const completed = progress.filter((entry) => entry.status === 'completed');
+  const currentlyReading = useMemo(
+    () => progress.filter((entry) => entry.status === 'reading'),
+    [progress],
+  );
+  const completed = useMemo(
+    () => progress.filter((entry) => entry.status === 'completed'),
+    [progress],
+  );
 
   return (
     <div className="flex flex-col gap-6">

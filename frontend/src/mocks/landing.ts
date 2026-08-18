@@ -5,6 +5,7 @@ import {
   BookOpen,
   Bot,
   CalendarCheck,
+  CalendarDays,
   Flame,
   Gift,
   type LucideIcon,
@@ -21,6 +22,21 @@ import type { IconBadgeTone } from '@/components/common';
 // Display copy for everything below lives in i18n locale files (src/i18n/locales/*.json),
 // keyed by `id`. These mocks hold only structural/icon data plus real-world proper nouns
 // (book titles, person names) that a real backend wouldn't translate either.
+
+export interface Statistic {
+  id: string;
+  icon: LucideIcon;
+  value: string;
+}
+
+export const statistics: Statistic[] = [
+  { id: 'booksAvailable', icon: BookOpen, value: '4,600+' },
+  { id: 'members', icon: Users, value: '140+' },
+  { id: 'readingClubs', icon: MessagesSquare, value: '6' },
+  { id: 'eventsHosted', icon: CalendarDays, value: '52' },
+  { id: 'booksBorrowed', icon: BookMarked, value: '6,800+' },
+  { id: 'studySeats', icon: CalendarCheck, value: '24' },
+];
 
 export interface Feature {
   id: string;
@@ -60,46 +76,6 @@ export const aiRecommendedBooks: AIRecommendedBook[] = [
   { id: 'atomicHabits', title: 'Atomic Habits', available: true },
   { id: 'psychologyOfMoney', title: 'The Psychology of Money', available: false },
   { id: 'ikigai', title: 'Ikigai', available: true },
-];
-
-export interface MoodRecommendation {
-  id: string;
-  emoji: string;
-  tone: IconBadgeTone;
-  books: string[];
-}
-
-export const moodRecommendations: MoodRecommendation[] = [
-  {
-    id: 'happy',
-    emoji: '\u{1F60A}',
-    tone: 'primary-tint',
-    books: ['The House in the Cerulean Sea', 'Anne of Green Gables'],
-  },
-  {
-    id: 'relaxed',
-    emoji: '\u{1F60C}',
-    tone: 'warning',
-    books: ['Norwegian Wood', 'The Overstory'],
-  },
-  {
-    id: 'curious',
-    emoji: '\u{1F92F}',
-    tone: 'success',
-    books: ['Sapiens', 'A Short History of Nearly Everything'],
-  },
-  {
-    id: 'motivated',
-    emoji: '\u{1F60E}',
-    tone: 'danger',
-    books: ['Atomic Habits', 'Can’t Hurt Me'],
-  },
-  {
-    id: 'studyMode',
-    emoji: '\u{1F4DA}',
-    tone: 'info',
-    books: ['Deep Work', 'How to Read a Book'],
-  },
 ];
 
 export interface Achievement {

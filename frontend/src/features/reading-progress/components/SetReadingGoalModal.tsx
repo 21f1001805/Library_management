@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -15,10 +16,10 @@ const INTEGER_PATTERN = /^[1-9]\d*$/;
 const goalSchema = z.object({
   yearlyGoal: z
     .string()
-    .regex(INTEGER_PATTERN, { message: 'Enter a whole number of at least 1' }),
+    .regex(INTEGER_PATTERN, { message: 'readingProgress.goalForm.integerError' }),
   monthlyGoal: z
     .string()
-    .regex(INTEGER_PATTERN, { message: 'Enter a whole number of at least 1' }),
+    .regex(INTEGER_PATTERN, { message: 'readingProgress.goalForm.integerError' }),
 });
 
 type GoalFormValues = z.infer<typeof goalSchema>;
@@ -37,6 +38,7 @@ export function SetReadingGoalModal({
   onSaved,
 }: SetReadingGoalModalProps) {
   const { setReadingGoal } = useAuth();
+  const { t } = useTranslation();
 
   const {
     register,
@@ -57,36 +59,36 @@ export function SetReadingGoalModal({
         monthly_goal: Number(values.monthlyGoal),
       });
       onSaved(goal);
-      toast.success('Reading goal saved');
+      toast.success(t('readingProgress.goalForm.savedToast'));
       onClose();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Could not save goal'));
+      toast.error(getErrorMessage(err, t('readingProgress.goalForm.saveError')));
     }
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Set Reading Goal">
+    <Modal open={open} onClose={onClose} title={t('readingProgress.goalForm.title')}>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
         <Input
-          label="Yearly goal (books)"
+          label={t('readingProgress.goalForm.yearly')}
           inputMode="numeric"
           pattern="[0-9]*"
-          error={errors.yearlyGoal?.message}
+          error={errors.yearlyGoal?.message ? t(errors.yearlyGoal.message) : undefined}
           {...register('yearlyGoal')}
         />
         <Input
-          label="Monthly goal (books)"
+          label={t('readingProgress.goalForm.monthly')}
           inputMode="numeric"
           pattern="[0-9]*"
-          error={errors.monthlyGoal?.message}
+          error={errors.monthlyGoal?.message ? t(errors.monthlyGoal.message) : undefined}
           {...register('monthlyGoal')}
         />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
+            {t('common.actions.cancel')}
           </Button>
           <Button type="submit" isLoading={isSubmitting}>
-            Save
+            {t('readingProgress.goalForm.save')}
           </Button>
         </div>
       </form>

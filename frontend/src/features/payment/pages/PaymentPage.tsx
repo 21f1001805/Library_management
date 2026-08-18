@@ -172,7 +172,7 @@ export function PaymentPage() {
             <button
               type="button"
               onClick={handleRemoveCoupon}
-              className="text-xs font-medium text-primary hover:underline"
+              className="text-xs font-medium text-primary-gradient hover:underline"
             >
               {t('payment.coupon.remove')}
             </button>
@@ -202,7 +202,7 @@ export function PaymentPage() {
       {isRenewal && (
         <p className="text-center text-sm text-muted-foreground">
           {t('payment.renewingCurrentPlan')}{' '}
-          <Link to={ROUTES.PRICING} className="font-medium text-primary hover:underline">
+          <Link to={ROUTES.PRICING} className="font-medium text-primary-gradient hover:underline">
             {t('payment.changePlan')}
           </Link>
         </p>

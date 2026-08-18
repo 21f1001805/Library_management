@@ -93,7 +93,7 @@ export function Login() {
           />
           <Link
             to={ROUTES.FORGOT_PASSWORD}
-            className="self-end text-sm font-medium text-primary hover:underline"
+            className="self-end text-sm font-medium text-primary-gradient hover:underline"
           >
             {t('auth.login.forgotPassword')}
           </Link>

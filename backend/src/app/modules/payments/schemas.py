@@ -28,8 +28,29 @@ class PaymentOut(BaseModel):
         )
 
 
+class PaymentListResponse(BaseModel):
+    items: list[PaymentOut]
+    total: int
+    page: int
+    page_size: int
+
+
 class MembershipOut(BaseModel):
     plan_label: str
     purchased_at: datetime
     expires_at: datetime
     is_active: bool
+
+
+class RazorpayOrderOut(BaseModel):
+    order_id: str
+    amount: int
+    currency: str
+    key_id: str
+    label: str
+
+
+class RazorpayVerifyRequest(BaseModel):
+    razorpay_order_id: str = Field(min_length=1)
+    razorpay_payment_id: str = Field(min_length=1)
+    razorpay_signature: str = Field(min_length=1)

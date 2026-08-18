@@ -1,16 +1,16 @@
+from contextlib import suppress
 from datetime import UTC, datetime
 
+from prisma import Prisma
+from prisma.errors import UniqueViolationError
 from prisma.models import LoginActivity, ReadingGoal, ReadingProgress, Role, User
 
+from app.core.constants import Role as AppRole
 from app.db.pagination import paginate
 from app.db.prisma import prisma
 
 MEMBER_INCLUDE = {"role": True}
 READING_PROGRESS_INCLUDE = {"book": True}
-
-
-async def get_role_by_name(name: str) -> Role | None:
-    return await prisma.role.find_unique(where={"name": name})
 
 
 async def upsert_role(name: str) -> Role:
@@ -25,17 +25,20 @@ async def find_by_id(member_id: str) -> User | None:
 
 
 async def find_by_email(email: str) -> User | None:
-    return await prisma.user.find_unique(where={"email": email}, include=MEMBER_INCLUDE)
+    return await prisma.user.find_unique(
+        where={"email": email.strip().lower()}, include=MEMBER_INCLUDE
+    )
 
 
 async def touch_last_login(user_id: str) -> None:
     now = datetime.now(UTC)
     today = datetime(now.year, now.month, now.day, tzinfo=UTC)
     await prisma.user.update(where={"id": user_id}, data={"lastLoginAt": now})
-    await prisma.loginactivity.upsert(
-        where={"memberId_date": {"memberId": user_id, "date": today}},
-        data={"create": {"memberId": user_id, "date": today}, "update": {}},
-    )
+    with suppress(UniqueViolationError):
+        await prisma.loginactivity.create(data={"memberId": user_id, "date": today})
+        # Concurrent successful logins may both try to create today's activity row.
+        # The unique row already represents the desired result, so authentication
+        # must not fail just because another request won that race.
 
 
 async def list_members(
@@ -78,7 +81,7 @@ async def create_member(
 ) -> User:
     return await prisma.user.create(
         data={
-            "email": email,
+            "email": email.strip().lower(),
             "passwordHash": password_hash,
             "fullName": full_name,
             "phone": phone,
@@ -89,8 +92,16 @@ async def create_member(
     )
 
 
-async def update_member(member_id: str, data: dict) -> User:
-    return await prisma.user.update(where={"id": member_id}, data=data, include=MEMBER_INCLUDE)
+async def update_member(member_id: str, data: dict, *, client: Prisma | None = None) -> User:
+    db = client or prisma
+    return await db.user.update(where={"id": member_id}, data=data, include=MEMBER_INCLUDE)
+
+
+async def count_active_admins(*, client: Prisma | None = None) -> int:
+    db = client or prisma
+    return await db.user.count(
+        where={"isActive": True, "deletedAt": None, "role": {"name": AppRole.ADMIN.value}}
+    )
 
 
 async def bump_token_version(user_id: str) -> User:

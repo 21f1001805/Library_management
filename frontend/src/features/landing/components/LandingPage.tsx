@@ -7,9 +7,8 @@ import { FAQ } from './FAQ';
 import { Features } from './Features';
 import { Hero } from './Hero';
 import { HowItWorks } from './HowItWorks';
-import { MoodRecommendation } from './MoodRecommendation';
 import { PlatformPreview } from './PlatformPreview';
-import { SeatAvailability } from './SeatAvailability';
+import { ShareReviews } from './ShareReviews';
 import { Testimonials } from './Testimonials';
 import { Footer } from './Footer';
 
@@ -32,8 +31,7 @@ export function LandingPage() {
       <PlatformPreview />
       <Features />
       <HowItWorks />
-      <MoodRecommendation />
-      <SeatAvailability />
+      <ShareReviews />
       <Community />
       <Testimonials />
       <FAQ />

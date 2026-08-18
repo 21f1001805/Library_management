@@ -6,9 +6,7 @@ CHILD_INCLUDE = {"role": True}
 
 
 async def create_link(*, guardian_id: str, member_id: str) -> GuardianLink:
-    return await prisma.guardianlink.create(
-        data={"guardianId": guardian_id, "memberId": member_id}
-    )
+    return await prisma.guardianlink.create(data={"guardianId": guardian_id, "memberId": member_id})
 
 
 async def list_children(guardian_id: str) -> list[User]:

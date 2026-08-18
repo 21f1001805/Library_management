@@ -26,7 +26,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-primary-foreground hover:bg-primary-hover',
+  primary: 'bg-primary-gradient text-primary-foreground hover:opacity-90',
   secondary: 'bg-secondary text-secondary-foreground hover:bg-border-muted',
   outline: 'border border-border bg-transparent text-foreground hover:bg-secondary',
   ghost: 'bg-transparent text-foreground hover:bg-secondary',
@@ -80,11 +80,18 @@ export function Button({
   return (
     <button
       ref={ref}
-      disabled={disabled ?? isLoading}
+      disabled={disabled || isLoading}
+      aria-busy={isLoading || undefined}
       className={buttonVariants({ variant, size, className })}
       {...props}
     >
-      {isLoading ? <Loader size="sm" /> : leadingIcon}
+      {isLoading ? (
+        <span aria-hidden="true">
+          <Loader size="sm" />
+        </span>
+      ) : (
+        leadingIcon
+      )}
       {children}
       {!isLoading && trailingIcon}
     </button>

@@ -21,7 +21,7 @@ from app.modules.seat_booking.schemas import SeatBookingOut
 
 router = APIRouter(prefix="/manager", tags=["manager"])
 
-manage = require_role(Role.MANAGER)
+manage = require_role(Role.MANAGER, Role.LIBRARIAN)
 
 
 @router.get("/dashboard", response_model=ManagerDashboardStatsOut)
@@ -36,6 +36,10 @@ async def book_seat_for_member(
     return await service.book_seat_for_member(payload)
 
 
+# Manager-scoped convenience wrapper around the same loans_service.create_loan used by
+# POST /loans (ADMIN/MANAGER/LIBRARIAN/IT_HEAD) — see manager/service.py. Both are
+# intentionally reachable by a manager: this one is the front-desk flow (issue while a
+# member is standing there), POST /loans is the general staff endpoint.
 @router.post("/loans", response_model=LoanOut, status_code=status.HTTP_201_CREATED)
 async def issue_loan_for_member(
     payload: ManagerLoanCreate, user: Annotated[User, Depends(manage)]

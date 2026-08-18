@@ -1,7 +1,5 @@
-import { BookOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { IconBadge } from '@/components/common';
 import { Badge, type BadgeVariant, Card, CardContent, CardHeader, CardTitle, EmptyState } from '@/components/ui';
 import type { Child, ChildBorrowedBook } from '@/mocks/guardian';
 
@@ -28,24 +26,22 @@ export function BorrowedBooksByChild({
   const childName = (childId: string) => children.find((child) => child.id === childId)?.name ?? '';
 
   return (
-    <Card className="rounded-2xl shadow-panel">
-      <CardHeader className="flex-row items-center gap-3 space-y-0">
-        <IconBadge icon={BookOpen} size={9} />
+    <Card>
+      <CardHeader>
         <CardTitle>{t('guardian.borrowedBooks.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         {books.length === 0 ? (
           <EmptyState
-            icon={BookOpen}
             title={t('guardian.borrowedBooks.emptyTitle')}
             description={t('guardian.borrowedBooks.emptyDescription')}
           />
         ) : (
-          <ul className="flex flex-col gap-2.5">
+          <ul className="flex flex-col gap-3">
             {books.map((book) => (
               <li
                 key={book.id}
-                className="flex flex-col gap-2 rounded-xl border border-border-muted bg-secondary/10 p-3.5 text-sm transition-colors hover:border-primary/20 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 rounded-lg border border-border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <p className="font-medium text-foreground">{book.title}</p>

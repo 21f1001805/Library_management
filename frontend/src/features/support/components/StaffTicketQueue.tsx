@@ -3,19 +3,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, EmptyState } from '@/components/ui';
+import { formatDate } from '@/lib/format';
 import type { SupportTicketRecord } from '@/providers/AuthProvider';
 
 import { CATEGORY_ICONS } from '../constants';
 import { ResolveTicketModal } from './ResolveTicketModal';
 import { TicketStatusBadge } from './TicketStatusBadge';
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
 
 export interface StaffTicketQueueProps {
   tickets: SupportTicketRecord[];

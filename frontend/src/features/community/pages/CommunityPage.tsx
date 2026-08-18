@@ -1,10 +1,11 @@
-import { Bookmark, Flag, MessageCircle, Plus, UserX, Users } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Flag, MessageCircle, Plus, UserX, Users } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { StatisticCard, PageTitle } from '@/components/common';
+import { Pagination, StatisticCard, PageTitle, TableToolbar } from '@/components/common';
 import { Button, Dialog, EmptyState } from '@/components/ui';
+import { usePagination, useSortedItems } from '@/hooks';
 import { getErrorMessage } from '@/lib/api';
 import {
   useAuth,
@@ -72,12 +73,13 @@ export function CommunityPage() {
     banCommunityAuthor,
     unbanCommunityAuthor,
   } = useAuth();
-  const isStaff = role === 'admin' || role === 'manager' || role === 'it-head';
+  const isStaff =
+    role === 'admin' || role === 'manager' || role === 'librarian' || role === 'it-head';
   const canModerate = role === 'admin' || role === 'it-head';
-  const canReport = role === 'member' || role === 'manager';
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
+  const [sort, setSort] = useState<'newest' | 'oldest' | 'likes'>('newest');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<CommunityPost | null>(null);
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
@@ -116,12 +118,31 @@ export function CommunityPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canModerate]);
 
-  const visiblePosts = useMemo(() => {
-    if (filter === 'saved') return posts.filter((post) => post.is_saved);
+  const filteredPosts = useMemo(() => {
+    // If a member reported a post themselves, hide it from their feed.
+    // Other members will still see it (marked as [Reported]), and staff see all posts.
+    const basePosts = !isStaff ? posts.filter((post) => !post.reported_by_me) : posts;
+    if (filter === 'saved') return basePosts.filter((post) => post.is_saved);
     if (filter === 'reported')
-      return posts.filter((post) => post.reported || hasReportedComment(post.comments));
-    return posts;
-  }, [posts, filter]);
+      return basePosts.filter((post) => post.reported || hasReportedComment(post.comments));
+    return basePosts;
+  }, [posts, filter, isStaff]);
+
+  const sortedPosts = useSortedItems(filteredPosts, {
+    compare: (a, b) => {
+      switch (sort) {
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'likes':
+          return b.like_count - a.like_count;
+        case 'newest':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    },
+  });
+
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(sortedPosts, 5);
   const deletingPost = posts.find((post) => post.id === deletingPostId) ?? null;
 
   const totalComments = useMemo(
@@ -133,9 +154,12 @@ export function CommunityPage() {
     [posts],
   );
 
-  function reportError(error: unknown) {
-    toast.error(getErrorMessage(error, t('common.errors.generic')));
-  }
+  const reportError = useCallback(
+    (error: unknown) => {
+      toast.error(getErrorMessage(error, t('common.errors.generic')));
+    },
+    [t],
+  );
 
   async function handleSubmitPost(draft: PostDraft) {
     const payload = { book_title: draft.bookTitle || null, content: draft.content, images: draft.images };
@@ -196,80 +220,112 @@ export function CommunityPage() {
     }
   }
 
-  async function toggleLike(postId: string) {
-    try {
-      const updated = await toggleCommunityLike(postId);
-      setPosts((prev) => replacePost(prev, updated));
-    } catch (error) {
-      reportError(error);
-    }
-  }
+  // Stable across renders (all deps are themselves stable: useAuth()'s functions are memoized,
+  // reportError only changes if the language changes) — passed straight through to PostCard
+  // instead of being re-wrapped in a fresh per-post closure inside the .map() below, so
+  // React.memo(PostCard) can actually skip re-rendering posts nothing changed on.
+  const toggleLike = useCallback(
+    async (postId: string) => {
+      try {
+        const updated = await toggleCommunityLike(postId);
+        setPosts((prev) => replacePost(prev, updated));
+      } catch (error) {
+        reportError(error);
+      }
+    },
+    [toggleCommunityLike, reportError],
+  );
 
-  async function toggleSave(postId: string) {
-    try {
-      const updated = await toggleCommunitySave(postId);
-      setPosts((prev) => replacePost(prev, updated));
-    } catch (error) {
-      reportError(error);
-    }
-  }
+  const toggleSave = useCallback(
+    async (postId: string) => {
+      try {
+        const updated = await toggleCommunitySave(postId);
+        setPosts((prev) => replacePost(prev, updated));
+      } catch (error) {
+        reportError(error);
+      }
+    },
+    [toggleCommunitySave, reportError],
+  );
 
-  async function addComment(postId: string, content: string) {
-    try {
-      const updated = await addCommunityComment(postId, { content });
-      setPosts((prev) => replacePost(prev, updated));
-    } catch (error) {
-      reportError(error);
-    }
-  }
+  const addComment = useCallback(
+    async (postId: string, content: string) => {
+      try {
+        const updated = await addCommunityComment(postId, { content });
+        setPosts((prev) => replacePost(prev, updated));
+      } catch (error) {
+        reportError(error);
+      }
+    },
+    [addCommunityComment, reportError],
+  );
 
-  async function addReply(postId: string, commentId: string, content: string) {
-    try {
-      const updated = await addCommunityComment(postId, { content, parent_id: commentId });
-      setPosts((prev) => replacePost(prev, updated));
-    } catch (error) {
-      reportError(error);
-    }
-  }
+  const addReply = useCallback(
+    async (postId: string, commentId: string, content: string) => {
+      try {
+        const updated = await addCommunityComment(postId, { content, parent_id: commentId });
+        setPosts((prev) => replacePost(prev, updated));
+      } catch (error) {
+        reportError(error);
+      }
+    },
+    [addCommunityComment, reportError],
+  );
 
-  async function deleteComment(postId: string, commentId: string) {
-    try {
-      await deleteCommunityComment(commentId);
-      setPosts((prev) =>
-        prev.map((post) =>
-          post.id === postId
-            ? { ...post, comments: removeCommentById(post.comments, commentId) }
-            : post,
-        ),
-      );
-    } catch (error) {
-      reportError(error);
-    }
-  }
+  const deleteComment = useCallback(
+    async (postId: string, commentId: string) => {
+      try {
+        await deleteCommunityComment(commentId);
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id === postId
+              ? { ...post, comments: removeCommentById(post.comments, commentId) }
+              : post,
+          ),
+        );
+      } catch (error) {
+        reportError(error);
+      }
+    },
+    [deleteCommunityComment, reportError],
+  );
 
-  async function reportPost(postId: string) {
-    try {
-      const updated = await reportCommunityPost(postId);
-      setPosts((prev) => replacePost(prev, updated));
-    } catch (error) {
-      reportError(error);
-    }
-  }
+  const reportPost = useCallback(
+    async (postId: string) => {
+      try {
+        const updated = await reportCommunityPost(postId);
+        setPosts((prev) => replacePost(prev, updated));
+      } catch (error) {
+        reportError(error);
+      }
+    },
+    [reportCommunityPost, reportError],
+  );
 
-  async function reportComment(postId: string, commentId: string) {
-    try {
-      await reportCommunityComment(commentId);
-      setPosts((prev) =>
-        prev.map((post) =>
-          post.id === postId
-            ? { ...post, comments: reportCommentById(post.comments, commentId) }
-            : post,
-        ),
-      );
-    } catch (error) {
-      reportError(error);
-    }
-  }
+  const reportComment = useCallback(
+    async (postId: string, commentId: string) => {
+      try {
+        await reportCommunityComment(commentId);
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id === postId
+              ? { ...post, comments: reportCommentById(post.comments, commentId) }
+              : post,
+          ),
+        );
+      } catch (error) {
+        reportError(error);
+      }
+    },
+    [reportCommunityComment, reportError],
+  );
+
+  const handleEditPost = useCallback((post: CommunityPost) => setEditingPost(post), []);
+  const handleDeletePost = useCallback((postId: string) => setDeletingPostId(postId), []);
+  const handleBanAuthor = useCallback(
+    (authorId: string, authorName: string) => setBanningAuthor({ id: authorId, name: authorName }),
+    [],
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -328,37 +384,45 @@ export function CommunityPage() {
         </div>
       )}
 
-      <div className="flex gap-2" role="group" aria-label={t('community.filterAriaLabel')}>
-        <Button
-          variant={filter === 'all' ? 'primary' : 'outline'}
-          size="sm"
-          onClick={() => setFilter('all')}
-        >
-          {t('community.filters.all')}
-        </Button>
-        {!isStaff && (
-          <Button
-            variant={filter === 'saved' ? 'primary' : 'outline'}
-            size="sm"
-            leadingIcon={<Bookmark className="size-4" />}
-            onClick={() => setFilter('saved')}
-          >
-            {t('community.filters.saved')}
-          </Button>
-        )}
-        {isStaff && (
-          <Button
-            variant={filter === 'reported' ? 'primary' : 'outline'}
-            size="sm"
-            leadingIcon={<Flag className="size-4" />}
-            onClick={() => setFilter('reported')}
-          >
-            {t('community.filters.reported')}
-          </Button>
-        )}
-      </div>
+      <TableToolbar
+        filters={[
+          {
+            label: 'Filter',
+            value: filter,
+            onChange: (value) => {
+              setFilter(value as Filter);
+              setPage(1);
+            },
+            options: [
+              { value: 'all', label: t('community.filters.all') },
+              ...(!isStaff
+                ? [{ value: 'saved', label: t('community.filters.saved') }]
+                : [{ value: 'reported', label: t('community.filters.reported') }]),
+            ],
+          },
+        ]}
+        sort={{
+          label: 'Sort',
+          value: sort,
+          onChange: (value) => {
+            setSort(value as 'newest' | 'oldest' | 'likes');
+            setPage(1);
+          },
+          options: [
+            { value: 'newest', label: 'Newest' },
+            { value: 'oldest', label: 'Oldest' },
+            { value: 'likes', label: 'Most liked' },
+          ],
+        }}
+        onReset={() => {
+          setFilter('all');
+          setSort('newest');
+          setPage(1);
+        }}
+        resetLabel="Reset"
+      />
 
-      {!isLoading && visiblePosts.length === 0 ? (
+      {!isLoading && filteredPosts.length === 0 ? (
         <EmptyState
           icon={filter === 'reported' ? Flag : Users}
           title={t(
@@ -385,31 +449,34 @@ export function CommunityPage() {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          {visiblePosts.map((post) => (
+          {paginatedItems.map((post) => (
             <PostCard
               key={post.id}
               post={post}
-              onToggleLike={() => toggleLike(post.id)}
-              onToggleSave={isStaff ? undefined : () => toggleSave(post.id)}
-              onAddComment={(content) => addComment(post.id, content)}
-              onAddReply={(commentId, content) => addReply(post.id, commentId, content)}
-              onDeleteComment={
-                isStaff ? (commentId) => deleteComment(post.id, commentId) : undefined
-              }
-              onEdit={post.is_own ? () => setEditingPost(post) : undefined}
-              onDelete={post.is_own || canModerate ? () => setDeletingPostId(post.id) : undefined}
-              onBan={
-                canModerate && !post.is_own
-                  ? () => setBanningAuthor({ id: post.author_id, name: post.author_name })
-                  : undefined
-              }
               isBanned={bannedAuthors.some((author) => author.user_id === post.author_id)}
-              onReportPost={canReport && !post.is_own ? () => reportPost(post.id) : undefined}
-              onReportComment={
-                canReport ? (commentId) => reportComment(post.id, commentId) : undefined
-              }
+              hasReportedComment={hasReportedComment(post.comments)}
+              onToggleLike={toggleLike}
+              onToggleSave={toggleSave}
+              onAddComment={addComment}
+              onAddReply={addReply}
+              onDeleteComment={deleteComment}
+              onEdit={handleEditPost}
+              onDelete={handleDeletePost}
+              onBan={handleBanAuthor}
+              onReportPost={reportPost}
+              onReportComment={reportComment}
             />
           ))}
+
+          {totalItems > 0 && (
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={5}
+              onPageChange={setPage}
+            />
+          )}
         </div>
       )}
 

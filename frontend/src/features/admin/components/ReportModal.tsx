@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ProgressBar } from '@/components/common';
 import { NoResults } from '@/components/feedback';
 import { Loader, Modal } from '@/components/ui';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatMonth } from '@/lib/format';
 import {
   useAuth,
   type ExpenseBreakdownReport,
@@ -24,12 +24,6 @@ export interface ReportModalProps {
   onClose: () => void;
 }
 
-function formatMonth(monthKey: string): string {
-  return new Date(`${monthKey}-01`).toLocaleDateString('en-US', {
-    month: 'short',
-    year: 'numeric',
-  });
-}
 
 function RevenueByPlanContent({ report }: { report: RevenueByPlanReport }) {
   const { t } = useTranslation();

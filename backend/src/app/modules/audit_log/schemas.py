@@ -24,3 +24,10 @@ class AuditLogEntryOut(BaseModel):
             params=row.metadata,
             created_at=row.createdAt,
         )
+
+
+class AuditLogListResponse(BaseModel):
+    items: list[AuditLogEntryOut]
+    total: int
+    page: int
+    page_size: int

@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from fastapi import HTTPException, status
 from prisma.models import User
 
+from app.db.prisma import prisma
 from app.modules.guardian import service as guardian_service
 from app.modules.guardian.schemas import GuardianLinkCreate
 from app.modules.loans import service as loans_service
@@ -89,40 +90,44 @@ async def list_pending_reservations() -> list[PendingReservationOut]:
     return [PendingReservationOut.from_prisma(row) for row in rows]
 
 
-async def _find_pending_reservation_or_404(reservation_id: str):
-    reservation = await reservations_repository.find_by_id(reservation_id)
-    if reservation is None or reservation.status != "pending":
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Pending reservation not found")
-    return reservation
-
-
 async def approve_reservation(
     manager_id: str, reservation_id: str, duration_days: int
 ) -> ReservationOut:
-    reservation = await _find_pending_reservation_or_404(reservation_id)
+    async with prisma.tx() as tx:
+        # Serialize decisions for the same reservation, then re-read its state inside
+        # the transaction. The loan helper separately locks the book inventory.
+        await tx.execute_raw("SELECT pg_advisory_xact_lock(hashtext($1))", reservation_id)
+        reservation = await reservations_repository.find_by_id(reservation_id, client=tx)
+        if reservation is None or reservation.status != "pending":
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Pending reservation not found")
 
-    if await reservations_repository.count_available_copies(reservation.bookId) <= 0:
-        raise HTTPException(status.HTTP_409_CONFLICT, "No copies available to approve this request")
-
-    loan = await loans_service.create_loan(
-        manager_id,
-        LoanCreate(book_id=reservation.bookId, member_id=reservation.memberId),
-        duration_days=duration_days,
-    )
-    updated = await reservations_repository.approve(reservation_id, loan_id=loan.id)
+        loan = await loans_service.create_loan(
+            manager_id,
+            LoanCreate(book_id=reservation.bookId, member_id=reservation.memberId),
+            duration_days=duration_days,
+            client=tx,
+        )
+        updated = await reservations_repository.approve(reservation_id, loan_id=loan.id, client=tx)
 
     await notifications_service.create_notification(
         reservation.memberId,
         "reservation-approved",
         f'Your request to borrow "{reservation.book.title}" was approved — '
-        f'please pick it up and return it by {loan.due_date.strftime("%b %d, %Y")}.',
+        f"please pick it up and return it by {loan.due_date.strftime('%b %d, %Y')}.",
     )
     return ReservationOut.from_prisma(updated)
 
 
 async def reject_reservation(reservation_id: str) -> ReservationOut:
-    reservation = await _find_pending_reservation_or_404(reservation_id)
-    updated = await reservations_repository.reject(reservation_id)
+    async with prisma.tx() as tx:
+        # Same lock key and same re-read-inside-the-transaction as approve_reservation.
+        # Both decisions must serialise against each other, or an approve that read
+        # 'pending' before a rejection committed overwrites it and issues the book.
+        await tx.execute_raw("SELECT pg_advisory_xact_lock(hashtext($1))", reservation_id)
+        reservation = await reservations_repository.find_by_id(reservation_id, client=tx)
+        if reservation is None or reservation.status != "pending":
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Pending reservation not found")
+        updated = await reservations_repository.reject(reservation_id, client=tx)
 
     await notifications_service.create_notification(
         reservation.memberId,

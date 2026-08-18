@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ROUTES } from '@/constants/routes';
@@ -15,13 +15,63 @@ export function Header() {
   const { isAuthenticated, role, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
   const scrolled = useScroll(10);
   const navLinks = useHeaderNavLinks();
 
   useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : '';
+    if (!open) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const backgroundElements = Array.from(document.querySelectorAll<HTMLElement>('main, footer'));
+    const previousInert = backgroundElements.map((element) => element.inert);
+    document.body.style.overflow = 'hidden';
+    backgroundElements.forEach((element) => {
+      element.inert = true;
+    });
+
+    if (open) {
+      drawerRef.current?.querySelector<HTMLElement>('a, button')?.focus();
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      requestAnimationFrame(() => toggleRef.current?.focus());
+    }
+
+    function trapFocus(event: KeyboardEvent) {
+      if (event.key !== 'Tab' || !drawerRef.current) return;
+      const focusable = Array.from(
+        drawerRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('keydown', trapFocus);
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = previousBodyOverflow;
+      backgroundElements.forEach((element, index) => {
+        element.inert = previousInert[index];
+      });
+      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('keydown', trapFocus);
     };
   }, [open]);
 
@@ -57,7 +107,7 @@ export function Header() {
           onLogout={handleLogout}
         />
 
-        <MobileNavToggle open={open} onToggle={() => setOpen((value) => !value)} />
+        <MobileNavToggle ref={toggleRef} open={open} onToggle={() => setOpen((value) => !value)} />
       </nav>
 
       <MobileNavDrawer
@@ -67,6 +117,7 @@ export function Header() {
         role={role}
         onLogout={handleLogout}
         onNavigate={() => setOpen(false)}
+        panelRef={drawerRef}
       />
     </header>
   );

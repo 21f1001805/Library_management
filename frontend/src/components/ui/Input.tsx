@@ -6,17 +6,18 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   hint?: string;
+  containerClassName?: string;
   ref?: Ref<HTMLInputElement>;
 }
 
-export function Input({ ref, id, className, label, error, hint, disabled, ...props }: InputProps) {
+export function Input({ ref, id, className, containerClassName, label, error, hint, disabled, ...props }: InputProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const hintId = `${inputId}-hint`;
   const errorId = `${inputId}-error`;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={cn('flex flex-col gap-1.5', containerClassName)}>
       {label && (
         <label htmlFor={inputId} className="text-sm font-medium text-foreground">
           {label}
@@ -39,7 +40,7 @@ export function Input({ ref, id, className, label, error, hint, disabled, ...pro
         {...props}
       />
       {error ? (
-        <p id={errorId} className="text-sm text-danger">
+        <p id={errorId} role="alert" className="text-sm text-danger">
           {error}
         </p>
       ) : hint ? (

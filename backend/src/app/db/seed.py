@@ -3,9 +3,10 @@ Startup seeder — runs once per process boot, safe to re-run (all upserts).
 Only seeds static reference data that the app cannot function without.
 """
 
+from app.core.constants import Role
 from app.db.prisma import prisma
 
-_ROLES = ["admin", "librarian", "manager", "member", "guardian", "it-head"]
+_ROLES = tuple(role.value for role in Role)
 
 
 async def run() -> None:

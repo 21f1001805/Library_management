@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import type { Ref } from 'react';
 
 import { Button, MenuToggleIcon } from '@/components/ui';
 import { cn } from '@/lib/cn';
@@ -10,15 +11,24 @@ import { NavigationLinks, type HeaderNavLink } from './NavigationLinks';
 export interface MobileNavToggleProps {
   open: boolean;
   onToggle: () => void;
+  ref?: Ref<HTMLButtonElement>;
 }
 
 // Hamburger button rendered inline in the header's nav row.
-export function MobileNavToggle({ open, onToggle }: MobileNavToggleProps) {
+export function MobileNavToggle({ open, onToggle, ref }: MobileNavToggleProps) {
   const { t } = useTranslation();
 
   return (
     <div className="flex items-center gap-2 lg:hidden">
-      <Button variant="ghost" size="sm" onClick={onToggle} aria-label={t('topBar.openNavigation')}>
+      <Button
+        ref={ref}
+        variant="ghost"
+        size="sm"
+        onClick={onToggle}
+        aria-label={open ? 'Close navigation' : t('topBar.openNavigation')}
+        aria-expanded={open}
+        aria-controls="mobile-primary-navigation"
+      >
         <MenuToggleIcon open={open} duration={300} />
       </Button>
     </div>
@@ -32,6 +42,7 @@ export interface MobileNavDrawerProps {
   role: Role | null;
   onLogout: () => void;
   onNavigate: () => void;
+  panelRef?: Ref<HTMLDivElement>;
 }
 
 // The full-screen slide-down panel opened by MobileNavToggle.
@@ -42,13 +53,21 @@ export function MobileNavDrawer({
   role,
   onLogout,
   onNavigate,
+  panelRef,
 }: MobileNavDrawerProps) {
+  if (!open) return null;
+
   return (
     <div
+      ref={panelRef}
+      id="mobile-primary-navigation"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Navigation"
       className={cn(
         'fixed inset-x-0 top-16 bottom-0 z-20 flex flex-col border-t border-border bg-surface',
         'transition-opacity duration-300 ease-out lg:hidden',
-        open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
+        'pointer-events-auto opacity-100',
       )}
     >
       <div className="flex h-full flex-col justify-between gap-6 p-4">

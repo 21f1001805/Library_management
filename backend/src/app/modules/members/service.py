@@ -3,7 +3,11 @@ from datetime import UTC, date, datetime, timedelta
 from fastapi import HTTPException, status
 from prisma.errors import ForeignKeyViolationError, UniqueViolationError
 
+from app.core.constants import Role
 from app.core.security import hash_password
+from app.db.prisma import prisma
+from app.modules.audit_log import service as audit_log_service
+from app.modules.audit_log.constants import AuditAction
 from app.modules.members import repository
 from app.modules.members.schemas import (
     MemberCreate,
@@ -16,6 +20,9 @@ from app.modules.members.schemas import (
     ReadingProgressUpsert,
     ReadingStreakOut,
 )
+
+# Constant key: this gates the "is this the last admin" decision globally, not per row.
+_ADMIN_COUNT_LOCK = "members:active-admin-count"
 
 
 async def list_members(
@@ -38,7 +45,7 @@ async def list_members(
 
 
 async def create_member(payload: MemberCreate) -> MemberOut:
-    role = await repository.upsert_role(payload.role_name)
+    role = await repository.upsert_role(payload.role_name.value)
 
     try:
         user = await repository.create_member(
@@ -58,10 +65,20 @@ async def create_member(payload: MemberCreate) -> MemberOut:
     return MemberOut.from_prisma(user)
 
 
-async def update_member(member_id: str, payload: MemberUpdate) -> MemberOut:
+async def update_member(member_id: str, payload: MemberUpdate, *, actor_id: str) -> MemberOut:
     existing = await repository.find_by_id(member_id)
     if existing is None or existing.deletedAt is not None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+
+    removes_admin_access = payload.is_active is False or (
+        payload.role_name is not None and payload.role_name != Role.ADMIN
+    )
+    if member_id == actor_id and removes_admin_access:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "You cannot deactivate or remove your own admin access",
+        )
+    guards_last_admin = existing.role.name == Role.ADMIN.value and removes_admin_access
 
     fields_set = payload.model_fields_set
     data: dict = {}
@@ -74,13 +91,51 @@ async def update_member(member_id: str, payload: MemberUpdate) -> MemberOut:
     if payload.is_active is not None:
         data["isActive"] = payload.is_active
     if payload.role_name is not None:
-        role = await repository.upsert_role(payload.role_name)
+        role = await repository.upsert_role(payload.role_name.value)
         data["roleId"] = role.id
 
     if not data:
         return MemberOut.from_prisma(existing)
 
-    updated = await repository.update_member(member_id, data)
+    if guards_last_admin:
+        # Count and write inside one transaction, behind an advisory lock on a constant
+        # key. pg_advisory_xact_lock is transaction-scoped, so taking it outside a
+        # transaction would release it immediately and guard nothing. Without this,
+        # two concurrent requests demoting two different admins both read a count of 2,
+        # both passed, and both committed — leaving zero active admins.
+        async with prisma.tx() as tx:
+            await tx.execute_raw("SELECT pg_advisory_xact_lock(hashtext($1))", _ADMIN_COUNT_LOCK)
+            if await repository.count_active_admins(client=tx) <= 1:
+                raise HTTPException(
+                    status.HTTP_409_CONFLICT,
+                    "The last active admin cannot be deactivated or reassigned",
+                )
+            updated = await repository.update_member(member_id, data, client=tx)
+    else:
+        updated = await repository.update_member(member_id, data)
+
+    # Recorded after the write succeeds, so the log never claims a change that failed.
+    if payload.role_name is not None and payload.role_name.value != existing.role.name:
+        await audit_log_service.record(
+            actor_id=actor_id,
+            action=AuditAction.MEMBER_ROLE_CHANGED,
+            metadata={
+                "memberId": member_id,
+                "memberEmail": existing.email,
+                "from": existing.role.name,
+                "to": payload.role_name.value,
+            },
+        )
+    if payload.is_active is not None and payload.is_active != existing.isActive:
+        await audit_log_service.record(
+            actor_id=actor_id,
+            action=AuditAction.MEMBER_ACTIVATION_CHANGED,
+            metadata={
+                "memberId": member_id,
+                "memberEmail": existing.email,
+                "isActive": payload.is_active,
+            },
+        )
     return MemberOut.from_prisma(updated)
 
 
@@ -146,11 +201,11 @@ async def _build_reading_goal_out(member_id: str, goal) -> ReadingGoalOut:
 async def get_reading_streak(member_id: str) -> ReadingStreakOut:
     rows = await repository.list_login_activity(member_id)
     login_dates = {row.date.date() for row in rows}
-    current, longest = _compute_streaks(login_dates)
+    current, longest = compute_streaks(login_dates)
     return ReadingStreakOut(current_streak_days=current, longest_streak_days=longest)
 
 
-def _compute_streaks(login_dates: set[date]) -> tuple[int, int]:
+def compute_streaks(login_dates: set[date]) -> tuple[int, int]:
     if not login_dates:
         return 0, 0
 

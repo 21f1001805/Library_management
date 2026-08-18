@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { ROUTES } from '@/constants/routes';
-import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0, y: 50 },
@@ -49,7 +48,7 @@ function NavList({ title, links }: { title: string; links: FooterNavLink[] }) {
             >
               {link.label}
               <motion.span
-                className="absolute bottom-0 left-0 h-0.5 bg-primary"
+                className="absolute bottom-0 left-0 h-0.5 bg-primary-gradient"
                 initial={{ width: 0 }}
                 whileHover={{ width: '100%' }}
                 transition={{ duration: 0.3 }}
@@ -117,18 +116,8 @@ export function Footer({ sticky = true }: FooterProps) {
 
       <div className="relative z-20 grid grid-cols-2 gap-6 md:grid-cols-3 md:gap-12 lg:gap-20">
         <motion.div variants={itemVariants}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-foreground">{t('landing.footer.brand')}</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {t('landing.footer.description')}
-              </p>
-            </div>
-            <div className="ml-4 hidden md:block">
-              {/* LanguageSwitcher for landing footer */}
-              <LanguageSwitcher />
-            </div>
-          </div>
+          <p className="text-sm font-semibold text-foreground">{t('landing.footer.brand')}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('landing.footer.description')}</p>
         </motion.div>
         <NavList title={t('landing.footer.navigation')} links={navLinks} />
         <NavList title={t('landing.footer.quickLinks')} links={quickLinks} />

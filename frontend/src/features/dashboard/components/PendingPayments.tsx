@@ -1,50 +1,93 @@
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { Pagination, TableToolbar } from '@/components/common';
 import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState } from '@/components/ui';
+import { usePagination } from '@/hooks';
 import { formatRelativeTime } from '@/lib/formatRelativeTime';
 import type { AppNotificationRecord } from '@/providers/AuthProvider';
 
 export interface PendingPaymentsProps {
   payments: AppNotificationRecord[];
-  onMarkPaid: (notificationId: string) => void;
+  onDismiss: (notificationId: string) => void;
 }
 
 // Members who'd rather pay cash at the counter than online — the manager
 // collects the cash here and clears the fee/fine (see the "pay at the
 // library" option on the payment page, which is what creates these).
-export function PendingPayments({ payments, onMarkPaid }: PendingPaymentsProps) {
+export function PendingPayments({ payments, onDismiss }: PendingPaymentsProps) {
   const { t } = useTranslation();
+  const [sortValue, setSortValue] = useState('newest');
+
+  const filteredPayments = useMemo(() => {
+    const items = [...payments];
+    switch (sortValue) {
+      case 'oldest':
+        return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      case 'newest':
+      default:
+        return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+  }, [payments, sortValue]);
+
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredPayments, 5);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t('managerDashboard.payments.title')}</CardTitle>
       </CardHeader>
-      <CardContent>
-        {payments.length === 0 ? (
+      <CardContent className="flex flex-col gap-3">
+        <TableToolbar
+          sort={{
+            label: 'Sort',
+            value: sortValue,
+            onChange: (value) => {
+              setSortValue(value);
+              setPage(1);
+            },
+            options: [
+              { value: 'newest', label: 'Newest First' },
+              { value: 'oldest', label: 'Oldest First' },
+            ],
+          }}
+          onReset={() => {
+            setSortValue('newest');
+            setPage(1);
+          }}
+          resetLabel={t('common.actions.reset')}
+        />
+        {filteredPayments.length === 0 ? (
           <EmptyState
             title={t('managerDashboard.payments.emptyTitle')}
             description={t('managerDashboard.payments.emptyDescription')}
           />
         ) : (
-          <ul className="flex flex-col gap-3">
-            {payments.map((payment) => (
-              <li
-                key={payment.id}
-                className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="text-sm text-foreground">{payment.message}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatRelativeTime(payment.created_at)}
-                  </p>
-                </div>
-                <Button size="sm" variant="outline" onClick={() => onMarkPaid(payment.id)}>
-                  {t('managerDashboard.payments.markPaid')}
-                </Button>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="flex flex-col gap-3">
+              {paginatedItems.map((payment) => (
+                <li
+                  key={payment.id}
+                  className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="text-sm text-foreground">{payment.message}</p>
+                    <p className="text-xs text-muted-foreground">{formatRelativeTime(payment.created_at)}</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => onDismiss(payment.id)}>
+                    {t('managerDashboard.payments.dismissRequest', 'Dismiss request')}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={5}
+              onPageChange={setPage}
+            />
+          </>
         )}
       </CardContent>
     </Card>

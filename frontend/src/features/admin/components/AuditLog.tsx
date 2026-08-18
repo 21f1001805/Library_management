@@ -1,7 +1,10 @@
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { Pagination, TableToolbar } from '@/components/common';
 import { NoResults } from '@/components/feedback';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { usePagination } from '@/hooks';
 import { formatCurrency } from '@/lib/format';
 import { formatRelativeTime } from '@/lib/formatRelativeTime';
 import { useAuth, type AuditLogEntry } from '@/providers/AuthProvider';
@@ -66,21 +69,97 @@ function AuditLogItem({ entry }: { entry: AuditLogEntry }) {
 
 export function AuditLog({ entries }: { entries: AuditLogEntry[] }) {
   const { t } = useTranslation();
+  const [filter, setFilter] = useState('all');
+  const [sort, setSort] = useState('newest');
+
+  const filteredEntries = useMemo(() => {
+    const items = [...entries].filter((entry) => {
+      if (filter === 'all') return true;
+      if (filter === 'credits') {
+        return ['pricingPlanUpdated'].includes(entry.action);
+      }
+      if (filter === 'debits') {
+        return ['expenseApproved'].includes(entry.action);
+      }
+      if (filter === 'refunds') {
+        return ['refundIssued', 'refundRejected', 'feeWaived', 'feeWaiverRejected'].includes(entry.action);
+      }
+      return true;
+    });
+
+    switch (sort) {
+      case 'oldest':
+        return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      case 'newest':
+      default:
+        return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+  }, [entries, filter, sort]);
+
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredEntries, 5);
+
+  function resetToolbar() {
+    setFilter('all');
+    setSort('newest');
+    setPage(1);
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t('admin.auditLog.title')}</CardTitle>
       </CardHeader>
-      <CardContent>
-        {entries.length === 0 ? (
+      <CardContent className="flex flex-col gap-3">
+        <TableToolbar
+          filters={[
+            {
+              label: 'Type',
+              value: filter,
+              onChange: (value) => {
+                setFilter(value);
+                setPage(1);
+              },
+              options: [
+                { value: 'all', label: 'All' },
+                { value: 'credits', label: 'Credits' },
+                { value: 'debits', label: 'Debits' },
+                { value: 'refunds', label: 'Refunds' },
+              ],
+            },
+          ]}
+          sort={{
+            label: 'Sort',
+            value: sort,
+            onChange: (value) => {
+              setSort(value);
+              setPage(1);
+            },
+            options: [
+              { value: 'newest', label: 'Newest First' },
+              { value: 'oldest', label: 'Oldest First' },
+            ],
+          }}
+          onReset={resetToolbar}
+          resetLabel={t('common.actions.reset')}
+        />
+
+        {filteredEntries.length === 0 ? (
           <NoResults title={t('admin.auditLog.empty')} />
         ) : (
-          <ul className="flex flex-col gap-3">
-            {entries.map((entry) => (
-              <AuditLogItem key={entry.id} entry={entry} />
-            ))}
-          </ul>
+          <>
+            <ul className="flex flex-col gap-3">
+              {paginatedItems.map((entry) => (
+                <AuditLogItem key={entry.id} entry={entry} />
+              ))}
+            </ul>
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={5}
+              onPageChange={setPage}
+            />
+          </>
         )}
       </CardContent>
     </Card>

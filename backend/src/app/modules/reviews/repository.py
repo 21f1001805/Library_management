@@ -4,6 +4,10 @@ from app.db.prisma import prisma
 
 REVIEW_INCLUDE = {"book": True, "member": True}
 
+# list_for_book() is naturally bounded (one book's reviews) and left uncapped;
+# list_all() backs the staff moderation queue across every book, so it isn't.
+LIST_LIMIT = 200
+
 
 async def list_for_book(book_id: str) -> list[Review]:
     return await prisma.review.find_many(
@@ -11,8 +15,16 @@ async def list_for_book(book_id: str) -> list[Review]:
     )
 
 
+async def list_for_member(member_id: str) -> list[Review]:
+    return await prisma.review.find_many(
+        where={"memberId": member_id}, include=REVIEW_INCLUDE, order={"createdAt": "desc"}
+    )
+
+
 async def list_all() -> list[Review]:
-    return await prisma.review.find_many(include=REVIEW_INCLUDE, order={"createdAt": "desc"})
+    return await prisma.review.find_many(
+        include=REVIEW_INCLUDE, order={"createdAt": "desc"}, take=LIST_LIMIT
+    )
 
 
 async def find_by_id(review_id: str) -> Review | None:

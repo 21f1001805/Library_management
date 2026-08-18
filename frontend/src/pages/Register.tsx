@@ -136,7 +136,7 @@ export function Register() {
         </form>
         <p className="text-sm text-muted-foreground">
           {t('auth.register.alreadyHaveAccount')}{' '}
-          <Link to={ROUTES.LOGIN} className="font-medium text-primary hover:underline">
+          <Link to={ROUTES.LOGIN} className="font-medium text-primary-gradient hover:underline">
             {t('auth.register.logIn')}
           </Link>
         </p>

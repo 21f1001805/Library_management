@@ -1,5 +1,7 @@
+import asyncio
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 from app.modules.admin import repository
 from app.modules.admin.constants import EXPENSE_BUDGETS, OPEN_HOURS, ExpenseCategory
@@ -31,6 +33,7 @@ from app.modules.admin.schemas import (
 from app.modules.audit_log import service as audit_log_service
 from app.modules.audit_log.constants import AuditAction
 from app.modules.notifications import service as notifications_service
+from app.modules.payments import service as payments_service
 from app.modules.seat_booking.constants import SEAT_LABELS
 
 TOTAL_SEATS = len(SEAT_LABELS)
@@ -49,7 +52,9 @@ def _previous_month_start(moment: datetime) -> datetime:
 def _trend(current: int, previous: int) -> TrendOut:
     if previous == 0:
         return TrendOut(direction="up", percent=100 if current > 0 else 0)
-    percent = round(abs(current - previous) / previous * 100)
+    # abs() on the divisor too: net profit is the one figure here that can be negative,
+    # and dividing by a signed baseline made a shrinking loss render as "up -50%".
+    percent = round(abs(current - previous) / abs(previous) * 100)
     return TrendOut(direction="up" if current >= previous else "down", percent=percent)
 
 
@@ -67,54 +72,76 @@ def _recent_month_starts(count: int, now: datetime) -> list[datetime]:
     return starts
 
 
-async def get_dashboard() -> AdminDashboardOut:
-    now = datetime.now(UTC)
-    this_month_start = _month_start(now)
-    last_month_start = _previous_month_start(now)
-
-    revenue_mtd = await repository.sum_payments(start=this_month_start)
-    revenue_last_month = await repository.sum_payments(start=last_month_start, end=this_month_start)
-    membership_fees = await repository.sum_payments(start=this_month_start, has_plan=True)
-    fines_collected = await repository.sum_payments(start=this_month_start, has_plan=False)
-
-    expenses_mtd = await repository.sum_expenses(start=this_month_start)
-    expenses_last_month = await repository.sum_expenses(
-        start=last_month_start, end=this_month_start
+def _parse_month_range(month: str) -> tuple[datetime, datetime]:
+    year, month_num = (int(part) for part in month.split("-"))
+    start = datetime(year, month_num, 1, tzinfo=UTC)
+    end = (
+        datetime(year + 1, 1, 1, tzinfo=UTC)
+        if month_num == 12
+        else datetime(year, month_num + 1, 1, tzinfo=UTC)
     )
+    return start, end
+
+
+async def get_dashboard() -> AdminDashboardOut:
+    utc_now = datetime.now(UTC)
+    local_now = datetime.now().astimezone()
+    this_month_start = _month_start(utc_now)
+    last_month_start = _previous_month_start(utc_now)
+
+    today = local_now.date()
+    yesterday = today - timedelta(days=1)
+    today_midnight = datetime(today.year, today.month, today.day, tzinfo=UTC)
+    yesterday_midnight = datetime(yesterday.year, yesterday.month, yesterday.day, tzinfo=UTC)
+
+    # These are independent, so they run concurrently rather than as ~11 sequential round
+    # trips. Kept to a fixed handful on purpose: an earlier version also fanned out one
+    # query per budget category and per opening hour, and those ~25 at once exhausted the
+    # connection pool. The two _by_ helpers below each collapse a fan-out into one query.
+    results = await asyncio.gather(
+        repository.sum_payments(start=this_month_start),
+        repository.sum_payments(start=last_month_start, end=this_month_start),
+        repository.sum_payments(start=this_month_start, has_plan=True),
+        repository.sum_payments(start=this_month_start, has_plan=False),
+        repository.sum_expenses(start=this_month_start),
+        repository.sum_expenses(start=last_month_start, end=this_month_start),
+        repository.count_members(),
+        repository.count_members(created_before=this_month_start),
+        repository.count_seat_bookings(date=today_midnight, hour=local_now.hour),
+        repository.sum_expenses_by_category(start=this_month_start),
+        repository.count_seat_bookings_by_hour(date=yesterday_midnight),
+    )
+    revenue_mtd = cast(int, results[0])
+    revenue_last_month = cast(int, results[1])
+    membership_fees = cast(int, results[2])
+    fines_collected = cast(int, results[3])
+    expenses_mtd = cast(int, results[4])
+    expenses_last_month = cast(int, results[5])
+    total_members = cast(int, results[6])
+    total_members_last_month = cast(int, results[7])
+    booked_this_hour = cast(int, results[8])
+    spend_by_category = cast(dict[str, int], results[9])
+    bookings_by_hour = cast(dict[int, int], results[10])
 
     net_profit_mtd = revenue_mtd - expenses_mtd
     net_profit_last_month = revenue_last_month - expenses_last_month
-
-    total_members = await repository.count_members()
-    total_members_last_month = await repository.count_members(created_before=this_month_start)
 
     budget = [
         BudgetCategoryOut(
             category=category,
             budgeted=budgeted,
-            spent=await repository.sum_expenses(start=this_month_start, category=category.value),
+            spent=spend_by_category.get(category.value, 0),
         )
         for category, budgeted in EXPENSE_BUDGETS.items()
     ]
 
-    today = now.date()
-    yesterday = today - timedelta(days=1)
-    today_midnight = datetime(today.year, today.month, today.day, tzinfo=UTC)
-    yesterday_midnight = datetime(yesterday.year, yesterday.month, yesterday.day, tzinfo=UTC)
-
-    booked_this_hour = await repository.count_seat_bookings(date=today_midnight, hour=now.hour)
     seat_status = SeatStatusOut(
         available=TOTAL_SEATS - booked_this_hour, booked=booked_this_hour, total=TOTAL_SEATS
     )
 
     seat_occupancy = [
         SeatOccupancySlotOut(
-            hour=hour,
-            percent_filled=round(
-                await repository.count_seat_bookings(date=yesterday_midnight, hour=hour)
-                / TOTAL_SEATS
-                * 100
-            ),
+            hour=hour, percent_filled=round(bookings_by_hour.get(hour, 0) / TOTAL_SEATS * 100)
         )
         for hour in OPEN_HOURS
     ]
@@ -155,20 +182,11 @@ async def log_expense(user_id: str, payload: ExpenseCreate) -> ExpenseOut:
 
 
 async def get_revenue_by_plan() -> RevenueByPlanOut:
-    payments = await repository.list_plan_payments()
-
-    totals: dict[str, list[int]] = defaultdict(lambda: [0, 0])
-    for payment in payments:
-        bucket = totals[payment.label]
-        bucket[0] += payment.amount
-        bucket[1] += 1
-
+    rows = await repository.revenue_by_plan_label()
     items = [
-        RevenueByPlanItemOut(label=label, amount=amount, count=count)
-        for label, (amount, count) in totals.items()
+        RevenueByPlanItemOut(label=row["label"], amount=int(row["amount"]), count=int(row["count"]))
+        for row in rows
     ]
-    items.sort(key=lambda item: item.amount, reverse=True)
-
     return RevenueByPlanOut(items=items, total=sum(item.amount for item in items))
 
 
@@ -210,23 +228,16 @@ async def get_profit_and_loss() -> ProfitAndLossOut:
 
 
 async def get_expense_breakdown() -> ExpenseBreakdownOut:
-    expenses = await repository.list_expenses()
-
-    totals: dict[str, int] = defaultdict(int)
-    for expense in expenses:
-        totals[expense.category] += expense.amount
-
-    total = sum(totals.values())
+    rows = await repository.expense_totals_by_category()
+    total = sum(int(row["amount"]) for row in rows)
     items = [
         ExpenseBreakdownItemOut(
-            category=ExpenseCategory(category),
-            amount=amount,
-            percent=round(amount / total * 100, 1) if total else 0,
+            category=ExpenseCategory(row["category"]),
+            amount=int(row["amount"]),
+            percent=round(int(row["amount"]) / total * 100, 1) if total else 0,
         )
-        for category, amount in totals.items()
+        for row in rows
     ]
-    items.sort(key=lambda item: item.amount, reverse=True)
-
     return ExpenseBreakdownOut(items=items, total=total)
 
 
@@ -235,15 +246,9 @@ async def get_membership_growth() -> MembershipGrowthOut:
     month_starts = _recent_month_starts(REPORT_MONTHS, now)
     earliest = month_starts[0]
 
-    created_dates = await repository.list_member_created_dates()
-
-    baseline = 0
-    new_by_month: dict[str, int] = defaultdict(int)
-    for created_at in created_dates:
-        if created_at < earliest:
-            baseline += 1
-        else:
-            new_by_month[_month_key(created_at)] += 1
+    # Two counting queries instead of hydrating every member row into Python.
+    baseline = await repository.count_members(created_before=earliest)
+    new_by_month = await repository.count_members_by_month(since=earliest)
 
     months = []
     running_total = baseline
@@ -262,8 +267,7 @@ async def get_membership_growth() -> MembershipGrowthOut:
 
 async def send_announcement(admin_id: str, payload: AnnouncementCreate) -> AnnouncementOut:
     member_ids = await repository.list_member_ids()
-    for member_id in member_ids:
-        await notifications_service.create_notification(member_id, "announcement", payload.message)
+    await notifications_service.create_notifications(member_ids, "announcement", payload.message)
 
     await audit_log_service.record(
         actor_id=admin_id,
@@ -273,12 +277,29 @@ async def send_announcement(admin_id: str, payload: AnnouncementCreate) -> Annou
     return AnnouncementOut(recipient_count=len(member_ids))
 
 
-async def list_members(*, search: str | None, page: int, page_size: int) -> AdminMemberListOut:
-    users, total = await repository.list_members(search=search, page=page, page_size=page_size)
+async def list_members(
+    *,
+    search: str | None,
+    page: int,
+    page_size: int,
+    role: str | None = None,
+    status: str | None = None,
+    sort_by: str = "joined",
+    sort_dir: str = "desc",
+) -> AdminMemberListOut:
+    users, total = await repository.list_members(
+        search=search,
+        page=page,
+        page_size=page_size,
+        role=role,
+        status=status,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+    )
     member_ids = [user.id for user in users]
 
     latest_payments = await repository.list_latest_payments(member_ids)
-    latest_plan_payments = await repository.list_latest_membership_payments(member_ids)
+    plan_payments_by_member = await repository.list_membership_payments_by_member(member_ids)
     progress_counts = await repository.count_reading_progress_by_status(member_ids)
     reported_ids = await repository.find_reported_member_ids(member_ids)
     event_registration_counts = await repository.count_event_registrations(member_ids)
@@ -287,17 +308,17 @@ async def list_members(*, search: str | None, page: int, page_size: int) -> Admi
     items = []
     for user in users:
         last_payment = latest_payments.get(user.id)
-        plan_payment = latest_plan_payments.get(user.id)
+        plan_payments = plan_payments_by_member.get(user.id) or []
+        plan_payment = plan_payments[-1] if plan_payments else None
 
         plan_expires_at = None
         plan_is_active = False
-        if plan_payment is not None:
-            # ponytail: same 30-days/month approximation as payments/router.py's
-            # get_my_membership — no real membership/plan model exists yet.
-            plan_expires_at = plan_payment.createdAt + timedelta(
-                days=30 * plan_payment.planMonths
-            )
-            plan_is_active = plan_expires_at > now
+        if plan_payments:
+            # Shared with the member-facing view rather than approximated locally. The
+            # old `30 * planMonths` on the latest payment alone showed annual plans
+            # expiring five days early and ignored renewals entirely.
+            plan_expires_at = payments_service.calculate_membership_expiry(plan_payments)
+            plan_is_active = plan_expires_at is not None and plan_expires_at > now
 
         counts = progress_counts.get(user.id, {})
 
@@ -306,7 +327,7 @@ async def list_members(*, search: str | None, page: int, page_size: int) -> Admi
                 id=user.id,
                 full_name=user.fullName,
                 email=user.email,
-                role=user.role.name,
+                role=user.role.name if user.role else "member",
                 is_active=user.isActive,
                 joined_at=user.createdAt,
                 last_payment_amount=last_payment.amount if last_payment else None,
@@ -325,15 +346,20 @@ async def list_members(*, search: str | None, page: int, page_size: int) -> Admi
     return AdminMemberListOut(items=items, total=total, page=page, page_size=page_size)
 
 
-async def list_payments(*, search: str | None, page: int, page_size: int) -> AdminPaymentListOut:
-    payments, total = await repository.list_payments(search=search, page=page, page_size=page_size)
+async def list_payments(
+    *, search: str | None, page: int, page_size: int, month: str | None = None
+) -> AdminPaymentListOut:
+    start, end = _parse_month_range(month) if month else (None, None)
+    payments, total = await repository.list_payments(
+        search=search, page=page, page_size=page_size, start=start, end=end
+    )
 
     items = [
         AdminPaymentOut(
             id=payment.id,
             member_id=payment.userId,
-            member_name=payment.user.fullName,
-            member_email=payment.user.email,
+            member_name=payment.user.fullName if payment.user else "Unknown Member",
+            member_email=payment.user.email if payment.user else "",
             amount=payment.amount,
             label=payment.label,
             status=payment.status,

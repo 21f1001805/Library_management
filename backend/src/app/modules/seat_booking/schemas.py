@@ -36,6 +36,12 @@ class SeatSlotOut(BaseModel):
     seat_label: str
     status: str  # available | reserved | booked_by_me
     booking_id: str | None = None
+    # Set for both "reserved" and "booked_by_me" — lets the seat grid show who has it
+    # (someone else, or the current member themself) rather than a plain color swatch.
+    # Deliberately just the avatar, not the member's name: the seat grid is visible to
+    # every member, so this stays a lightweight visual cue rather than exposing another
+    # member's identity outright.
+    booked_by_avatar_url: str | None = None
 
 
 class ScheduleOut(BaseModel):

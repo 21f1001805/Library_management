@@ -42,7 +42,7 @@ const iconSizeClasses: Record<IconBadgeSize, string> = {
 // one color vocabulary.
 const toneClasses: Record<IconBadgeTone, string> = {
   'primary-tint': 'bg-primary/10 text-primary',
-  'primary-solid': 'bg-primary text-primary-foreground',
+  'primary-solid': 'bg-primary-gradient text-primary-foreground',
   success: 'bg-success/10 text-success',
   warning: 'bg-warning/10 text-warning',
   danger: 'bg-danger/10 text-danger',

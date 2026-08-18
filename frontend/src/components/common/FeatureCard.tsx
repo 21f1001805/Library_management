@@ -12,12 +12,7 @@ export interface FeatureCardProps {
 
 export function FeatureCard({ icon: Icon, title, description, className }: FeatureCardProps) {
   return (
-    <Card
-      className={cn(
-        'h-full border-border-muted bg-secondary/10 transition-colors hover:border-primary/30',
-        className,
-      )}
-    >
+    <Card className={cn('h-full', className)}>
       <CardHeader>
         <span className="inline-flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <Icon className="size-5" />

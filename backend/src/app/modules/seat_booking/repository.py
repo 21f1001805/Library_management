@@ -11,7 +11,11 @@ def _to_datetime(value: date_type) -> datetime:
 
 
 async def list_bookings_for_slot(date: date_type, hour: int) -> list[SeatBooking]:
-    return await prisma.seatbooking.find_many(where={"date": _to_datetime(date), "hour": hour})
+    # include=member so the caller can show who a *reserved* (someone else's) seat
+    # belongs to (avatar) without a second round-trip per booking.
+    return await prisma.seatbooking.find_many(
+        where={"date": _to_datetime(date), "hour": hour}, include={"member": True}
+    )
 
 
 async def find_booking(booking_id: str) -> SeatBooking | None:

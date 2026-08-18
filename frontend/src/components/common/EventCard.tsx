@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 
+export type EventStatus = 'ongoing' | 'upcoming' | 'closed';
+
 export interface EventCardProps {
   title: string;
   date: string;
@@ -10,6 +12,7 @@ export interface EventCardProps {
   attendees: number;
   capacity: number;
   registered: boolean;
+  status: EventStatus;
   onViewDetails: () => void;
 }
 
@@ -20,6 +23,7 @@ export function EventCard({
   attendees,
   capacity,
   registered,
+  status,
   onViewDetails,
 }: EventCardProps) {
   const { t } = useTranslation();
@@ -45,8 +49,18 @@ export function EventCard({
         <div className="mt-auto flex items-center justify-between pt-2">
           {registered ? (
             <Badge variant="success">{t('common.cards.event.registered')}</Badge>
+          ) : status === 'ongoing' || status === 'upcoming' ? (
+            <Badge
+              variant="outline"
+              className="animate-pulse gap-1.5 border-success text-success"
+            >
+              <span className="flex size-1.5 animate-ping rounded-full bg-success" />
+              {status === 'ongoing'
+                ? t('common.cards.event.ongoing')
+                : t('common.cards.event.upcoming')}
+            </Badge>
           ) : (
-            <Badge variant="outline">{t('common.cards.event.open')}</Badge>
+            <Badge variant="outline">{t('common.cards.event.closed')}</Badge>
           )}
           <Button size="sm" variant="outline" onClick={onViewDetails}>
             {t('common.cards.event.viewDetails')}

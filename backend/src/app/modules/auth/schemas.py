@@ -23,6 +23,9 @@ class UpdateProfileRequest(BaseModel):
     full_name: str | None = Field(default=None, min_length=1, max_length=150)
     phone: str | None = Field(default=None, max_length=20)
     password: str | None = Field(default=None, min_length=8)
+    # Required whenever `password` is set — see auth.service.update_profile. Without it
+    # a stolen access token was enough to change the password and lock the owner out.
+    current_password: str | None = None
     avatar_url: str | None = None
 
 

@@ -1,45 +1,39 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import {
-  ArrowRight,
-  BookOpen,
-  CalendarCheck,
-  CalendarDays,
-  CheckCircle2,
-  ChevronDown,
-  CreditCard,
-  Gift,
-  Mail,
-  MessageSquare,
-  Phone,
-  Users,
-  type LucideIcon,
-} from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
+import { AnimatedHeading, AnimatedText, FadeUp, Section, SectionHeading } from '@/components/common';
 import {
-  AnimatedHeading,
-  AnimatedText,
-  FadeUp,
-  IconBadge,
-  Section,
-  SectionHeading,
-} from '@/components/common';
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from '@/components/ui';
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Textarea,
+} from '@/components/ui';
 import { apiPost, getErrorMessage } from '@/lib/api';
-import { cn } from '@/lib/cn';
+import { LIBRARY_CONTACT } from '@/constants/contact';
 import { isValidEmail } from '@/lib/email';
+import { preferredScrollBehavior } from '@/lib/scroll';
+
+import { LibraryMap } from '../components/LibraryMap';
 
 // International-friendly: an optional leading +, then 7-15 digits (spaces/dashes/parens allowed).
 const PHONE_PATTERN = /^\+?[\d\s()-]{7,20}$/;
-
-const GENERAL_EMAIL = 'hello@readingclub.org';
-const GENERAL_PHONE = '+1 (555) 010-1234';
 
 const contactUsSchema = z.object({
   name: z.string().min(1, { message: 'contactUs.errors.name' }),
@@ -52,47 +46,56 @@ const contactUsSchema = z.object({
 
 type ContactUsFormValues = z.infer<typeof contactUsSchema>;
 
-const contactCategories: Array<{ id: string; email: string; phone: string; icon: LucideIcon }> = [
-  { id: 'pricingAndFines', email: 'pricing@readingclub.org', phone: '+91 84708 12345', icon: CreditCard },
-  { id: 'booksAndClubs', email: 'clubs@readingclub.org', phone: '+91 84708 12345', icon: BookOpen },
-  { id: 'seatBooking', email: 'booking@readingclub.org', phone: '+91 84708 12345', icon: CalendarCheck },
-  { id: 'donations', email: 'donations@readingclub.org', phone: '+91 84708 12345', icon: Gift },
+const contactCategories = [
+  {
+    id: 'pricingAndFines',
+    email: 'pricing@readingclub.org',
+    phone: LIBRARY_CONTACT.phoneDisplay,
+  },
+  {
+    id: 'booksAndClubs',
+    email: 'clubs@readingclub.org',
+    phone: LIBRARY_CONTACT.phoneDisplay,
+  },
+  {
+    id: 'seatBooking',
+    email: 'booking@readingclub.org',
+    phone: LIBRARY_CONTACT.phoneDisplay,
+  },
+  {
+    id: 'donations',
+    email: 'donations@readingclub.org',
+    phone: LIBRARY_CONTACT.phoneDisplay,
+  },
 ];
 
-const faqSections: Array<{ id: string; icon: LucideIcon; questions: string[] }> = [
+const faqSections = [
   {
     id: 'membership',
-    icon: Users,
     questions: ['becomeMember', 'renewMembership', 'updateProfile', 'resetPassword'],
   },
   {
     id: 'books',
-    icon: BookOpen,
     questions: ['borrowBook', 'renewBorrowedBook', 'reserveUnavailableBook', 'requestNewBookTitle', 'loseBook'],
   },
   {
     id: 'readingClubs',
-    icon: MessageSquare,
     questions: ['joinReadingClub', 'createReadingClub', 'leaveClub', 'clubMeetings'],
   },
   {
     id: 'seatBooking',
-    icon: CalendarCheck,
     questions: ['reserveSeat', 'cancelReservation', 'seatUnavailable', 'bookingLimit'],
   },
   {
     id: 'finesPayments',
-    icon: CreditCard,
     questions: ['overdueFines', 'payFines', 'waiveFine'],
   },
   {
     id: 'donations',
-    icon: Gift,
     questions: ['donateBooks', 'donationCondition', 'donateFunds', 'donationReceipt'],
   },
   {
     id: 'events',
-    icon: CalendarDays,
     questions: ['registerEvents', 'volunteer', 'organizeEvent'],
   },
 ];
@@ -101,19 +104,6 @@ export function ContactUsPage() {
   const { t } = useTranslation();
   const location = useLocation();
   const messageFieldId = useId();
-  const [openQuestions, setOpenQuestions] = useState<Set<string>>(new Set());
-
-  function toggleQuestion(id: string) {
-    setOpenQuestions((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }
 
   const {
     register,
@@ -139,7 +129,7 @@ export function ContactUsPage() {
     const section = document.getElementById(hash);
     if (!section) return;
 
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    section.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
   }, [location.hash]);
 
   async function onSubmit(values: ContactUsFormValues) {
@@ -163,7 +153,7 @@ export function ContactUsPage() {
     const element = document.getElementById(id);
     if (!element) return;
 
-    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    element.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
   }
 
   function renderAnswer(answer: string) {
@@ -174,30 +164,6 @@ export function ContactUsPage() {
     ));
   }
 
-  const quickContactMethods = [
-    {
-      id: 'email',
-      icon: Mail,
-      title: t('contactUs.actions.emailUs'),
-      subtitle: t('contactUs.quickContact.email.subtitle'),
-      href: `mailto:${GENERAL_EMAIL}`,
-    },
-    {
-      id: 'call',
-      icon: Phone,
-      title: t('contactUs.actions.callUs'),
-      subtitle: t('contactUs.quickContact.call.subtitle'),
-      href: `tel:${GENERAL_PHONE.replace(/[^+0-9]/g, '')}`,
-    },
-    {
-      id: 'message',
-      icon: MessageSquare,
-      title: t('contactUs.quickContact.message.title'),
-      subtitle: t('contactUs.quickContact.message.subtitle'),
-      onClick: () => scrollToSection('contact-us'),
-    },
-  ] as const;
-
   return (
     <>
       <Section
@@ -205,20 +171,7 @@ export function ContactUsPage() {
         tone="surface"
         size="3xl"
         spacing="py-20 md:py-28"
-        containerClassName="relative text-center"
-        className="relative overflow-hidden"
-        decorative={
-          <>
-            <div
-              aria-hidden
-              className="blob pointer-events-none absolute -top-32 left-1/2 size-128 -translate-x-1/2 opacity-[0.16] blur-3xl"
-            />
-            <div
-              aria-hidden
-              className="blob pointer-events-none absolute -right-20 top-1/3 size-72 opacity-[0.10] blur-3xl"
-            />
-          </>
-        }
+        containerClassName="text-center"
       >
         <AnimatedHeading as="h1" size="hero" id="contact-us-hero-heading" className="text-4xl md:text-5xl">
           {t('contactUs.hero.heading')}
@@ -251,107 +204,52 @@ export function ContactUsPage() {
         </div>
       </Section>
 
-      <Section ariaLabel="Quick contact methods" tone="surface" spacing="py-10 md:py-14">
-        <div className="mx-auto grid w-full max-w-5xl gap-4 sm:grid-cols-3">
-          {quickContactMethods.map((method, index) => {
-            const Icon = method.icon;
-            const inner = (
-              <Card className="flex h-full items-start gap-4 rounded-2xl border-border bg-surface p-5 shadow-panel transition-colors hover:border-primary/40">
-                <IconBadge icon={Icon} size={11} />
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-foreground">{method.title}</p>
-                  <p className="mt-0.5 truncate text-sm text-muted-foreground">{method.subtitle}</p>
-                </div>
-                <ArrowRight className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
-              </Card>
-            );
-
-            return (
-              <FadeUp key={method.id} delay={index}>
-                {'href' in method ? (
-                  <a href={method.href} className="group block h-full">
-                    {inner}
-                  </a>
-                ) : (
-                  <button type="button" onClick={method.onClick} className="group block h-full w-full text-left">
-                    {inner}
-                  </button>
-                )}
-              </FadeUp>
-            );
-          })}
-        </div>
-      </Section>
-
       <Section id="faq" ariaLabelledBy="faq-heading" tone="surface" className="bg-surface" spacing="pt-12 pb-6">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-12">
           <SectionHeading
             id="faq-heading"
-            eyebrow={t('contactUs.quickNav.faq')}
             title={t('contactUs.faq.heading')}
             description={t('contactUs.faq.description')}
             headingClassName="max-w-3xl"
           />
 
-          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+          <div className="grid gap-8">
             {faqSections.map((section) => (
-              <div
-                key={section.id}
-                className="rounded-3xl border border-border bg-surface p-6 shadow-panel transition-colors hover:border-primary/25"
-              >
-                <div className="flex items-center gap-3">
-                  <IconBadge icon={section.icon} shape="square" />
-                  <h2 className="text-lg font-semibold text-foreground md:text-xl">
-                    {t(`contactUs.faq.categories.${section.id}`)}
-                  </h2>
-                </div>
+              <div key={section.id} className="rounded-3xl border border-border bg-surface p-6 shadow-panel">
+                <h2 className="text-lg font-semibold text-foreground md:text-xl">
+                  {t(`contactUs.faq.categories.${section.id}`)}
+                </h2>
                 <div className="mt-4 space-y-3">
                   {section.questions.map((questionId) => {
                     const question = t(`contactUs.faq.items.${questionId}.question`);
                     const answer = t(`contactUs.faq.items.${questionId}.answer`);
-                    const isOpen = openQuestions.has(questionId);
 
                     return (
-                      <div
+                      <details
                         key={questionId}
                         className="overflow-hidden rounded-2xl border border-border-muted bg-secondary/10"
                       >
-                        <button
-                          type="button"
-                          onClick={() => toggleQuestion(questionId)}
-                          aria-expanded={isOpen}
-                          className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left text-sm font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary md:text-base"
-                        >
+                        <summary className="cursor-pointer px-4 py-4 text-sm font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary md:text-base">
                           {question}
-                          <ChevronDown
-                            className={cn(
-                              'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                              isOpen && 'rotate-180',
-                            )}
-                          />
-                        </button>
-                        <AnimatePresence initial={false}>
-                          {isOpen && (
-                            <motion.div
-                              key="content"
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.25, ease: 'easeInOut' }}
-                              className="overflow-hidden"
-                            >
-                              <div className="px-4 pb-4 pt-2 text-sm text-muted-foreground md:text-base">
-                                {renderAnswer(answer)}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
+                        </summary>
+                        <div className="px-4 pb-4 pt-2 text-sm text-muted-foreground md:text-base">
+                          {renderAnswer(answer)}
+                        </div>
+                      </details>
                     );
                   })}
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="rounded-3xl border border-border bg-secondary/10 p-6 text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+              {t('contactUs.stillNeedHelp.title')}
+            </p>
+            <p className="mt-4 text-base text-muted-foreground max-w-2xl mx-auto">
+              {t('contactUs.stillNeedHelp.description')}
+            </p>
           </div>
         </div>
       </Section>
@@ -367,36 +265,34 @@ export function ContactUsPage() {
                 <CardDescription>{t('contactUs.form.description')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="flex flex-col gap-5" onSubmit={handleSubmit(onSubmit)} noValidate>
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <Input
-                      label={t('contactUs.form.name')}
-                      autoComplete="name"
-                      error={errors.name?.message ? t(errors.name.message) : undefined}
-                      {...register('name')}
-                    />
-                    <Input
-                      label={t('contactUs.form.email')}
-                      type="email"
-                      autoComplete="email"
-                      error={errors.email?.message ? t(errors.email.message) : undefined}
-                      {...register('email')}
-                    />
-                    <Input
-                      label={t('contactUs.form.phoneNumber')}
-                      type="tel"
-                      autoComplete="tel"
-                      error={errors.phoneNumber?.message ? t(errors.phoneNumber.message) : undefined}
-                      {...register('phoneNumber')}
-                    />
-                    <Input
-                      label={t('contactUs.form.organization')}
-                      type="text"
-                      autoComplete="organization"
-                      error={errors.organization?.message ? t(errors.organization.message) : undefined}
-                      {...register('organization')}
-                    />
-                  </div>
+                <form className="flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)} noValidate>
+                  <Input
+                    label={t('contactUs.form.name')}
+                    autoComplete="name"
+                    error={errors.name?.message ? t(errors.name.message) : undefined}
+                    {...register('name')}
+                  />
+                  <Input
+                    label={t('contactUs.form.email')}
+                    type="email"
+                    autoComplete="email"
+                    error={errors.email?.message ? t(errors.email.message) : undefined}
+                    {...register('email')}
+                  />
+                  <Input
+                    label={t('contactUs.form.phoneNumber')}
+                    type="tel"
+                    autoComplete="tel"
+                    error={errors.phoneNumber?.message ? t(errors.phoneNumber.message) : undefined}
+                    {...register('phoneNumber')}
+                  />
+                  <Input
+                    label={t('contactUs.form.organization')}
+                    type="text"
+                    autoComplete="organization"
+                    error={errors.organization?.message ? t(errors.organization.message) : undefined}
+                    {...register('organization')}
+                  />
                   <Input
                     label={t('contactUs.form.subject')}
                     type="text"
@@ -404,29 +300,15 @@ export function ContactUsPage() {
                     error={errors.subject?.message ? t(errors.subject.message) : undefined}
                     {...register('subject')}
                   />
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor={messageFieldId} className="text-sm font-medium text-foreground">
-                      {t('contactUs.form.message')}
-                    </label>
-                    <textarea
-                      id={messageFieldId}
-                      rows={5}
-                      aria-invalid={Boolean(errors.message)}
-                      aria-describedby={errors.message ? `${messageFieldId}-error` : undefined}
-                      className={cn(
-                        'min-h-40 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground',
-                        'placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                        errors.message && 'border-danger focus-visible:ring-danger',
-                      )}
-                      {...register('message')}
-                    />
-                    {errors.message?.message && (
-                      <p id={`${messageFieldId}-error`} className="text-sm text-danger">
-                        {t(errors.message.message)}
-                      </p>
-                    )}
-                  </div>
-                  <Button type="submit" isLoading={isSubmitting} trailingIcon={<ArrowRight className="size-4" />}>
+                  <Textarea
+                    id={messageFieldId}
+                    label={t('contactUs.form.message')}
+                    rows={5}
+                    className="min-h-[12rem]"
+                    error={errors.message?.message ? t(errors.message.message) : undefined}
+                    {...register('message')}
+                  />
+                  <Button type="submit" isLoading={isSubmitting}>
                     {t('contactUs.form.submitButton')}
                   </Button>
                 </form>
@@ -436,94 +318,57 @@ export function ContactUsPage() {
 
           {/* Department contacts column */}
           <div id="department-contacts" className="w-full">
-            <Card className="rounded-3xl border-border bg-surface shadow-panel">
+            <Card className="overflow-hidden rounded-3xl border-border bg-surface shadow-panel">
               <CardHeader>
                 <CardTitle>{t('contactUs.table.heading')}</CardTitle>
                 <CardDescription>{t('contactUs.table.description')}</CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-4 sm:grid-cols-2">
-                {contactCategories.map((contact) => (
-                  <div
-                    key={contact.id}
-                    className="flex flex-col gap-3 rounded-2xl border border-border-muted bg-secondary/10 p-4 transition-colors hover:border-primary/30"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <IconBadge icon={contact.icon} size={9} />
-                      <p className="font-semibold text-foreground">{t(`contactUs.table.${contact.id}`)}</p>
-                    </div>
-                    <div className="flex flex-col gap-1.5 text-sm">
-                      <a
-                        href={`mailto:${contact.email}`}
-                        className="flex items-center gap-1.5 text-primary hover:underline"
-                      >
-                        <Mail className="size-3.5 shrink-0" />
-                        <span className="truncate">{contact.email}</span>
-                      </a>
-                      <a
-                        href={`tel:${contact.phone.replace(/[^+0-9]/g, '')}`}
-                        className="flex items-center gap-1.5 text-foreground hover:text-primary"
-                        aria-label={`${t(`contactUs.table.${contact.id}`)} phone ${contact.phone}`}
-                      >
-                        <Phone className="size-3.5 shrink-0" />
-                        {contact.phone}
-                      </a>
-                    </div>
-                  </div>
-                ))}
+              <CardContent className="overflow-x-auto p-0">
+                <Table className="min-w-full">
+                  <TableCaption>{t('contactUs.table.caption')}</TableCaption>
+                  <TableHeader>
+                    <TableRow className="bg-primary/10">
+                      <TableHead className="text-foreground">{t('contactUs.table.category')}</TableHead>
+                      <TableHead className="text-foreground">{t('contactUs.table.email')}</TableHead>
+                      <TableHead className="text-foreground">{t('contactUs.table.phone')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contactCategories.map((contact) => (
+                      <TableRow key={contact.id}>
+                        <TableCell>{t(`contactUs.table.${contact.id}`)}</TableCell>
+                        <TableCell>
+                          <a href={`mailto:${contact.email}`} className="text-primary-gradient hover:underline">
+                            {contact.email}
+                          </a>
+                        </TableCell>
+                        <TableCell>
+                          <a
+                            href={`tel:${contact.phone.replace(/[^+0-9]/g, '')}`}
+                            className="text-foreground hover:text-primary"
+                            aria-label={`${t(`contactUs.table.${contact.id}`)} phone ${contact.phone}`}
+                          >
+                            {contact.phone}
+                          </a>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
-              <p className="px-6 pb-6 text-xs text-muted-foreground">{t('contactUs.table.caption')}</p>
+            </Card>
+
+            <Card className="mt-6 rounded-3xl border-border bg-surface shadow-panel">
+              <CardHeader>
+                <CardTitle>{t('contactUs.map.title')}</CardTitle>
+                <CardDescription>{t('contactUs.map.description')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <LibraryMap />
+              </CardContent>
             </Card>
           </div>
         </div>
-      </Section>
-
-      <Section
-        ariaLabelledBy="contact-us-cta-heading"
-        tone="primary"
-        divider={false}
-        size="3xl"
-        className="relative overflow-hidden"
-        containerClassName="relative flex flex-col items-center gap-3 text-center"
-        decorative={
-          <>
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -right-20 -top-24 size-96 rounded-full bg-primary-foreground/10 blur-3xl"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -left-16 bottom-0 size-72 rounded-full bg-primary-foreground/10 blur-3xl"
-            />
-          </>
-        }
-      >
-        <AnimatedHeading id="contact-us-cta-heading" color="inverted">
-          {t('contactUs.stillNeedHelp.title')}
-        </AnimatedHeading>
-        <AnimatedText tone="inverted" spacing={false} className="max-w-xl">
-          {t('contactUs.stillNeedHelp.description')}
-        </AnimatedText>
-        <FadeUp delay={2}>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-            <Button
-              size="lg"
-              variant="secondary"
-              leadingIcon={<Mail className="size-4" />}
-              onClick={() => window.location.assign(`mailto:${GENERAL_EMAIL}`)}
-            >
-              {t('contactUs.actions.emailUs')}
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
-              leadingIcon={<Phone className="size-4" />}
-              onClick={() => window.location.assign(`tel:${GENERAL_PHONE.replace(/[^+0-9]/g, '')}`)}
-            >
-              {t('contactUs.actions.callUs')}
-            </Button>
-          </div>
-        </FadeUp>
       </Section>
     </>
   );

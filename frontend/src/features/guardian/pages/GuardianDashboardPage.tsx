@@ -1,12 +1,14 @@
-import { BookOpen, HandCoins, MessageSquare, RefreshCw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { BookOpen, HandCoins, MessageSquare, RefreshCw, Star } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { IconBadge, PageHeader, QuickActionsCard, StatisticCard } from '@/components/common';
-import { Avatar, Card, CardContent, CardHeader, CardTitle, EmptyState } from '@/components/ui';
+import { PageHeader, QuickActionsCard, StatisticCard } from '@/components/common';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { ROUTES } from '@/constants/routes';
+import { LeaveLibraryReviewModal } from '@/features/reviews/components/LeaveLibraryReviewModal';
+import { LibraryReviewCard } from '@/features/reviews/components/LibraryReviewCard';
 import { RaiseTicketModal } from '@/features/support/components/RaiseTicketModal';
 import { GUARDIAN_CATEGORIES } from '@/features/support/constants';
 import { getErrorMessage } from '@/lib/api';
@@ -15,8 +17,16 @@ import { useAuth, type GuardianChild } from '@/providers/AuthProvider';
 
 import { BorrowedBooksByChild } from '../components/BorrowedBooksByChild';
 import { ChildrenPresence } from '../components/ChildrenPresence';
+import { GuardianStatModal, type GuardianStatKey } from '../components/GuardianStatModal';
 import { SeatReservationForChild } from '../components/SeatReservationForChild';
 import { SubscriptionAndFines } from '../components/SubscriptionAndFines';
+
+const STAT_KEY_MAP: Record<string, GuardianStatKey> = {
+  'guardian.stats.linkedChildren': 'linkedChildren',
+  'guardian.stats.currentlyInLibrary': 'currentlyInLibrary',
+  'guardian.stats.booksBorrowed': 'booksBorrowed',
+  'guardian.stats.totalDues': 'totalDues',
+};
 
 // ponytail: child identity always comes from the real GuardianLink/ReadingProgress
 // tables now (getGuardianChildren) — GuardianChild has no presence/loan/fine fields
@@ -26,24 +36,17 @@ function ChildrenReadingProgress({ realChildren }: { realChildren: GuardianChild
   const { t } = useTranslation();
 
   return (
-    <Card className="rounded-2xl shadow-panel">
-      <CardHeader className="flex-row items-center gap-3 space-y-0">
-        <IconBadge icon={BookOpen} size={9} />
+    <Card>
+      <CardHeader>
         <CardTitle>{t('readingProgress.pageTitle')}</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2.5 text-sm">
+      <CardContent className="flex flex-col gap-3 text-sm">
         {realChildren.length === 0 ? (
-          <EmptyState icon={BookOpen} title={t('readingProgress.emptyState.title')} />
+          <p className="text-muted-foreground">{t('readingProgress.emptyState.title')}</p>
         ) : (
           realChildren.map((child) => (
-            <div
-              key={child.id}
-              className="flex items-center justify-between gap-2 rounded-xl border border-border-muted bg-secondary/10 p-3.5 transition-colors hover:border-primary/20"
-            >
-              <div className="flex items-center gap-3">
-                <Avatar name={child.full_name} size="sm" />
-                <span className="font-medium text-foreground">{child.full_name}</span>
-              </div>
+            <div key={child.id} className="flex items-center justify-between gap-2">
+              <span className="font-medium text-foreground">{child.full_name}</span>
               <span className="text-muted-foreground">
                 {child.currently_reading.length} reading · {child.completed.length} completed
               </span>
@@ -52,10 +55,10 @@ function ChildrenReadingProgress({ realChildren }: { realChildren: GuardianChild
         )}
         <Link
           to={ROUTES.READING_PROGRESS}
-          className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          className="flex items-center gap-1.5 text-sm font-medium hover:underline"
         >
-          <BookOpen className="size-4" />
-          {t('readingProgress.pageTitle')}
+          <BookOpen className="size-4 text-primary" />
+          <span className="text-primary-gradient">{t('readingProgress.pageTitle')}</span>
         </Link>
       </CardContent>
     </Card>
@@ -67,6 +70,8 @@ export function GuardianDashboardPage() {
   const { getGuardianChildren, payChildFines, renewChildSubscription } = useAuth();
   const [realChildren, setRealChildren] = useState<GuardianChild[]>([]);
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
+  const [activeStat, setActiveStat] = useState<GuardianStatKey | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   function refreshChildren() {
     getGuardianChildren().then(setRealChildren).catch(() => setRealChildren([]));
@@ -74,7 +79,10 @@ export function GuardianDashboardPage() {
 
   useEffect(refreshChildren, [getGuardianChildren]);
 
-  const childrenWithFines = realChildren.filter((child) => child.outstanding_fine > 0);
+  const childrenWithFines = useMemo(
+    () => realChildren.filter((child) => child.outstanding_fine > 0),
+    [realChildren],
+  );
 
   async function handlePayAllFines() {
     if (childrenWithFines.length === 0) {
@@ -83,7 +91,7 @@ export function GuardianDashboardPage() {
     }
     try {
       await Promise.all(childrenWithFines.map((child) => payChildFines(child.id)));
-      toast.success(t('guardian.quickActions.toasts.payingAllFines'));
+      toast.success('Cash fine-payment requests sent to a manager');
       refreshChildren();
     } catch (err) {
       toast.error(getErrorMessage(err, t('common.errors.generic')));
@@ -97,7 +105,7 @@ export function GuardianDashboardPage() {
     }
     try {
       await Promise.all(realChildren.map((child) => renewChildSubscription(child.id)));
-      toast.success(t('guardian.quickActions.toasts.renewingSubscription'));
+      toast.success('Renewal payment requests sent to a manager');
       refreshChildren();
     } catch (err) {
       toast.error(getErrorMessage(err, t('common.errors.generic')));
@@ -111,18 +119,23 @@ export function GuardianDashboardPage() {
       <h2 className="sr-only">{t('common.dashboardSectionsHeading')}</h2>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {guardianStats.map((stat) => (
-          <StatisticCard
-            key={stat.labelKey}
-            icon={stat.icon}
-            label={t(stat.labelKey)}
-            value={
-              stat.labelKey === 'guardian.stats.linkedChildren'
-                ? String(realChildren.length)
-                : stat.value
-            }
-          />
-        ))}
+        {guardianStats.map((stat) => {
+          const statKey = STAT_KEY_MAP[stat.labelKey];
+          return (
+            <StatisticCard
+              key={stat.labelKey}
+              icon={stat.icon}
+              label={t(stat.labelKey)}
+              value={
+                stat.labelKey === 'guardian.stats.linkedChildren'
+                  ? String(realChildren.length)
+                  : stat.value
+              }
+              onClick={() => setActiveStat(statKey)}
+              selected={activeStat === statKey}
+            />
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -136,6 +149,8 @@ export function GuardianDashboardPage() {
       </div>
 
       <ChildrenReadingProgress realChildren={realChildren} />
+
+      <LibraryReviewCard onOpenModal={() => setIsReviewModalOpen(true)} />
 
       <QuickActionsCard
         actions={[
@@ -154,7 +169,17 @@ export function GuardianDashboardPage() {
             icon: MessageSquare,
             onClick: () => setTicketModalOpen(true),
           },
+          {
+            label: t('dashboard.quickActions.writeReview', 'Write Library Review'),
+            icon: Star,
+            onClick: () => setIsReviewModalOpen(true),
+          },
         ]}
+      />
+
+      <LeaveLibraryReviewModal
+        open={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
       />
 
       <RaiseTicketModal
@@ -162,6 +187,21 @@ export function GuardianDashboardPage() {
         onClose={() => setTicketModalOpen(false)}
         categories={GUARDIAN_CATEGORIES}
         onCreated={() => toast.success(t('support.toasts.created'))}
+      />
+
+      <GuardianStatModal
+        statKey={activeStat}
+        onClose={() => setActiveStat(null)}
+        childrenList={realChildren}
+        onPayFine={async (childId) => {
+          try {
+            await payChildFines(childId);
+            toast.success('Cash fine-payment request sent to a manager');
+            refreshChildren();
+          } catch (err) {
+            toast.error(getErrorMessage(err, t('common.errors.generic')));
+          }
+        }}
       />
     </div>
   );

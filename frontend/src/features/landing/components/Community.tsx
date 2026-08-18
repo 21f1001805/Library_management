@@ -19,7 +19,7 @@ export function Community() {
   const { t } = useTranslation();
 
   return (
-    <Section ariaLabelledBy="community-heading" tone="secondary">
+    <Section ariaLabelledBy="community-heading">
       <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
         <motion.div
           initial="hidden"

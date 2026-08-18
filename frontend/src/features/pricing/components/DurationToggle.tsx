@@ -41,7 +41,7 @@ export function DurationToggle({ plans, active, onChange }: DurationToggleProps)
               {isActive && (
                 <motion.span
                   layoutId="duration-toggle-pill"
-                  className="absolute inset-0 rounded-full bg-primary"
+                  className="absolute inset-0 rounded-full bg-primary-gradient"
                   transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                 />
               )}

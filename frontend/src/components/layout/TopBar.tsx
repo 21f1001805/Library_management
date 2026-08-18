@@ -7,8 +7,8 @@ import type { NavItem } from '@/constants/navigation';
 import { NotificationsPanel } from '@/features/notifications/components/NotificationsPanel';
 import { useUnreadNotifications } from '@/features/notifications/hooks/useUnreadNotifications';
 import { cn } from '@/lib/cn';
+import { usePageHeadingSlot } from '@/providers/PageHeadingProvider';
 
-import { LanguageSwitcher } from './LanguageSwitcher';
 import { Sidebar } from './Sidebar';
 import { UserMenu } from './UserMenu';
 
@@ -21,20 +21,28 @@ export function TopBar({ items }: TopBarProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { unreadCount, justArrived, refresh } = useUnreadNotifications();
+  const headingSlot = usePageHeadingSlot();
 
   return (
-    <header className="flex h-16 items-center justify-between gap-1 border-b border-border bg-surface px-4">
+    // sticky/z-30 matches the sidebar's, so the two stay pinned together as one frame
+    // around the scrolling content. bg-surface is what keeps content from showing through.
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-1 border-b border-border bg-surface px-4">
       <Button
         variant="ghost"
         size="sm"
         className="size-10 p-0 md:hidden"
         aria-label={t('topBar.openNavigation')}
+        aria-expanded={mobileNavOpen}
+        aria-controls="authenticated-mobile-navigation"
         onClick={() => setMobileNavOpen(true)}
       >
         <Menu className="size-5" />
       </Button>
 
-      <div className="flex-1" />
+      {/* Doubles as the spacer that used to sit here: pages portal their PageHeader/PageTitle
+          heading in via PageHeadingProvider, and min-w-0 lets its truncation actually kick in
+          rather than the flex item refusing to shrink. */}
+      <div ref={headingSlot?.setSlot} className="flex min-w-0 flex-1 items-center px-2" />
 
       <Button
         variant="ghost"
@@ -45,6 +53,8 @@ export function TopBar({ items }: TopBarProps) {
             ? t('notifications.pageTitleWithUnread', { count: unreadCount })
             : t('notifications.pageTitle')
         }
+        aria-expanded={notificationsOpen}
+        aria-controls="notifications-dialog"
         onClick={() => setNotificationsOpen(true)}
       >
         <Bell
@@ -58,10 +68,10 @@ export function TopBar({ items }: TopBarProps) {
           <span className="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-warning ring-2 ring-surface" />
         )}
       </Button>
-      <LanguageSwitcher className="text-muted-foreground" />
       <UserMenu />
 
       <Modal
+        id="notifications-dialog"
         open={notificationsOpen}
         onClose={() => {
           setNotificationsOpen(false);
@@ -74,12 +84,13 @@ export function TopBar({ items }: TopBarProps) {
       </Modal>
 
       <Drawer
+        id="authenticated-mobile-navigation"
         open={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
         title={t('topBar.menu')}
         side="left"
       >
-        <Sidebar items={items} />
+        <Sidebar items={items} onNavigate={() => setMobileNavOpen(false)} />
       </Drawer>
     </header>
   );

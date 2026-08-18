@@ -23,12 +23,19 @@ export function UserMenu() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label={t('userMenu.openAccountMenu')}
+        aria-expanded={open}
+        aria-controls="account-menu-drawer"
         className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <Avatar src={avatarUrl ?? undefined} name={fullName ?? undefined} size="sm" />
       </button>
 
-      <Drawer open={open} onClose={() => setOpen(false)} title={t('userMenu.account')}>
+      <Drawer
+        id="account-menu-drawer"
+        open={open}
+        onClose={() => setOpen(false)}
+        title={t('userMenu.account')}
+      >
         <div className="flex flex-col gap-4">
           {role && (
             <Badge variant="outline" className="w-fit capitalize">

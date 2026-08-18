@@ -1,8 +1,11 @@
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { Pagination, TableToolbar } from '@/components/common';
 import { NoResults } from '@/components/feedback';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { usePagination } from '@/hooks';
 import { getErrorMessage } from '@/lib/api';
 import {
   useAuth,
@@ -19,6 +22,29 @@ export interface AccessControlProps {
 export function AccessControl({ members, permissionRequests, onChanged }: AccessControlProps) {
   const { t } = useTranslation();
   const { updateAdminMember, grantPermissionRequest, denyPermissionRequest } = useAuth();
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [sortValue, setSortValue] = useState('name');
+
+  const filteredMembers = useMemo(() => {
+    const items = [...members].filter((member) => {
+      const statusMatches = statusFilter === 'all' || (statusFilter === 'active' ? member.is_active : !member.is_active);
+      const roleMatches = roleFilter === 'all' || member.role.name === roleFilter;
+      return statusMatches && roleMatches;
+    });
+
+    switch (sortValue) {
+      case 'name-desc':
+        return items.sort((a, b) => b.full_name.localeCompare(a.full_name));
+      case 'created':
+        return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      case 'name':
+      default:
+        return items.sort((a, b) => a.full_name.localeCompare(b.full_name));
+    }
+  }, [members, roleFilter, sortValue, statusFilter]);
+
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredMembers, 5);
 
   async function handleGrant(requestId: string, name: string) {
     try {
@@ -60,63 +86,119 @@ export function AccessControl({ members, permissionRequests, onChanged }: Access
         <CardTitle>{t('itHead.accessControl.title')}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        {members.length === 0 ? (
+        <TableToolbar
+          filters={[
+            {
+              label: 'Status',
+              value: statusFilter,
+              onChange: (value) => {
+                setStatusFilter(value);
+                setPage(1);
+              },
+              options: [
+                { value: 'all', label: 'All' },
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Disabled' },
+              ],
+            },
+            {
+              label: 'Role',
+              value: roleFilter,
+              onChange: (value) => {
+                setRoleFilter(value);
+                setPage(1);
+              },
+              options: [
+                { value: 'all', label: 'All' },
+                ...Array.from(new Set(members.map((member) => member.role.name))).map((role) => ({
+                  value: role,
+                  label: t(`auth.login.roles.${role}`),
+                })),
+              ],
+            },
+          ]}
+          sort={{
+            label: 'Sort',
+            value: sortValue,
+            onChange: (value) => {
+              setSortValue(value);
+              setPage(1);
+            },
+            options: [
+              { value: 'name', label: 'Name A–Z' },
+              { value: 'name-desc', label: 'Name Z–A' },
+              { value: 'created', label: 'Newest First' },
+            ],
+          }}
+          onReset={() => {
+            setStatusFilter('all');
+            setRoleFilter('all');
+            setSortValue('name');
+            setPage(1);
+          }}
+          resetLabel={t('common.actions.reset')}
+        />
+        {filteredMembers.length === 0 ? (
           <NoResults title={t('itHead.accessControl.empty')} />
         ) : (
-          members.map((member) => {
-            const pendingRequest = permissionRequests.find(
-              (request) => request.requested_by_id === member.id && request.status === 'pending',
-            );
+          <>
+            {paginatedItems.map((member) => {
+              const pendingRequest = permissionRequests.find(
+                (request) => request.requested_by_id === member.id && request.status === 'pending',
+              );
 
-            return (
-              <div
-                key={member.id}
-                className="flex flex-col gap-2 rounded-lg border border-border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-foreground">{member.full_name}</p>
-                    <Badge variant="outline">{t(`auth.login.roles.${member.role.name}`)}</Badge>
-                    <Badge variant={member.is_active ? 'success' : 'danger'}>
-                      {t(`itHead.accessControl.status.${member.is_active ? 'active' : 'deactivated'}`)}
-                    </Badge>
+              return (
+                <div
+                  key={member.id}
+                  className="flex flex-col gap-2 rounded-lg border border-border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-foreground">{member.full_name}</p>
+                      <Badge variant="outline">{t(`auth.login.roles.${member.role.name}`)}</Badge>
+                      <Badge variant={member.is_active ? 'success' : 'danger'}>
+                        {t(`itHead.accessControl.status.${member.is_active ? 'active' : 'deactivated'}`)}
+                      </Badge>
+                    </div>
+                    <p className="text-muted-foreground">{member.email}</p>
+                    {pendingRequest && (
+                      <p className="text-xs text-muted-foreground">
+                        {t('itHead.accessControl.pendingPermission', {
+                          permission: pendingRequest.permission,
+                        })}
+                      </p>
+                    )}
                   </div>
-                  <p className="text-muted-foreground">{member.email}</p>
-                  {pendingRequest && (
-                    <p className="text-xs text-muted-foreground">
-                      {t('itHead.accessControl.pendingPermission', {
-                        permission: pendingRequest.permission,
-                      })}
-                    </p>
-                  )}
+                  <div className="flex gap-2">
+                    {pendingRequest && (
+                      <>
+                        <Button size="sm" onClick={() => handleGrant(pendingRequest.id, member.full_name)}>
+                          {t('itHead.accessControl.grantAccess')}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeny(pendingRequest.id, member.full_name)}
+                        >
+                          {t('itHead.accessControl.deny')}
+                        </Button>
+                      </>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => handleToggleActive(member)}>
+                      {member.is_active ? t('itHead.accessControl.deactivate') : t('itHead.accessControl.reactivate')}
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  {pendingRequest && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => handleGrant(pendingRequest.id, member.full_name)}
-                      >
-                        {t('itHead.accessControl.grantAccess')}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDeny(pendingRequest.id, member.full_name)}
-                      >
-                        {t('itHead.accessControl.deny')}
-                      </Button>
-                    </>
-                  )}
-                  <Button size="sm" variant="outline" onClick={() => handleToggleActive(member)}>
-                    {member.is_active
-                      ? t('itHead.accessControl.deactivate')
-                      : t('itHead.accessControl.reactivate')}
-                  </Button>
-                </div>
-              </div>
-            );
-          })
+              );
+            })}
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={5}
+              onPageChange={setPage}
+            />
+          </>
         )}
       </CardContent>
     </Card>

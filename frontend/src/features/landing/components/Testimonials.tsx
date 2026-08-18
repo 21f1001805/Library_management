@@ -32,7 +32,7 @@ export function Testimonials() {
   }, [setActiveSection]);
 
   return (
-    <Section id="testimonials" ariaLabelledBy="testimonials-heading">
+    <Section id="testimonials" ariaLabelledBy="testimonials-heading" tone="secondary">
       <SectionHeading
         id="testimonials-heading"
         title={t('landing.testimonials.heading')}

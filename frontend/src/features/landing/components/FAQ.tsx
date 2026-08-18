@@ -18,7 +18,7 @@ export function FAQ() {
   }
 
   return (
-    <Section ariaLabelledBy="faq-heading" tone="secondary" size="3xl">
+    <Section ariaLabelledBy="faq-heading" size="3xl">
       <SectionHeading id="faq-heading" title={t('landing.faq.heading')} headingClassName="mb-8" />
 
       <motion.ul

@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { Button, Input, Modal } from '@/components/ui';
+import { ListRow } from '@/components/common';
+import { Button, Input, Modal, Textarea } from '@/components/ui';
 import { getErrorMessage } from '@/lib/api';
 import { useAuth, type MemberSummary } from '@/providers/AuthProvider';
 
@@ -93,19 +94,19 @@ export function WaiveFineModal({ open, onClose, onWaived }: WaiveFineModalProps)
         <div className="flex flex-col gap-1.5">
           <p className="text-sm font-medium text-foreground">{t('admin.waiveFine.memberLabel')}</p>
           {selectedMember ? (
-            <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 py-2">
-              <div>
-                <p className="text-sm font-medium text-foreground">{selectedMember.full_name}</p>
-                <p className="text-xs text-muted-foreground">{selectedMember.email}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedMember(null)}
-                className="text-xs font-medium text-primary hover:underline"
-              >
-                {t('admin.waiveFine.changeMember')}
-              </button>
-            </div>
+            <ListRow
+              title={selectedMember.full_name}
+              subtitle={selectedMember.email}
+              action={
+                <button
+                  type="button"
+                  onClick={() => setSelectedMember(null)}
+                  className="text-xs font-medium text-primary-gradient hover:underline"
+                >
+                  {t('admin.waiveFine.changeMember')}
+                </button>
+              }
+            />
           ) : (
             <div className="flex flex-col gap-1.5">
               <Input
@@ -151,18 +152,13 @@ export function WaiveFineModal({ open, onClose, onWaived }: WaiveFineModalProps)
           {...register('amount')}
         />
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="waive-fine-reason" className="text-sm font-medium text-foreground">
-            {t('admin.waiveFine.reasonLabel')}
-          </label>
-          <textarea
-            id="waive-fine-reason"
-            rows={3}
-            className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            {...register('reason')}
-          />
-          {errors.reason?.message && <p className="text-sm text-danger">{errors.reason.message}</p>}
-        </div>
+        <Textarea
+          id="waive-fine-reason"
+          label={t('admin.waiveFine.reasonLabel')}
+          rows={3}
+          error={errors.reason?.message}
+          {...register('reason')}
+        />
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>

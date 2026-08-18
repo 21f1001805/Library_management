@@ -37,11 +37,13 @@ export function SeatOccupancySummary({ slots }: { slots: AdminSeatOccupancySlot[
       <CardHeader>
         <CardTitle>{t('admin.seatOccupancy.title')}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          {t('admin.seatOccupancy.summary', {
-            peakHour: formatHour(peak.hour),
-            peakPercent: peak.percent_filled,
-            avgPercent: avg,
-          })}
+          {peak.percent_filled === 0
+            ? t('admin.seatOccupancy.zeroSummary')
+            : t('admin.seatOccupancy.summary', {
+                peakHour: formatHour(peak.hour),
+                peakPercent: peak.percent_filled,
+                avgPercent: avg,
+              })}
         </p>
       </CardHeader>
       <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">

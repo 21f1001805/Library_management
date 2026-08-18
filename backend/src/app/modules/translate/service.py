@@ -20,6 +20,13 @@ _BATCH_CONCURRENCY = 16
 # In-memory cache so a given (source, target, text-list) batch — e.g. the full
 # UI string set for one language — is only ever translated once per process
 # lifetime, no matter how many users trigger it.
+#
+# Bounded: the key is a hash of caller-supplied text on an unauthenticated endpoint, so
+# an unbounded dict grew by every distinct payload and was never reclaimed. Insertion
+# order gives us FIFO eviction for free.
+# ponytail: FIFO, not LRU — the real workload is a handful of full-locale batches, so
+# tracking recency would cost more than it saves. Swap in an LRU if the hit rate drops.
+_BATCH_CACHE_MAX_ENTRIES = 64
 _batch_cache: dict[str, list[str]] = {}
 
 
@@ -75,5 +82,7 @@ async def translate_batch(payload: TranslateBatchRequest) -> TranslateBatchRespo
             status_code=status.HTTP_502_BAD_GATEWAY, detail="Translation service unavailable"
         ) from exc
 
+    if len(_batch_cache) >= _BATCH_CACHE_MAX_ENTRIES:
+        del _batch_cache[next(iter(_batch_cache))]
     _batch_cache[cache_key] = translated
     return TranslateBatchResponse(translated=translated)

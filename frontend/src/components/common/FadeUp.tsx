@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { ReactNode } from 'react';
 
 import { fadeUpStagger } from '@/lib/motion';
@@ -11,11 +11,13 @@ export interface FadeUpProps {
 }
 
 export function FadeUp({ children, delay = 0, className }: FadeUpProps) {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <motion.div
       custom={delay}
       variants={fadeUpStagger}
-      initial="hidden"
+      initial={prefersReducedMotion ? false : 'hidden'}
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       className={className}

@@ -4,10 +4,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from prisma.models import User
 
-from app.api.deps import require_role
+from app.api.deps import get_optional_user, require_role
 from app.core.constants import Role
 from app.modules.books import service
-from app.modules.books.schemas import BookCreate, BookListResponse, BookOut, BookUpdate
+from app.modules.books.schemas import BookCreate, BookListResponse, BookOut, BookSort, BookUpdate
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -17,15 +17,22 @@ delete_books = require_role(Role.ADMIN)
 
 @router.get("", response_model=BookListResponse)
 async def list_books(
+    current_user: Annotated[User | None, Depends(get_optional_user)],
     search: Annotated[
         str | None, Query(description="Match against title, author, or description")
     ] = None,
     category: Annotated[str | None, Query(description="Exact category match")] = None,
+    sort: Annotated[BookSort, Query()] = "newest",
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> BookListResponse:
     return await service.list_books(
-        search=search, category=category, page=page, page_size=page_size
+        search=search,
+        category=category,
+        sort=sort,
+        page=page,
+        page_size=page_size,
+        member_id=current_user.id if current_user else None,
     )
 
 

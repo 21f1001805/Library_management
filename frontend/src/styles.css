@@ -1,36 +1,37 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  /* Single fixed black/white theme — no light mode, no toggle. */
-  --color-background: #000000;
-  --color-surface: #0d0d0d;
-  --color-border: #262626;
-  --color-border-muted: #1a1a1a;
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --color-border-muted: #edf1f5;
 
-  --color-foreground: #ffffff;
-  --color-muted: #a1a1aa;
-  --color-muted-foreground: #9ca3af;
+  --color-foreground: #0f172a;
+  --color-muted: #475569;
+  --color-muted-foreground: #556277;
 
-  --color-primary: #c13fcb;
+  --color-primary: #731c7b;
   --color-primary-foreground: #ffffff;
-  --color-primary-hover: #a62db0;
+  --color-primary-hover: #5c1663;
 
-  --color-secondary: #171717;
-  --color-secondary-foreground: #ffffff;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #0f172a;
 
-  --color-success: #15803d;
+  --color-success: #166534;
   --color-success-foreground: #ffffff;
-  --color-warning: #b45309;
+  --color-warning: #92400e;
   --color-warning-foreground: #ffffff;
   --color-danger: #b91c1c;
   --color-danger-foreground: #ffffff;
   --color-info: #1d4ed8;
   --color-info-foreground: #ffffff;
 
-  --color-ink: #5b0c63;
+  --color-ink: #4a044e;
   --color-ink-foreground: #fdf4ff;
   --color-ink-muted: #f0abfc;
 
@@ -38,6 +39,47 @@
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
+
+  --shadow-panel: 0 8px 24px rgba(15, 23, 42, 0.1);
+}
+
+.dark {
+  --color-background: #000000;
+  --color-surface: #131b2c;
+  --color-border: #232f42;
+  --color-border-muted: #1c2536;
+
+  --color-foreground: #e2e8f0;
+  --color-muted: #94a3b8;
+  /* Was #7c8ba1 — exactly 4.97:1 on --color-surface, which left no headroom: any
+     translucent tint over that surface (SidebarPromo's dark:bg-primary/10 composites to
+     #25203d) dropped it to 4.48:1 and failed axe's 4.5:1 check on every app-shell page.
+     #8b98ac clears 5.3:1 through the tint and 5.9:1 on bare surface. */
+  --color-muted-foreground: #8b98ac;
+
+  --color-secondary: #1b2536;
+  --color-secondary-foreground: #e2e8f0;
+
+  /* Bright enough for brand text on both dark surfaces, paired with a dark
+     foreground for filled controls so both combinations clear WCAG AA. */
+  --color-primary: #ca50d4;
+  --color-primary-foreground: #0b1220;
+  --color-primary-hover: #d05bda;
+
+  /* Light semantic colors remain legible as text on dark cards. Their paired
+     dark foregrounds keep filled badges/buttons accessible as well. */
+  --color-success: #4ade80;
+  --color-success-foreground: #052e16;
+  --color-warning: #fbbf24;
+  --color-warning-foreground: #451a03;
+  --color-danger: #fb7185;
+  --color-danger-foreground: #450a0a;
+  --color-info: #60a5fa;
+  --color-info-foreground: #0c1a33;
+
+  --color-ink: #5b0c63;
+  --color-ink-foreground: #fdf4ff;
+  --color-ink-muted: #f0abfc;
 
   --shadow-panel: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
@@ -79,6 +121,23 @@
     background: radial-gradient(circle at 32% 32%, var(--color-primary), transparent 72%);
   }
 
+  /* Replaces flat bg-primary wherever it's used as a solid fill (buttons, active/selected
+     states, badges, icon chips, etc.) — a single definition so the look stays consistent
+     and can be retuned in one place. */
+  .bg-primary-gradient {
+    background-image: linear-gradient(135deg, var(--color-info), var(--color-primary));
+  }
+
+  /* Same gradient, painted onto text instead of a background — for links and other
+     primary-colored text. Only apply to text nodes: this makes `color` transparent, which
+     also blanks any SVG icon (fill="currentColor") caught in the same element. */
+  .text-primary-gradient {
+    background-image: linear-gradient(135deg, var(--color-info), var(--color-primary));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
   .seat-available {
     animation: seat-glow 2.6s ease-in-out infinite;
   }
@@ -92,6 +151,15 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+
     .seat-available,
     .seat-reserved,
     .seat-occupied {

@@ -1,17 +1,13 @@
-import { Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { IconBadge } from '@/components/common';
-import { Avatar, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Modal } from '@/components/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Modal } from '@/components/ui';
 import { getErrorMessage } from '@/lib/api';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatDate } from '@/lib/format';
 import { useAuth, type GuardianChild } from '@/providers/AuthProvider';
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
+import { ChildPaymentHistoryModal } from './ChildPaymentHistoryModal';
 
 export interface SubscriptionAndFinesProps {
   children: GuardianChild[];
@@ -22,14 +18,18 @@ export function SubscriptionAndFines({ children, onChanged }: SubscriptionAndFin
   const { t } = useTranslation();
   const { payChildFines, renewChildSubscription } = useAuth();
   const [fineDetailsChildId, setFineDetailsChildId] = useState<string | null>(null);
+  const [historyChildId, setHistoryChildId] = useState<string | null>(null);
   const [pendingChildId, setPendingChildId] = useState<string | null>(null);
   const fineDetailsChild = children.find((child) => child.id === fineDetailsChildId) ?? null;
+  const historyChild = children.find((child) => child.id === historyChildId) ?? null;
 
   async function payFine(child: GuardianChild) {
     setPendingChildId(child.id);
     try {
       await payChildFines(child.id);
-      toast.success(t('guardian.subscription.fineOwed', { amount: formatCurrency(child.outstanding_fine) }));
+      toast.success(
+        t('guardian.subscription.fineRequestToast', 'Cash fine-payment request sent to a manager'),
+      );
       setFineDetailsChildId(null);
       onChanged();
     } catch (err) {
@@ -43,7 +43,9 @@ export function SubscriptionAndFines({ children, onChanged }: SubscriptionAndFin
     setPendingChildId(child.id);
     try {
       await renewChildSubscription(child.id);
-      toast.success(t('guardian.subscription.renewToast', { name: child.full_name }));
+      toast.success(
+        t('guardian.subscription.renewRequestToast', 'Renewal payment request sent to a manager'),
+      );
       onChanged();
     } catch (err) {
       toast.error(getErrorMessage(err, t('common.errors.generic')));
@@ -53,15 +55,13 @@ export function SubscriptionAndFines({ children, onChanged }: SubscriptionAndFin
   }
 
   return (
-    <Card className="rounded-2xl shadow-panel">
-      <CardHeader className="flex-row items-center gap-3 space-y-0">
-        <IconBadge icon={Wallet} size={9} />
+    <Card>
+      <CardHeader>
         <CardTitle>{t('guardian.subscription.title')}</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2.5">
+      <CardContent className="flex flex-col gap-3">
         {children.length === 0 && (
           <EmptyState
-            icon={Wallet}
             title={t('guardian.subscription.emptyTitle')}
             description={t('guardian.subscription.emptyDescription')}
           />
@@ -70,24 +70,27 @@ export function SubscriptionAndFines({ children, onChanged }: SubscriptionAndFin
           const hasFine = child.outstanding_fine > 0;
           const isPending = pendingChildId === child.id;
           return (
-            <div
-              key={child.id}
-              className="flex flex-col gap-2 rounded-xl border border-border-muted bg-secondary/10 p-3.5 text-sm transition-colors hover:border-primary/20"
-            >
+            <div key={child.id} className="flex flex-col gap-2 rounded-lg border border-border p-3 text-sm">
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <Avatar name={child.full_name} size="sm" />
-                  <p className="font-medium text-foreground">{child.full_name}</p>
-                </div>
-                {hasFine && (
+                <p className="font-medium text-foreground">{child.full_name}</p>
+                <div className="flex shrink-0 items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setFineDetailsChildId(child.id)}
-                    className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline"
+                    onClick={() => setHistoryChildId(child.id)}
+                    className="text-sm font-medium text-primary-gradient hover:underline"
                   >
-                    {t('guardian.subscription.viewFineDetails')}
+                    {t('guardian.subscription.viewPaymentHistory')}
                   </button>
-                )}
+                  {hasFine && (
+                    <button
+                      type="button"
+                      onClick={() => setFineDetailsChildId(child.id)}
+                      className="text-sm font-medium text-primary-gradient hover:underline"
+                    >
+                      {t('guardian.subscription.viewFineDetails')}
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -114,11 +117,11 @@ export function SubscriptionAndFines({ children, onChanged }: SubscriptionAndFin
                       isLoading={isPending}
                       onClick={() => payFine(child)}
                     >
-                      {t('guardian.subscription.payFine')}
+                      {t('guardian.subscription.requestFinePayment', 'Request cash payment')}
                     </Button>
                   )}
                   <Button size="sm" isLoading={isPending} onClick={() => renewChild(child)}>
-                    {t('guardian.subscription.renew')}
+                    {t('guardian.subscription.requestRenewal', 'Request renewal')}
                   </Button>
                 </div>
               </div>
@@ -171,6 +174,12 @@ export function SubscriptionAndFines({ children, onChanged }: SubscriptionAndFin
           </div>
         )}
       </Modal>
+
+      <ChildPaymentHistoryModal
+        childId={historyChildId}
+        childName={historyChild?.full_name ?? ''}
+        onClose={() => setHistoryChildId(null)}
+      />
     </Card>
   );
 }

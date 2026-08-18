@@ -9,7 +9,7 @@ export type SectionTone = 'surface' | 'secondary' | 'primary' | 'transparent';
 const toneClasses: Record<SectionTone, string> = {
   surface: 'bg-surface',
   secondary: 'bg-secondary/40',
-  primary: 'bg-primary',
+  primary: 'bg-primary-gradient',
   transparent: '',
 };
 

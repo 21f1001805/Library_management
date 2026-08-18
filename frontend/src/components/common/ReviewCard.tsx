@@ -33,9 +33,7 @@ export function ReviewCard({
   const { t } = useTranslation();
 
   return (
-    <Card
-      className={cn('h-full bg-secondary/10 transition-colors hover:border-primary/25', className)}
-    >
+    <Card className={cn('h-full', className)}>
       <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
         <div className="flex items-center gap-3">
           <Avatar src={avatarUrl ?? undefined} name={name} size="md" />
@@ -67,7 +65,11 @@ export function ReviewCard({
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         {rating != null && (
-          <div className="flex" aria-label={t('common.cards.review.ratedOutOf5', { rating })}>
+          <div
+            className="flex"
+            role="img"
+            aria-label={t('common.cards.review.ratedOutOf5', { rating })}
+          >
             {Array.from({ length: 5 }, (_, index) => (
               <Star
                 key={index}

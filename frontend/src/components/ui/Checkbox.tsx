@@ -45,7 +45,7 @@ export function Checkbox({ ref, id, className, label, error, disabled, ...props 
         {label}
       </label>
       {error && (
-        <p id={errorId} className="text-sm text-danger">
+        <p id={errorId} role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}

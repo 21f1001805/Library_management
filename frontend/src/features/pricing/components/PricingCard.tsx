@@ -53,7 +53,7 @@ export function PricingCard({ duration, isActive, index, onSelect }: PricingCard
         className="relative h-full"
       >
         {duration.badge && (
-          <span className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-panel">
+          <span className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary-gradient px-3 py-1 text-xs font-semibold text-primary-foreground shadow-panel">
             {t(`pricing.badges.${duration.badge}`)}
           </span>
         )}

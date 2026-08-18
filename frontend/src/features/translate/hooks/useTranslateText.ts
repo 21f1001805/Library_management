@@ -16,21 +16,33 @@ export function useTranslateText(text: string, targetLang: string) {
     translated: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [failure, setFailure] = useState<{
+    text: string;
+    targetLang: string;
+    error: unknown;
+  } | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   const skip = !text.trim() || targetLang === 'en';
 
   useEffect(() => {
-    if (skip) return;
+    if (skip) {
+      return;
+    }
 
     let cancelled = false;
     const timer = setTimeout(() => {
       if (cancelled) return;
       setLoading(true);
+      setFailure(null);
       apiPost<TranslateResponse>('/translate', { text, target_lang: targetLang })
         .then((data) => {
           if (!cancelled) setTranslation({ text, targetLang, translated: data.translated });
         })
-        .catch(() => {
-          if (!cancelled) setTranslation(null);
+        .catch((requestError) => {
+          if (!cancelled) {
+            setTranslation(null);
+            setFailure({ text, targetLang, error: requestError });
+          }
         })
         .finally(() => {
           if (!cancelled) setLoading(false);
@@ -41,19 +53,19 @@ export function useTranslateText(text: string, targetLang: string) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [text, targetLang, skip]);
+  }, [text, targetLang, skip, retryKey]);
 
   const translated =
     !skip && translation?.text === text && translation.targetLang === targetLang
       ? translation.translated
       : text;
+  const error =
+    !skip && failure?.text === text && failure.targetLang === targetLang ? failure.error : null;
 
-  return { translated, loading: !skip && loading };
-}
-
-/** One-off translate call, e.g. for translating a batch of strings outside of render. */
-export function translateText(text: string, targetLang: string): Promise<string> {
-  return apiPost<TranslateResponse>('/translate', { text, target_lang: targetLang }).then(
-    (data) => data.translated,
-  );
+  return {
+    translated,
+    loading: !skip && loading,
+    error: skip ? null : error,
+    retry: () => setRetryKey((key) => key + 1),
+  };
 }

@@ -1,18 +1,28 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from prisma.models import User
 
 from app.api.deps import get_current_user
 from app.modules.community import service
-from app.modules.community.schemas import BannedAuthorOut, CommentCreate, PostCreate, PostOut
+from app.modules.community.schemas import (
+    BannedAuthorOut,
+    CommentCreate,
+    PostCreate,
+    PostListResponse,
+    PostOut,
+)
 
 router = APIRouter(prefix="/community", tags=["community"])
 
 
-@router.get("/posts", response_model=list[PostOut])
-async def list_posts(user: Annotated[User, Depends(get_current_user)]) -> list[PostOut]:
-    return await service.list_posts(user)
+@router.get("/posts", response_model=PostListResponse)
+async def list_posts(
+    user: Annotated[User, Depends(get_current_user)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200)] = 20,
+) -> PostListResponse:
+    return await service.list_posts(user, page=page, page_size=page_size)
 
 
 @router.post("/posts", response_model=PostOut, status_code=status.HTTP_201_CREATED)
@@ -59,16 +69,12 @@ async def add_comment(
 
 
 @router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_comment(
-    comment_id: str, user: Annotated[User, Depends(get_current_user)]
-) -> None:
+async def delete_comment(comment_id: str, user: Annotated[User, Depends(get_current_user)]) -> None:
     await service.delete_comment(user, comment_id)
 
 
 @router.post("/comments/{comment_id}/report", status_code=status.HTTP_204_NO_CONTENT)
-async def report_comment(
-    comment_id: str, user: Annotated[User, Depends(get_current_user)]
-) -> None:
+async def report_comment(comment_id: str, user: Annotated[User, Depends(get_current_user)]) -> None:
     await service.report_comment(user, comment_id)
 
 
@@ -80,9 +86,7 @@ async def list_banned_authors(
 
 
 @router.post("/banned-authors/{target_user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def ban_author(
-    target_user_id: str, user: Annotated[User, Depends(get_current_user)]
-) -> None:
+async def ban_author(target_user_id: str, user: Annotated[User, Depends(get_current_user)]) -> None:
     await service.ban_author(user, target_user_id)
 
 

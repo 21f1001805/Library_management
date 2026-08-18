@@ -10,8 +10,8 @@ export type AnimatedTextTone = 'default' | 'inverted';
 const variantClasses: Record<`${AnimatedTextSize}-${AnimatedTextTone}`, string> = {
   'base-default': 'text-muted-foreground',
   'lg-default': 'text-lg leading-relaxed text-muted',
-  'base-inverted': 'text-primary-foreground/80',
-  'lg-inverted': 'text-lg leading-relaxed text-primary-foreground/80',
+  'base-inverted': 'text-primary-foreground',
+  'lg-inverted': 'text-lg leading-relaxed text-primary-foreground',
 };
 
 export interface AnimatedTextProps {

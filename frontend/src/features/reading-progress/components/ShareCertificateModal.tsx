@@ -73,7 +73,7 @@ function draw(canvas: HTMLCanvasElement, opts: ShareCertificateModalProps) {
 
   ctx.font = '24px Inter, sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.fillText('Library', WIDTH / 2, HEIGHT - 60);
+  ctx.fillText('Community Reading Club', WIDTH / 2, HEIGHT - 60);
 }
 
 export function ShareCertificateModal(props: ShareCertificateModalProps) {

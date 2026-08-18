@@ -1,22 +1,12 @@
 from datetime import UTC, datetime
 
-from prisma.models import Book
+from prisma.models import Book, Loan, Review
 
 from app.db.pagination import paginate
 from app.db.prisma import prisma
 
 
-async def find_by_id(book_id: str) -> Book | None:
-    return await prisma.book.find_unique(where={"id": book_id})
-
-
-async def find_by_isbn(isbn: str) -> Book | None:
-    return await prisma.book.find_unique(where={"isbn": isbn})
-
-
-async def list_books(
-    *, search: str | None, category: str | None, page: int, page_size: int
-) -> tuple[list[Book], int]:
+def _list_where(search: str | None, category: str | None) -> dict:
     where: dict = {"deletedAt": None}
     if search:
         where["OR"] = [
@@ -26,14 +16,97 @@ async def list_books(
         ]
     if category and category.lower() != "all":
         where["category"] = category
+    return where
 
+
+async def find_by_id(book_id: str) -> Book | None:
+    book = await prisma.book.find_unique(where={"id": book_id})
+    if book is None or book.deletedAt is not None:
+        return None
+    return book
+
+
+async def list_by_ids(book_ids: list[str]) -> list[Book]:
+    if not book_ids:
+        return []
+    return await prisma.book.find_many(where={"id": {"in": book_ids}, "deletedAt": None})
+
+
+async def list_ratings_for_books(book_ids: list[str]) -> list[Review]:
+    if not book_ids:
+        return []
+    return await prisma.review.find_many(where={"bookId": {"in": book_ids}})
+
+
+async def list_books(
+    *, search: str | None, category: str | None, page: int, page_size: int
+) -> tuple[list[Book], int]:
     return await paginate(
         prisma.book,
-        where=where,
+        where=_list_where(search, category),
         order={"createdAt": "desc"},
         skip=(page - 1) * page_size,
         take=page_size,
     )
+
+
+# Used by sort modes ("rating"/"recommended") that need every matching book scored
+# before they can be paginated, unlike the DB-level skip/take "newest" sort above.
+async def list_books_by_rating(
+    *, search: str | None, category: str | None, skip: int, take: int
+) -> tuple[list[Book], int]:
+    """A page of books ordered by average rating, ranked and paginated in SQL.
+
+    Rating order used to mean loading the entire matching catalogue plus every review
+    for it, sorting in Python and slicing — on a list endpoint the chat tool also hits.
+    Unreviewed books sort last (NULLS LAST) rather than as if they scored zero.
+    """
+    like = f"%{search}%" if search else None
+    wants_category = bool(category and category.lower() != "all")
+
+    conditions = ["b.deleted_at IS NULL"]
+    params: list = []
+    if like is not None:
+        params.append(like)
+        i = len(params)
+        conditions.append(
+            f"(b.title ILIKE ${i} OR b.author ILIKE ${i} OR b.description ILIKE ${i})"
+        )
+    if wants_category:
+        params.append(category)
+        conditions.append(f"b.category = ${len(params)}")
+    where_sql = " AND ".join(conditions)
+
+    total_rows = await prisma.query_raw(
+        f"SELECT COUNT(*)::bigint AS total FROM books b WHERE {where_sql}", *params
+    )
+    total = int(total_rows[0]["total"]) if total_rows else 0
+
+    params.extend([take, skip])
+    rows = await prisma.query_raw(
+        f"""SELECT b.id::text AS id
+            FROM books b
+            LEFT JOIN reviews rv ON rv.book_id = b.id
+            WHERE {where_sql}
+            GROUP BY b.id
+            ORDER BY AVG(rv.rating) DESC NULLS LAST, b.created_at DESC
+            LIMIT ${len(params) - 1} OFFSET ${len(params)}""",
+        *params,
+    )
+    ids = [row["id"] for row in rows]
+    if not ids:
+        return [], total
+    books = await prisma.book.find_many(where={"id": {"in": ids}})
+    order = {book_id: index for index, book_id in enumerate(ids)}
+    return sorted(books, key=lambda book: order[book.id]), total
+
+
+async def find_all_matching(search: str | None, category: str | None) -> list[Book]:
+    return await prisma.book.find_many(where=_list_where(search, category))
+
+
+async def list_loans_for_member(member_id: str) -> list[Loan]:
+    return await prisma.loan.find_many(where={"memberId": member_id}, include={"book": True})
 
 
 async def find_co_borrowed(book_id: str, *, limit: int) -> list[Book]:
@@ -79,6 +152,24 @@ async def create_book(data: dict) -> Book:
 
 async def update_book(book_id: str, data: dict) -> Book:
     return await prisma.book.update(where={"id": book_id}, data=data)
+
+
+async def update_book_with_inventory_guard(
+    book_id: str, data: dict
+) -> tuple[Book | None, str | None]:
+    """Keep copy-count edits serialized with loan issuance for this book."""
+    async with prisma.tx() as tx:
+        await tx.execute_raw("SELECT pg_advisory_xact_lock(hashtext($1))", book_id)
+        book = await tx.book.find_unique(where={"id": book_id})
+        if book is None or book.deletedAt is not None:
+            return None, "not_found"
+        requested_total = data.get("totalCopies")
+        if requested_total is not None:
+            active_loans = await tx.loan.count(where={"bookId": book_id, "returnedAt": None})
+            if requested_total < active_loans:
+                return book, "active_loans"
+        updated = await tx.book.update(where={"id": book_id}, data=data)
+        return updated, None
 
 
 async def soft_delete_book(book_id: str) -> Book:

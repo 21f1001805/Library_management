@@ -1,7 +1,10 @@
 import re
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
+
+BookSort = Literal["newest", "rating", "recommended"]
 
 _ISBN_CHARS = re.compile(r"[- ]")
 _ISBN_10 = re.compile(r"^\d{9}[\dX]$")
@@ -63,11 +66,15 @@ class BookOut(BaseModel):
     cover_image_url: str | None
     total_copies: int
     available: bool
+    average_rating: float | None
+    review_count: int
     created_at: datetime
     updated_at: datetime
 
     @staticmethod
-    def from_prisma(book) -> "BookOut":
+    def from_prisma(
+        book, *, average_rating: float | None = None, review_count: int = 0
+    ) -> "BookOut":
         return BookOut(
             id=book.id,
             title=book.title,
@@ -80,6 +87,8 @@ class BookOut(BaseModel):
             cover_image_url=book.coverImageUrl,
             total_copies=book.totalCopies,
             available=book.totalCopies > 0,
+            average_rating=average_rating,
+            review_count=review_count,
             created_at=book.createdAt,
             updated_at=book.updatedAt,
         )

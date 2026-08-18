@@ -12,9 +12,22 @@ export interface OverlayProps {
   children: ReactNode;
   panelClassName?: string;
   labelledBy?: string;
+  /**
+   * Escape and backdrop clicks stop closing the overlay, so the only way out is a control
+   * inside the panel. Used by the announcement popup, which must be acknowledged rather
+   * than clicked past. Focus is still trapped either way.
+   */
+  blocking?: boolean;
 }
 
-export function Overlay({ open, onClose, children, panelClassName, labelledBy }: OverlayProps) {
+export function Overlay({
+  open,
+  onClose,
+  children,
+  panelClassName,
+  labelledBy,
+  blocking = false,
+}: OverlayProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,7 +43,7 @@ export function Overlay({ open, onClose, children, panelClassName, labelledBy }:
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        onClose();
+        if (!blocking) onClose();
         return;
       }
       if (event.key !== 'Tab' || !panel) return;
@@ -59,13 +72,17 @@ export function Overlay({ open, onClose, children, panelClassName, labelledBy }:
       document.body.style.overflow = previousBodyOverflow;
       previouslyFocused?.focus();
     };
-  }, [open, onClose]);
+  }, [open, onClose, blocking]);
 
   if (!open) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex" role="presentation">
-      <div className="fixed inset-0 bg-foreground/40" aria-hidden="true" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-foreground/40"
+        aria-hidden="true"
+        onClick={blocking ? undefined : onClose}
+      />
       <div
         ref={panelRef}
         role="dialog"

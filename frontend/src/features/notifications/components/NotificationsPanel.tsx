@@ -1,11 +1,14 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { BellOff, CheckCheck } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { NotificationCard, type NotificationType } from '@/components/common';
 import { Badge, Button, EmptyState } from '@/components/ui';
 import { formatRelativeTime } from '@/lib/formatRelativeTime';
 import { useAuth, type AppNotificationRecord } from '@/providers/AuthProvider';
+
+import { notificationKeys, useNotificationsQuery } from '../hooks/useNotificationsQuery';
 
 type Filter = 'all' | 'unread';
 
@@ -52,13 +55,16 @@ function NotificationRow({
 
 export function NotificationsPanel() {
   const { t } = useTranslation();
-  const { getMyNotifications, markNotificationRead, markAllNotificationsRead } = useAuth();
-  const [notifications, setNotifications] = useState<AppNotificationRecord[]>([]);
+  const { markNotificationRead, markAllNotificationsRead } = useAuth();
+  const { notifications } = useNotificationsQuery();
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<Filter>('all');
 
-  useEffect(() => {
-    getMyNotifications().then(setNotifications);
-  }, [getMyNotifications]);
+  // Writes go through the shared cache rather than local state, so the bell's unread
+  // count updates the moment something is marked read instead of on its next poll.
+  function setCached(next: AppNotificationRecord[]) {
+    queryClient.setQueryData(notificationKeys.mine, next);
+  }
 
   const unreadCount = notifications.filter((notification) => !notification.read).length;
   const visibleNotifications = useMemo(
@@ -67,25 +73,24 @@ export function NotificationsPanel() {
   );
 
   function markAsRead(id: string) {
-    setNotifications((prev) =>
-      prev.map((notification) => (notification.id === id ? { ...notification, read: true } : notification)),
+    const previous = notifications;
+    setCached(
+      notifications.map((notification) =>
+        notification.id === id ? { ...notification, read: true } : notification,
+      ),
     );
     markNotificationRead(id).catch(() => {
       // Revert on failure so the UI doesn't claim a read state the backend never saved.
-      setNotifications((prev) =>
-        prev.map((notification) =>
-          notification.id === id ? { ...notification, read: false } : notification,
-        ),
-      );
+      setCached(previous);
     });
   }
 
   function markAllAsRead() {
     const previous = notifications;
-    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })));
+    setCached(notifications.map((notification) => ({ ...notification, read: true })));
     markAllNotificationsRead().catch(() => {
       // Revert on failure so the UI doesn't claim a read state the backend never saved.
-      setNotifications(previous);
+      setCached(previous);
     });
   }
 

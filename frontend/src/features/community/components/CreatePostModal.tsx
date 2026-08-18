@@ -2,7 +2,7 @@ import { ImagePlus, X } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Button, Input, Modal } from '@/components/ui';
+import { Button, Input, Modal, Textarea } from '@/components/ui';
 
 export interface PostDraft {
   bookTitle: string;
@@ -13,13 +13,14 @@ export interface PostDraft {
 export interface CreatePostModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (draft: PostDraft) => void;
+  onSubmit: (draft: PostDraft) => void | Promise<void>;
   /** When set, the modal opens pre-filled for editing an existing post. */
   initialValues?: PostDraft;
 }
 
 const MAX_IMAGES = 4;
 const MAX_CONTENT_LENGTH = 500;
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 
 export function CreatePostModal({ open, onClose, onSubmit, initialValues }: CreatePostModalProps) {
   const { t } = useTranslation();
@@ -27,6 +28,8 @@ export function CreatePostModal({ open, onClose, onSubmit, initialValues }: Crea
   const [bookTitle, setBookTitle] = useState(initialValues?.bookTitle ?? '');
   const [content, setContent] = useState(initialValues?.content ?? '');
   const [images, setImages] = useState<string[]>(initialValues?.images ?? []);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Re-sync the draft whenever the modal transitions to open, so a fresh
   // "create" starts blank and "edit" starts pre-filled with that post.
@@ -37,6 +40,8 @@ export function CreatePostModal({ open, onClose, onSubmit, initialValues }: Crea
       setBookTitle(initialValues?.bookTitle ?? '');
       setContent(initialValues?.content ?? '');
       setImages(initialValues?.images ?? []);
+      setImageError(null);
+      setIsSubmitting(false);
     }
   }
 
@@ -53,21 +58,48 @@ export function CreatePostModal({ open, onClose, onSubmit, initialValues }: Crea
     const files = Array.from(event.target.files ?? []);
     const remainingSlots = MAX_IMAGES - images.length;
     event.target.value = '';
+    setImageError(null);
+    const selectedFiles = files.slice(0, remainingSlots);
+    const invalidType = selectedFiles.find((file) => !file.type.startsWith('image/'));
+    if (invalidType) {
+      setImageError(
+        t('community.createPostModal.invalidImageType', 'Only image files can be attached.'),
+      );
+      return;
+    }
+    const oversized = selectedFiles.find((file) => file.size > MAX_IMAGE_SIZE_BYTES);
+    if (oversized) {
+      setImageError(
+        t('community.createPostModal.imageTooLarge', 'Each image must be 5 MB or smaller.'),
+      );
+      return;
+    }
     // Data URLs (not blob: URLs) because there's no upload/object storage yet
     // (see the ponytail note on CommunityPost.images) — this way the image
     // actually persists in the DB and is visible to other users/after reload.
-    const nextUrls = await Promise.all(files.slice(0, remainingSlots).map(readAsDataUrl));
-    setImages((prev) => [...prev, ...nextUrls]);
+    try {
+      const nextUrls = await Promise.all(selectedFiles.map(readAsDataUrl));
+      setImages((prev) => [...prev, ...nextUrls]);
+    } catch {
+      setImageError(
+        t('community.createPostModal.imageReadFailed', 'One or more images could not be read.'),
+      );
+    }
   }
 
   function removeImage(index: number) {
     setImages((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (content.trim().length === 0) return;
-    onSubmit({ bookTitle: bookTitle.trim(), content: content.trim(), images });
+    if (content.trim().length === 0 || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmit({ bookTitle: bookTitle.trim(), content: content.trim(), images });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const canSubmit = content.trim().length > 0;
@@ -87,17 +119,14 @@ export function CreatePostModal({ open, onClose, onSubmit, initialValues }: Crea
         />
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="post-content" className="text-sm font-medium text-foreground">
-            {t('community.createPostModal.contentLabel')}
-          </label>
-          <textarea
+          <Textarea
             id="post-content"
+            label={t('community.createPostModal.contentLabel')}
             value={content}
             onChange={(event) => setContent(event.target.value)}
             rows={4}
             maxLength={MAX_CONTENT_LENGTH}
             placeholder={t('community.createPostModal.contentPlaceholder')}
-            className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
           <p className="text-right text-xs text-muted-foreground tabular-nums">
             {content.length}/{MAX_CONTENT_LENGTH}
@@ -141,9 +170,14 @@ export function CreatePostModal({ open, onClose, onSubmit, initialValues }: Crea
           <p className="text-xs text-muted-foreground">
             {t('community.createPostModal.imagesHint', { count: MAX_IMAGES })}
           </p>
+          {imageError && (
+            <p role="alert" className="text-xs text-danger">
+              {imageError}
+            </p>
+          )}
         </div>
 
-        <Button type="submit" disabled={!canSubmit}>
+        <Button type="submit" disabled={!canSubmit} isLoading={isSubmitting}>
           {isEditing ? t('community.createPostModal.saveChanges') : t('community.createPostModal.submit')}
         </Button>
       </form>

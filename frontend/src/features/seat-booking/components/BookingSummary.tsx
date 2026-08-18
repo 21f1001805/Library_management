@@ -1,4 +1,4 @@
-import { Bell, BellRing } from 'lucide-react';
+import { Bell, BellRing, Clock3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
@@ -8,6 +8,10 @@ export interface BookingSummaryProps {
   selectedSeat: SeatSlot | null;
   dateLabel: string;
   hourLabel: string;
+  /** Label for when the currently selected 1-hour slot ends, e.g. "5 PM". */
+  slotEndHourLabel: string;
+  /** Minutes left in the slot if it's happening right now, else null (future slot). */
+  minutesUntilFree: number | null;
   isNotified: boolean;
   /** True when you already hold a different seat in this exact date/hour slot. */
   hasOtherBookingThisSlot: boolean;
@@ -24,10 +28,26 @@ function formatBookingHour(hour: number): string {
   return `${displayHour} ${period}`;
 }
 
+function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// A booking is "in progress" (rather than simply "upcoming") when its 1-hour
+// slot has started but not yet ended — e.g. an 8 PM booking checked at 8:54 PM.
+function isBookingInProgress(date: string, hour: number): boolean {
+  const now = new Date();
+  return date === toDateInputValue(now) && hour === now.getHours();
+}
+
 export function BookingSummary({
   selectedSeat,
   dateLabel,
   hourLabel,
+  slotEndHourLabel,
+  minutesUntilFree,
   isNotified,
   hasOtherBookingThisSlot,
   isBusy,
@@ -75,6 +95,17 @@ export function BookingSummary({
           </div>
         )}
 
+        {(isTaken || isMine) && selectedSeat && (
+          <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+            <Clock3 className="mt-0.5 size-3.5 shrink-0" />
+            {minutesUntilFree !== null
+              ? t('seatBooking.bookingSummary.slotDurationCountdown', {
+                  minutes: minutesUntilFree,
+                })
+              : t('seatBooking.bookingSummary.slotDurationFixed', { endHour: slotEndHourLabel })}
+          </p>
+        )}
+
         {isAvailable && hasOtherBookingThisSlot && (
           <div className="rounded-md bg-warning/10 p-3 text-sm font-medium text-warning">
             {t('seatBooking.bookingSummary.alreadyBookedThisSlot')}
@@ -120,24 +151,32 @@ export function BookingSummary({
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {t('seatBooking.bookingSummary.yourBookings')}
             </p>
-            {myBookings.map((booking) => (
-              <div
-                key={booking.id}
-                className="flex items-center justify-between gap-2 rounded-md bg-secondary/40 px-3 py-2 text-sm"
-              >
-                <span className="text-foreground">
-                  {booking.seat_label} · {booking.date} · {formatBookingHour(booking.hour)}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={isBusy}
-                  onClick={() => onCancelBooking(booking.id)}
+            {myBookings.map((booking) => {
+              const inProgress = isBookingInProgress(booking.date, booking.hour);
+              return (
+                <div
+                  key={booking.id}
+                  className="flex items-center justify-between gap-2 rounded-md bg-secondary/40 px-3 py-2 text-sm"
                 >
-                  {t('seatBooking.bookingSummary.cancelButton')}
-                </Button>
-              </div>
-            ))}
+                  <span className="text-foreground">
+                    {booking.seat_label} · {booking.date} ·{' '}
+                    {inProgress
+                      ? t('seatBooking.bookingSummary.bookingInProgress', {
+                          endHour: formatBookingHour((booking.hour + 1) % 24),
+                        })
+                      : formatBookingHour(booking.hour)}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={isBusy}
+                    onClick={() => onCancelBooking(booking.id)}
+                  >
+                    {t('seatBooking.bookingSummary.cancelButton')}
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         )}
       </CardContent>

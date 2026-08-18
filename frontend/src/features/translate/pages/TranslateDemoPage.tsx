@@ -1,8 +1,17 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Select } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  Select,
+  Textarea,
+} from '@/components/ui';
+import { getErrorMessage } from '@/lib/api';
 import { useTranslateText } from '@/features/translate/hooks/useTranslateText';
-import { cn } from '@/lib/cn';
 
 const DEMO_LANGUAGES = [
   { value: 'hi', label: 'Hindi (हिन्दी)' },
@@ -22,39 +31,29 @@ const DEMO_LANGUAGES = [
 const DEFAULT_TEXT = 'Welcome to the library. This book is currently available to borrow.';
 
 export function TranslateDemoPage() {
+  const { t } = useTranslation();
   const [text, setText] = useState(DEFAULT_TEXT);
   const [targetLang, setTargetLang] = useState('hi');
-  const { translated, loading } = useTranslateText(text, targetLang);
+  const { translated, loading, error, retry } = useTranslateText(text, targetLang);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-16">
       <Card className="rounded-3xl border-border bg-surface shadow-panel">
         <CardHeader>
-          <CardTitle>Translation demo</CardTitle>
-          <CardDescription>
-            Type any text and pick a language — this calls the backend&apos;s free{' '}
-            <code>deep-translator</code> proxy at <code>/api/translate</code>.
-          </CardDescription>
+          <h1 className="text-lg font-semibold text-foreground">{t('translateDemo.title')}</h1>
+          <CardDescription>{t('translateDemo.description')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="demo-source-text" className="text-sm font-medium text-foreground">
-              Text to translate
-            </label>
-            <textarea
-              id="demo-source-text"
-              rows={4}
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-              className={cn(
-                'w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground',
-                'placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-              )}
-            />
-          </div>
+          <Textarea
+            id="demo-source-text"
+            label={t('translateDemo.sourceLabel')}
+            rows={4}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+          />
 
           <Select
-            label="Translate to"
+            label={t('translateDemo.targetLabel')}
             options={DEMO_LANGUAGES}
             value={targetLang}
             onChange={(event) => setTargetLang(event.target.value)}
@@ -62,11 +61,25 @@ export function TranslateDemoPage() {
 
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-foreground">
-              Translated output {loading && <span className="text-muted-foreground">(translating…)</span>}
+              {t('translateDemo.outputLabel')}{' '}
+              {loading && (
+                <span className="text-muted-foreground">{t('translateDemo.loading')}</span>
+              )}
             </span>
             <p className="min-h-[3.5rem] rounded-md border border-border-muted bg-secondary/10 px-3 py-2 text-sm text-foreground">
               {translated}
             </p>
+            {Boolean(error) && (
+              <div
+                role="alert"
+                className="flex flex-wrap items-center justify-between gap-2 text-sm text-danger"
+              >
+                <span>{getErrorMessage(error, t('translateDemo.error'))}</span>
+                <Button type="button" size="sm" variant="outline" onClick={retry}>
+                  {t('feedback.error.retry')}
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

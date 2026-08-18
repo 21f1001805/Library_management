@@ -18,9 +18,9 @@ export interface EditProfileModalProps {
 
 export function EditProfileModal({ open, onClose }: EditProfileModalProps) {
   const { t } = useTranslation();
-  const { fullName, phone, avatarUrl, updateProfile } = useAuth();
+  const { fullName, phone, avatarUrl, role, updateProfile } = useAuth();
   const [selectedAvatar, setSelectedAvatar] = useState<string | undefined>(avatarUrl ?? undefined);
-  const presets = getAvatarPresets();
+  const presets = role ? getAvatarPresets(role) : [];
 
   const {
     register,
@@ -31,8 +31,6 @@ export function EditProfileModal({ open, onClose }: EditProfileModalProps) {
     values: {
       fullName: fullName ?? '',
       phoneNumber: phone ?? '',
-      password: '',
-      confirmPassword: '',
     },
   });
 
@@ -41,7 +39,6 @@ export function EditProfileModal({ open, onClose }: EditProfileModalProps) {
       await updateProfile({
         full_name: values.fullName,
         phone: values.phoneNumber,
-        password: values.password || undefined,
         avatar_url: selectedAvatar,
       });
       toast.success('Profile updated');
@@ -87,21 +84,6 @@ export function EditProfileModal({ open, onClose }: EditProfileModalProps) {
           placeholder="+91 98765 43210"
           error={errors.phoneNumber?.message ? t(errors.phoneNumber.message) : undefined}
           {...register('phoneNumber')}
-        />
-        <Input
-          label="New password"
-          type="password"
-          autoComplete="new-password"
-          placeholder="Leave blank to keep your current password"
-          error={errors.password?.message ? t(errors.password.message) : undefined}
-          {...register('password')}
-        />
-        <Input
-          label="Confirm new password"
-          type="password"
-          autoComplete="new-password"
-          error={errors.confirmPassword?.message ? t(errors.confirmPassword.message) : undefined}
-          {...register('confirmPassword')}
         />
 
         <div className="flex justify-end gap-2">

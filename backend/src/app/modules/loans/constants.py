@@ -9,3 +9,7 @@ RESERVATION_DURATION_CHOICES = (3, 5, 7, 10)
 
 # How many days before a loan's due date the daily background job starts nudging.
 REMINDER_WINDOW_DAYS = 2
+
+# Don't re-nudge the same loan inside this window. The sweep also runs on startup, so
+# without a cooldown every restart would re-email everyone currently due soon.
+REMIND_COOLDOWN_HOURS = 20

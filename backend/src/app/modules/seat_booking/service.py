@@ -19,8 +19,6 @@ from app.modules.seat_booking.schemas import (
 
 
 def _now() -> datetime:
-    # UTC throughout — mixing this with naive local time (server timezone offset
-    # from UTC) is exactly what made the day/hour boundary checks below flaky.
     return datetime.now(UTC)
 
 
@@ -41,13 +39,13 @@ def _validate_slot(target_date: date_type, hour: int) -> None:
 
 
 async def get_availability_summary() -> SeatAvailabilitySummary:
-    # Public (no auth) — landing-page marketing widget. Only a booked-vs-available
-    # count is meaningful here: the model has no presence/check-in concept, so a
-    # true "physically occupied right now" figure doesn't exist to report.
-    now = _now()
-    bookings = await repository.list_bookings_for_slot(now.date(), now.hour)
+    now_utc = _now()
+    now_local = datetime.now().astimezone()
+    bookings_utc = await repository.list_bookings_for_slot(now_utc.date(), now_utc.hour)
+    bookings_local = await repository.list_bookings_for_slot(now_local.date(), now_local.hour)
+    all_bookings = {b.id: b for b in (bookings_utc + bookings_local)}
     total = len(SEAT_LABELS)
-    booked = len(bookings)
+    booked = len(all_bookings)
     return SeatAvailabilitySummary(available=total - booked, booked=booked, total=total)
 
 
@@ -62,10 +60,21 @@ async def get_schedule(user: User, target_date: date_type, hour: int) -> Schedul
             slots.append(SeatSlotOut(seat_label=label, status="available"))
         elif booking.memberId == user.id:
             slots.append(
-                SeatSlotOut(seat_label=label, status="booked_by_me", booking_id=booking.id)
+                SeatSlotOut(
+                    seat_label=label,
+                    status="booked_by_me",
+                    booking_id=booking.id,
+                    booked_by_avatar_url=user.avatarUrl,
+                )
             )
         else:
-            slots.append(SeatSlotOut(seat_label=label, status="reserved"))
+            slots.append(
+                SeatSlotOut(
+                    seat_label=label,
+                    status="reserved",
+                    booked_by_avatar_url=booking.member.avatarUrl if booking.member else None,
+                )
+            )
 
     return ScheduleOut(date=target_date, hour=hour, seats=slots)
 
@@ -117,14 +126,13 @@ async def cancel_booking(user: User, booking_id: str) -> None:
     waiting = await repository.find_notify_requests_for_slot(
         booking.seatLabel, booking_date, booking.hour
     )
-    for request in waiting:
-        await notifications_service.create_notification(
-            request.memberId,
+    if waiting:
+        await notifications_service.create_notifications(
+            [request.memberId for request in waiting],
             "seat-available",
             f"Seat {booking.seatLabel} is now available on "
             f"{booking_date.isoformat()} at {booking.hour:02d}:00.",
         )
-    if waiting:
         await repository.delete_notify_requests([request.id for request in waiting])
 
 

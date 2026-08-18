@@ -24,9 +24,7 @@ _TYPE_LABELS = {"refund": "refund", "fee_waiver": "fee waiver"}
 
 
 async def _notify_admins(message: str) -> None:
-    admins = await prisma.user.find_many(where={"role": {"name": Role.ADMIN}, "deletedAt": None})
-    for admin in admins:
-        await notifications_service.create_notification(admin.id, "pending-request", message)
+    await notifications_service.notify_roles([Role.ADMIN], "pending-request", message)
 
 
 async def list_pending_requests() -> list[BillingRequestOut]:
@@ -98,10 +96,16 @@ async def _decide(request_id: str, decided_by_id: str, status_value: str) -> Bil
             status_code=status.HTTP_409_CONFLICT, detail="This request has already been decided"
         )
 
-    row = await repository.decide(request_id, status=status_value, decided_by_id=decided_by_id)
-    await audit_log_service.record(
-        actor_id=decided_by_id,
-        action=_DECISION_ACTIONS[(row.type, status_value)],
-        metadata={"amount": row.amount, "memberName": row.member.fullName},
-    )
+    async with prisma.tx() as tx:
+        row = await repository.decide_if_pending(
+            request_id, status=status_value, decided_by_id=decided_by_id, client=tx
+        )
+        if row is None:
+            raise HTTPException(status.HTTP_409_CONFLICT, "This request has already been decided")
+        await audit_log_service.record(
+            actor_id=decided_by_id,
+            action=_DECISION_ACTIONS[(row.type, status_value)],
+            metadata={"amount": row.amount, "memberName": row.member.fullName},
+            client=tx,
+        )
     return BillingRequestOut.from_prisma(row)

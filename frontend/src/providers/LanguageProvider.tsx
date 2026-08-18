@@ -1,20 +1,12 @@
-/* eslint-disable react-refresh/only-export-components */
-
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
 
 import i18n from '@/i18n/config';
 import { ensureLanguageLoaded } from '@/i18n/autoTranslate';
 import { DEFAULT_LANGUAGE, LANGUAGES } from '@/i18n/languages';
 import { useLocalStorageState } from '@/lib/useLocalStorageState';
 
-interface LanguageContextValue {
-  language: string;
-  setLanguage: (code: string) => void;
-  /** True while a language without a static locale file is being auto-translated for the first time. */
-  isTranslating: boolean;
-}
-
-const LanguageContext = createContext<LanguageContextValue | null>(null);
+import { LanguageContext } from './languageContext';
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useLocalStorageState<string>('language', DEFAULT_LANGUAGE);
@@ -26,18 +18,31 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const timer = setTimeout(() => {
       if (cancelled) return;
       setIsTranslating(true);
+      let failed = false;
       ensureLanguageLoaded(language)
         .catch(() => {
-          // Failed to auto-translate (e.g. backend unreachable) — i18next's
-          // fallbackLng keeps the UI in English instead of breaking.
+          // i18next's fallbackLng keeps the UI readable in English rather than
+          // breaking, but staying silent about it meant a user could pick a language,
+          // watch a spinner, and be left on an English page with no explanation.
+          failed = true;
         })
         .finally(() => {
           if (cancelled) return;
           void i18n.changeLanguage(language);
           const option = LANGUAGES.find((entry) => entry.code === language);
           document.documentElement.lang = language;
-          document.documentElement.dir = option?.dir ?? 'ltr';
+          // Only flip writing direction if the translation actually loaded — RTL
+          // English is harder to read than LTR English.
+          document.documentElement.dir = failed ? 'ltr' : (option?.dir ?? 'ltr');
           setIsTranslating(false);
+          if (failed) {
+            toast.error(
+              i18n.t(
+                'common.errors.translationUnavailable',
+                'That language could not be loaded — showing English for now.',
+              ),
+            );
+          }
         });
     }, 0);
 
@@ -48,14 +53,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, [language]);
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, isTranslating }}>
+    <LanguageContext.Provider
+      value={{ language, setLanguage, isTranslating }}
+    >
       {children}
     </LanguageContext.Provider>
   );
-}
-
-export function useLanguage(): LanguageContextValue {
-  const context = useContext(LanguageContext);
-  if (!context) throw new Error('useLanguage must be used within a LanguageProvider');
-  return context;
 }

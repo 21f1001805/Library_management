@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { Button, Modal } from '@/components/ui';
+import { Button, Modal, Textarea } from '@/components/ui';
 import { getErrorMessage } from '@/lib/api';
 import { useAuth, type SupportTicketRecord } from '@/providers/AuthProvider';
 
@@ -50,20 +50,13 @@ export function ResolveTicketModal({ ticket, onClose, onResolved }: ResolveTicke
     <Modal open={ticket !== null} onClose={onClose} title={t('itHead.issueResolution.resolve')}>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
         {ticket && <p className="text-sm text-muted-foreground">{ticket.description}</p>}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="resolution-note" className="text-sm font-medium text-foreground">
-            {t('itHead.issueResolution.resolutionNoteLabel')}
-          </label>
-          <textarea
-            id="resolution-note"
-            rows={3}
-            className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            {...register('resolution_note')}
-          />
-          {errors.resolution_note?.message && (
-            <p className="text-sm text-danger">{errors.resolution_note.message}</p>
-          )}
-        </div>
+        <Textarea
+          id="resolution-note"
+          label={t('itHead.issueResolution.resolutionNoteLabel')}
+          rows={3}
+          error={errors.resolution_note?.message}
+          {...register('resolution_note')}
+        />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>
             {t('common.actions.cancel')}

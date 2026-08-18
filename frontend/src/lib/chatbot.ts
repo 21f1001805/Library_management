@@ -48,7 +48,7 @@ export const CONVERSATION_TREE: Record<string, TreeNode> = {
   membership_renew: {
     id: 'membership_renew',
     botMessage:
-      '1. Open your Profile.\n2. Go to the Membership section.\n3. Select Renew membership.\n4. Confirm your details and complete payment if required.',
+      '1. Open your Profile.\n2. Go to the Membership section.\n3. Select Upgrade membership.\n4. Confirm your details and complete payment if required.',
   },
 
   // ── Books & Borrowing ────────────────────────────────────────────────────────

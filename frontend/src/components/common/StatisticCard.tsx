@@ -1,4 +1,5 @@
 import { TrendingDown, TrendingUp, type LucideIcon } from 'lucide-react';
+import type { KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Card } from '@/components/ui';
@@ -17,24 +18,71 @@ export interface StatisticCardProps {
   label: string;
   value: string;
   trend?: StatisticTrend;
+  /** Makes the card interactive (button semantics, hover state, keyboard support). */
+  onClick?: () => void;
+  /** Highlights the card, e.g. while its detail modal is open. */
+  selected?: boolean;
   className?: string;
 }
 
-export function StatisticCard({ icon: Icon, label, value, trend, className }: StatisticCardProps) {
+export function StatisticCard({
+  icon: Icon,
+  label,
+  value,
+  trend,
+  onClick,
+  selected,
+  className,
+}: StatisticCardProps) {
   const { t } = useTranslation();
-  const sentiment = trend ? (trend.sentiment ?? (trend.direction === 'up' ? 'positive' : 'negative')) : null;
+  const sentiment = trend
+    ? (trend.sentiment ?? (trend.direction === 'up' ? 'positive' : 'negative'))
+    : null;
+  const interactive = Boolean(onClick);
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (!onClick) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick();
+    }
+  }
 
   return (
-    <Card className={cn('flex items-center gap-3.5 p-5', className)}>
-      <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+    <Card
+      className={cn(
+        // Two statistic cards share a row on narrow phones. Stack the icon above the
+        // content there so long labels and currency values stay inside their column.
+        'flex min-w-0 flex-col items-start gap-3 p-4 sm:flex-row sm:items-center sm:gap-3.5 sm:p-5',
+        interactive &&
+          'cursor-pointer text-left transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md',
+        selected && 'border-primary ring-2 ring-primary/40',
+        className,
+      )}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-pressed={interactive ? (selected ?? false) : undefined}
+      onClick={onClick}
+      onKeyDown={interactive ? handleKeyDown : undefined}
+    >
+      <span
+        className={cn(
+          'inline-flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors',
+          selected && 'bg-primary-gradient text-primary-foreground',
+        )}
+      >
         <Icon className="size-5" />
       </span>
       {/* min-w-0: without it, a long label (e.g. "Late Fines Outstanding") sets the flex
           item's minimum width to its unwrapped text width, pushing the card past its grid
           column instead of wrapping. */}
-      <div className="min-w-0">
-        <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <div className="min-w-0 max-w-full">
+        <p className="break-words text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+          {value}
+        </p>
+        <p className="break-words text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
         {trend && (
           <p
             className={cn(

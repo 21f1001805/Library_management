@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { Button, Input, Modal, Select } from '@/components/ui';
+import { Button, Input, Modal, Select, Textarea } from '@/components/ui';
 import { getErrorMessage } from '@/lib/api';
 import { useAuth, type MemberSummary } from '@/providers/AuthProvider';
 
@@ -98,18 +98,13 @@ export function FileBillingRequestModal({ open, onClose }: FileBillingRequestMod
           {...register('amount')}
         />
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="billing-request-reason" className="text-sm font-medium text-foreground">
-            {t('managerDashboard.billingRequest.reasonLabel')}
-          </label>
-          <textarea
-            id="billing-request-reason"
-            rows={3}
-            className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            {...register('reason')}
-          />
-          {errors.reason?.message && <p className="text-sm text-danger">{errors.reason.message}</p>}
-        </div>
+        <Textarea
+          id="billing-request-reason"
+          label={t('managerDashboard.billingRequest.reasonLabel')}
+          rows={3}
+          error={errors.reason?.message}
+          {...register('reason')}
+        />
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>

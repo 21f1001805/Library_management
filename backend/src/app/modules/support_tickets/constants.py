@@ -32,5 +32,5 @@ CATEGORIES_BY_ROLE: dict[str, set[TicketCategory]] = {
     },
 }
 
-STAFF_ROLES = (Role.ADMIN, Role.MANAGER, Role.IT_HEAD)
+STAFF_ROLES = (Role.ADMIN, Role.MANAGER, Role.LIBRARIAN, Role.IT_HEAD)
 RAISER_ROLES = (Role.MEMBER, Role.GUARDIAN)

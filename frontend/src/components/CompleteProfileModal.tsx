@@ -53,14 +53,16 @@ export function CompleteProfileModal() {
   }
 
   return (
-    <Modal open={needsProfileCompletion} onClose={() => {}}>
+    <Modal
+      open={needsProfileCompletion}
+      onClose={() => {}}
+      title="Complete your account"
+      dismissible={false}
+    >
       <div className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Complete your account</h2>
-          <p className="text-sm text-muted-foreground">
-            A few more details before you get started.
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          A few more details before you get started.
+        </p>
 
         <form className="flex flex-col gap-3" onSubmit={handleSubmit(onSubmit)} noValidate>
           <Input

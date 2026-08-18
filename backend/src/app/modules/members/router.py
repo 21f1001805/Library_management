@@ -21,12 +21,13 @@ from app.modules.members.schemas import (
 
 router = APIRouter(prefix="/members", tags=["members"])
 
-manage_members = require_role(Role.ADMIN, Role.LIBRARIAN, Role.MANAGER, Role.IT_HEAD)
+view_members = require_role(Role.ADMIN, Role.LIBRARIAN, Role.MANAGER, Role.IT_HEAD)
+manage_members = require_role(Role.ADMIN)
 
 
 @router.get("", response_model=MemberListResponse)
 async def list_members(
-    _: Annotated[User, Depends(manage_members)],
+    _: Annotated[User, Depends(view_members)],
     search: Annotated[str | None, Query(description="Match against full name or email")] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
@@ -50,9 +51,9 @@ async def create_member(
 async def update_member(
     member_id: UUID,
     payload: MemberUpdate,
-    _: Annotated[User, Depends(manage_members)],
+    actor: Annotated[User, Depends(manage_members)],
 ) -> MemberOut:
-    return await service.update_member(str(member_id), payload)
+    return await service.update_member(str(member_id), payload, actor_id=actor.id)
 
 
 @router.get("/me/reading-progress", response_model=list[ReadingProgressOut])

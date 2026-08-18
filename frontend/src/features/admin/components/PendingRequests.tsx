@@ -1,23 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { Pagination, TableToolbar } from '@/components/common';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Dialog } from '@/components/ui';
+import { usePagination } from '@/hooks';
 import { getErrorMessage } from '@/lib/api';
+import { formatDate } from '@/lib/format';
 import { useAuth, type BillingRequestRecord, type BillingRequestType } from '@/providers/AuthProvider';
 
 const typeLabelKey: Record<BillingRequestType, string> = {
   refund: 'admin.pendingRequests.types.refundRequest',
   fee_waiver: 'admin.pendingRequests.types.feeWaiverRequest',
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
 
 type PendingAction = { request: BillingRequestRecord; kind: 'approve' | 'reject' };
 
@@ -33,6 +28,33 @@ export function PendingRequests({ requests, onDecided }: PendingRequestsProps) {
   const { approveBillingRequest, rejectBillingRequest } = useAuth();
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [isDeciding, setIsDeciding] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [sortValue, setSortValue] = useState('newest');
+
+  const filteredRequests = useMemo(() => {
+    const items = [...requests].filter((request) => {
+      const statusMatches = statusFilter === 'all' || request.status === statusFilter;
+      const typeMatches = typeFilter === 'all' || request.type === typeFilter;
+      return statusMatches && typeMatches;
+    });
+
+    switch (sortValue) {
+      case 'oldest':
+        return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      case 'amount-high':
+        return items.sort((a, b) => b.amount - a.amount);
+      case 'amount-low':
+        return items.sort((a, b) => a.amount - b.amount);
+      case 'member':
+        return items.sort((a, b) => a.member_name.localeCompare(b.member_name));
+      case 'newest':
+      default:
+        return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+  }, [requests, statusFilter, typeFilter, sortValue]);
+
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredRequests, 5);
 
   async function confirm() {
     if (!pendingAction) return;
@@ -55,48 +77,121 @@ export function PendingRequests({ requests, onDecided }: PendingRequestsProps) {
     }
   }
 
+  function resetToolbar() {
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setSortValue('newest');
+    setPage(1);
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t('admin.pendingRequests.title')}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        {requests.map((request) => (
-          <div
-            key={request.id}
-            className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{t(typeLabelKey[request.type])}</Badge>
-                <span className="font-medium text-foreground">
-                  ₹{request.amount.toLocaleString('en-IN')}
-                </span>
-                <span className="text-xs text-muted-foreground">{formatDate(request.created_at)}</span>
-              </div>
-              <p className="mt-1 text-sm text-foreground">{request.reason}</p>
-              <p className="text-xs text-muted-foreground">
-                {t('admin.pendingRequests.from', { name: request.member_name })}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="danger"
-                onClick={() => setPendingAction({ request, kind: 'reject' })}
-              >
-                {t('common.actions.reject')}
-              </Button>
-              <Button
-                size="sm"
-                variant="success"
-                onClick={() => setPendingAction({ request, kind: 'approve' })}
-              >
-                {t('common.actions.approve')}
-              </Button>
-            </div>
+        <TableToolbar
+          filters={[
+            {
+              label: 'Status',
+              value: statusFilter,
+              onChange: (value) => {
+                setStatusFilter(value);
+                setPage(1);
+              },
+              options: [
+                { value: 'all', label: 'All' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'approved', label: 'Approved' },
+                { value: 'rejected', label: 'Rejected' },
+              ],
+            },
+            {
+              label: 'Type',
+              value: typeFilter,
+              onChange: (value) => {
+                setTypeFilter(value);
+                setPage(1);
+              },
+              options: [
+                { value: 'all', label: 'All' },
+                { value: 'refund', label: t(typeLabelKey.refund) },
+                { value: 'fee_waiver', label: t(typeLabelKey.fee_waiver) },
+              ],
+            },
+          ]}
+          sort={{
+            label: 'Sort',
+            value: sortValue,
+            onChange: (value) => {
+              setSortValue(value);
+              setPage(1);
+            },
+            options: [
+              { value: 'newest', label: 'Newest First' },
+              { value: 'oldest', label: 'Oldest First' },
+              { value: 'amount-high', label: 'Amount High to Low' },
+              { value: 'amount-low', label: 'Amount Low to High' },
+              { value: 'member', label: 'Member Name' },
+            ],
+          }}
+          onReset={resetToolbar}
+          resetLabel={t('common.actions.reset')}
+        />
+
+        {filteredRequests.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+            {t('common.emptyState.noResults')}
           </div>
-        ))}
+        ) : (
+          <>
+            <ul className="flex flex-col gap-3">
+              {paginatedItems.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{t(typeLabelKey[request.type])}</Badge>
+                      <span className="font-medium text-foreground">
+                        ₹{request.amount.toLocaleString('en-IN')}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{formatDate(request.created_at)}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-foreground">{request.reason}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('admin.pendingRequests.from', { name: request.member_name })}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => setPendingAction({ request, kind: 'reject' })}
+                    >
+                      {t('common.actions.reject')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="success"
+                      onClick={() => setPendingAction({ request, kind: 'approve' })}
+                    >
+                      {t('common.actions.approve')}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </ul>
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={5}
+              onPageChange={setPage}
+            />
+          </>
+        )}
       </CardContent>
 
       <Dialog

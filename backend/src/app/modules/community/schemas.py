@@ -22,10 +22,18 @@ class CommentOut(BaseModel):
     content: str
     created_at: datetime
     reported: bool
+    reported_by_me: bool = False
     replies: list["CommentOut"] = Field(default_factory=list)
 
     @staticmethod
-    def from_prisma(comment) -> "CommentOut":
+    def from_prisma(comment, current_user_id: str | None = None) -> "CommentOut":
+        reports = getattr(comment, "reports", []) or []
+        reported_by_me = (
+            any(getattr(r, "userId", None) == current_user_id for r in reports)
+            if current_user_id
+            else False
+        )
+        is_reported = bool(comment.reported or reports)
         return CommentOut(
             id=comment.id,
             author_id=comment.authorId,
@@ -33,7 +41,8 @@ class CommentOut(BaseModel):
             author_avatar_url=comment.author.avatarUrl,
             content=comment.content,
             created_at=comment.createdAt,
-            reported=comment.reported,
+            reported=is_reported,
+            reported_by_me=reported_by_me,
             replies=[],
         )
 
@@ -52,10 +61,13 @@ class PostOut(BaseModel):
     is_saved: bool
     is_own: bool
     reported: bool
+    reported_by_me: bool = False
     comments: list[CommentOut]
 
     @staticmethod
     def from_prisma(post, *, current_user_id: str) -> "PostOut":
+        reports = getattr(post, "reports", []) or []
+        reported_by_me = any(getattr(r, "userId", None) == current_user_id for r in reports)
         return PostOut(
             id=post.id,
             author_id=post.authorId,
@@ -70,12 +82,16 @@ class PostOut(BaseModel):
             is_saved=any(save.userId == current_user_id for save in post.saves),
             is_own=post.authorId == current_user_id,
             reported=post.reported,
-            comments=_build_comment_tree(post.comments),
+            reported_by_me=reported_by_me,
+            comments=_build_comment_tree(post.comments, current_user_id=current_user_id),
         )
 
 
-def _build_comment_tree(comments: list) -> list[CommentOut]:
-    by_id = {comment.id: CommentOut.from_prisma(comment) for comment in comments}
+def _build_comment_tree(comments: list, current_user_id: str | None = None) -> list[CommentOut]:
+    by_id = {
+        comment.id: CommentOut.from_prisma(comment, current_user_id=current_user_id)
+        for comment in comments
+    }
     roots: list[CommentOut] = []
     for comment in comments:
         node = by_id[comment.id]
@@ -84,6 +100,13 @@ def _build_comment_tree(comments: list) -> list[CommentOut]:
         else:
             roots.append(node)
     return roots
+
+
+class PostListResponse(BaseModel):
+    items: list[PostOut]
+    total: int
+    page: int
+    page_size: int
 
 
 class BannedAuthorOut(BaseModel):

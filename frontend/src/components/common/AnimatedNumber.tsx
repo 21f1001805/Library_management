@@ -6,12 +6,19 @@ export interface AnimatedNumberProps {
   /** Intl.NumberFormat locale used to render the tweened value. */
   locale?: string;
   className?: string;
+  /** Stable hook for tests, so specs don't have to match on styling classes. */
+  'data-testid'?: string;
 }
 
 // Tweens the displayed number toward `value` whenever it changes (e.g. switching
 // pricing durations), instead of just replacing the text. Falls back to an
 // instant jump under prefers-reduced-motion.
-export function AnimatedNumber({ value, locale = 'en-IN', className }: AnimatedNumberProps) {
+export function AnimatedNumber({
+  value,
+  locale = 'en-IN',
+  className,
+  'data-testid': testId,
+}: AnimatedNumberProps) {
   const motionValue = useMotionValue(value);
   const [display, setDisplay] = useState(value);
 
@@ -29,5 +36,9 @@ export function AnimatedNumber({ value, locale = 'en-IN', className }: AnimatedN
     return controls.stop;
   }, [value, motionValue]);
 
-  return <span className={className}>{new Intl.NumberFormat(locale).format(display)}</span>;
+  return (
+    <span className={className} data-testid={testId}>
+      {new Intl.NumberFormat(locale).format(display)}
+    </span>
+  );
 }

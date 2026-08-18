@@ -28,14 +28,31 @@ async def create_request(
     return await service.create_request(user.id, payload)
 
 
-@router.post("/{request_id}/grant", response_model=PermissionRequestOut)
+@router.post("/{request_id}/approve", response_model=PermissionRequestOut)
+async def approve_request(
+    request_id: str, user: Annotated[User, Depends(decide_request)]
+) -> PermissionRequestOut:
+    return await service.grant_request(request_id, user.id)
+
+
+@router.post("/{request_id}/reject", response_model=PermissionRequestOut)
+async def reject_request(
+    request_id: str, user: Annotated[User, Depends(decide_request)]
+) -> PermissionRequestOut:
+    return await service.deny_request(request_id, user.id)
+
+
+# ponytail: grant/deny predate the approve/reject verbs billing_requests and
+# reservations already use for the same kind of decision. Kept as deprecated aliases
+# for one release instead of a hard rename; drop once nothing calls these two.
+@router.post("/{request_id}/grant", response_model=PermissionRequestOut, deprecated=True)
 async def grant_request(
     request_id: str, user: Annotated[User, Depends(decide_request)]
 ) -> PermissionRequestOut:
     return await service.grant_request(request_id, user.id)
 
 
-@router.post("/{request_id}/deny", response_model=PermissionRequestOut)
+@router.post("/{request_id}/deny", response_model=PermissionRequestOut, deprecated=True)
 async def deny_request(
     request_id: str, user: Annotated[User, Depends(decide_request)]
 ) -> PermissionRequestOut:

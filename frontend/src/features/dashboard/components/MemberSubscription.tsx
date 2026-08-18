@@ -1,9 +1,7 @@
-import { Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { IconBadge } from '@/components/common';
 import { Button, Card, CardContent, CardHeader, CardTitle, Modal } from '@/components/ui';
 import { ROUTES } from '@/constants/routes';
 
@@ -59,9 +57,8 @@ export function MemberSubscription({
   }
 
   return (
-    <Card className="rounded-2xl shadow-panel">
-      <CardHeader className="flex-row items-center gap-3 space-y-0">
-        <IconBadge icon={Wallet} size={9} />
+    <Card>
+      <CardHeader>
         <CardTitle>{t('dashboard.subscription.title')}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
@@ -80,7 +77,7 @@ export function MemberSubscription({
               <button
                 type="button"
                 onClick={() => setShowFineDetails(true)}
-                className="ml-2 text-sm font-medium text-primary underline underline-offset-2 hover:no-underline"
+                className="ml-2 text-sm font-medium text-primary-gradient underline underline-offset-2 hover:no-underline"
               >
                 {t('dashboard.subscription.viewFineDetails')}
               </button>

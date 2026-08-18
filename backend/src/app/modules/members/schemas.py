@@ -17,8 +17,8 @@ class MemberCreate(BaseModel):
     full_name: str = Field(min_length=1, max_length=150)
     phone: str | None = Field(default=None, max_length=20)
     avatar_url: str | None = None
-    role_name: str = Field(
-        default=Role.MEMBER.value,
+    role_name: Role = Field(
+        default=Role.MEMBER,
         description=f"Defaults to '{Role.MEMBER.value}'",
     )
 
@@ -28,7 +28,7 @@ class MemberUpdate(BaseModel):
     phone: str | None = Field(default=None, max_length=20)
     avatar_url: str | None = None
     is_active: bool | None = None
-    role_name: str | None = None
+    role_name: Role | None = None
 
 
 class MemberOut(BaseModel):

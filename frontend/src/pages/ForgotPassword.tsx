@@ -43,7 +43,7 @@ export function ForgotPassword() {
         <p className="text-sm text-muted-foreground">
           {t('auth.forgotPassword.successDescription')}
         </p>
-        <Link to={ROUTES.LOGIN} className="font-medium text-primary hover:underline">
+        <Link to={ROUTES.LOGIN} className="font-medium text-primary-gradient hover:underline">
           {t('auth.forgotPassword.backToLogin')}
         </Link>
       </div>
@@ -73,7 +73,7 @@ export function ForgotPassword() {
       </form>
 
       <p className="text-sm text-muted-foreground">
-        <Link to={ROUTES.LOGIN} className="font-medium text-primary hover:underline">
+        <Link to={ROUTES.LOGIN} className="font-medium text-primary-gradient hover:underline">
           {t('auth.forgotPassword.backToLogin')}
         </Link>
       </p>

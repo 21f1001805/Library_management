@@ -46,9 +46,7 @@ async def book_seat(
 
 
 @router.delete("/{booking_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def cancel_booking(
-    booking_id: str, user: Annotated[User, Depends(get_current_user)]
-) -> None:
+async def cancel_booking(booking_id: str, user: Annotated[User, Depends(get_current_user)]) -> None:
     await service.cancel_booking(user, booking_id)
 
 

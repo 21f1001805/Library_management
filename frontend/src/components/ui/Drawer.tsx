@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/cn';
 
@@ -8,6 +9,7 @@ import { Overlay } from './internal/Overlay';
 export type DrawerSide = 'left' | 'right';
 
 export interface DrawerProps {
+  id?: string;
   open: boolean;
   onClose: () => void;
   title?: ReactNode;
@@ -16,8 +18,17 @@ export interface DrawerProps {
   className?: string;
 }
 
-export function Drawer({ open, onClose, title, children, side = 'right', className }: DrawerProps) {
+export function Drawer({
+  id,
+  open,
+  onClose,
+  title,
+  children,
+  side = 'right',
+  className,
+}: DrawerProps) {
   const titleId = useId();
+  const { t } = useTranslation();
 
   return (
     <Overlay
@@ -27,6 +38,7 @@ export function Drawer({ open, onClose, title, children, side = 'right', classNa
       panelClassName={cn('h-full', side === 'left' ? 'mr-auto' : 'ml-auto')}
     >
       <div
+        id={id}
         className={cn(
           'flex h-full w-[calc(100vw-3rem)] max-w-sm flex-col bg-surface shadow-panel',
           className,
@@ -40,7 +52,7 @@ export function Drawer({ open, onClose, title, children, side = 'right', classNa
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close"
+              aria-label={t('common.actions.close')}
               className="flex size-10 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
               <X className="size-5" />

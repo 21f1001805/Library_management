@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { SeatCard } from '@/components/common';
-import { Button, Modal, Select } from '@/components/ui';
+import { ErrorState } from '@/components/feedback';
+import { Button, Loader, Modal, Select } from '@/components/ui';
 import { getErrorMessage } from '@/lib/api';
 import { useAuth, type MemberSummary, type SeatSlot } from '@/providers/AuthProvider';
 
@@ -59,6 +60,9 @@ export function BookSeatForMemberModal({ open, onClose, onBooked }: BookSeatForM
   const [selectedDate, setSelectedDate] = useState(todayValue);
   const [selectedHour, setSelectedHour] = useState(() => new Date().getHours());
   const [seats, setSeats] = useState<SeatSlot[] | null>(null);
+  const [isLoadingSeats, setIsLoadingSeats] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   const [selectedSeatLabel, setSelectedSeatLabel] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -79,17 +83,39 @@ export function BookSeatForMemberModal({ open, onClose, onBooked }: BookSeatForM
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
+    setTimeout(() => {
+      if (!cancelled) {
+        setIsLoadingSeats(true);
+        setScheduleError(null);
+      }
+    }, 0);
     getSeatSchedule(selectedDate, effectiveHour)
       .then((schedule) => {
         if (!cancelled) setSeats(schedule.seats);
       })
-      .catch(() => {
-        if (!cancelled) setSeats(null);
-      });
+      .catch((error) => {
+        if (!cancelled) {
+          setSeats(null);
+          setScheduleError(getErrorMessage(error, t('common.errors.generic')));
+        }
+      })
+      .finally(() => !cancelled && setIsLoadingSeats(false));
     return () => {
       cancelled = true;
     };
-  }, [open, selectedDate, effectiveHour, getSeatSchedule]);
+  }, [open, selectedDate, effectiveHour, getSeatSchedule, retryKey, t]);
+
+  function changeDate(date: string) {
+    setSelectedSeatLabel(null);
+    setSeats(null);
+    setSelectedDate(date);
+  }
+
+  function changeHour(hour: number) {
+    setSelectedSeatLabel(null);
+    setSeats(null);
+    setSelectedHour(hour);
+  }
 
   async function onSubmit() {
     if (!selectedMember || !selectedSeatLabel) return;
@@ -141,11 +167,11 @@ export function BookSeatForMemberModal({ open, onClose, onBooked }: BookSeatForM
             <button
               key={option.value}
               type="button"
-              onClick={() => setSelectedDate(option.value)}
+              onClick={() => changeDate(option.value)}
               className={
                 'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ' +
                 (selectedDate === option.value
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-primary-gradient text-primary-foreground'
                   : 'bg-secondary/60 text-foreground hover:bg-secondary')
               }
             >
@@ -157,7 +183,7 @@ export function BookSeatForMemberModal({ open, onClose, onBooked }: BookSeatForM
         <Select
           label={t('managerDashboard.bookSeatModal.hourLabel')}
           value={String(effectiveHour)}
-          onChange={(event) => setSelectedHour(Number(event.target.value))}
+          onChange={(event) => changeHour(Number(event.target.value))}
           options={HOURS.map((hour) => ({
             value: String(hour),
             label: formatHourLabel(hour),
@@ -165,19 +191,37 @@ export function BookSeatForMemberModal({ open, onClose, onBooked }: BookSeatForM
           }))}
         />
 
-        <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+        <div className="flex min-h-64 flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+          {isLoadingSeats ? (
+            <div className="flex flex-1 items-center justify-center" aria-label="Loading seat availability">
+              <Loader />
+            </div>
+          ) : scheduleError ? (
+            <ErrorState
+              className="min-h-48"
+              title="Seat availability unavailable"
+              description={scheduleError}
+              onRetry={() => setRetryKey((key) => key + 1)}
+            />
+          ) : (
+          <>
           {SEAT_ROWS.map((row) => (
             <div key={row} className="flex items-center gap-3">
               <span className="w-6 text-sm font-semibold text-muted-foreground">{row}</span>
               <div className="grid flex-1 grid-cols-4 gap-2 sm:grid-cols-8">
                 {SEAT_LABELS.filter((label) => label.startsWith(row)).map((label) => {
                   const seat = seats?.find((s) => s.seat_label === label);
-                  const visualStatus = !seat || seat.status === 'available' ? 'available' : 'reserved';
+                  const visualStatus = !seat
+                    ? 'occupied'
+                    : seat.status === 'available'
+                      ? 'available'
+                      : 'reserved';
                   return (
                     <SeatCard
                       key={label}
                       label={label}
                       status={visualStatus}
+                      avatarUrl={seat?.booked_by_avatar_url}
                       selected={selectedSeatLabel === label}
                       onSelect={visualStatus === 'available' ? () => setSelectedSeatLabel(label) : undefined}
                     />
@@ -186,6 +230,8 @@ export function BookSeatForMemberModal({ open, onClose, onBooked }: BookSeatForM
               </div>
             </div>
           ))}
+          </>
+          )}
         </div>
 
         <div className="flex justify-end gap-2">

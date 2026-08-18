@@ -58,6 +58,13 @@ interface TranslateBatchResponse {
 
 const inFlight = new Map<string, Promise<void>>();
 
+// Curated locale files that ship as their own chunk (kept out of the main bundle) rather
+// than being machine-translated — dynamic import so they only download when selected.
+const STATIC_LOCALE_LOADERS: Record<string, () => Promise<{ default: Node }>> = {
+  hi: () => import('@/i18n/locales/hi.json'),
+  pa: () => import('@/i18n/locales/pa.json'),
+};
+
 /**
  * Ensures i18next has a resource bundle for `lang`. Languages with a static
  * locale file (en/hi/pa) or one already loaded this session are a no-op.
@@ -72,9 +79,16 @@ export function ensureLanguageLoaded(lang: string): Promise<void> {
   const existing = inFlight.get(lang);
   if (existing) return existing;
 
-  const promise = loadLanguage(lang).finally(() => inFlight.delete(lang));
+  const promise = (STATIC_LOCALE_LOADERS[lang] ? loadStaticLocale(lang) : loadLanguage(lang)).finally(
+    () => inFlight.delete(lang),
+  );
   inFlight.set(lang, promise);
   return promise;
+}
+
+async function loadStaticLocale(lang: string): Promise<void> {
+  const module = await STATIC_LOCALE_LOADERS[lang]();
+  i18n.addResourceBundle(lang, 'translation', module.default, true, true);
 }
 
 async function loadLanguage(lang: string): Promise<void> {

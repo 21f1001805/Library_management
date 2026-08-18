@@ -123,7 +123,7 @@ export function NotificationCard({
           <p className="font-medium text-foreground">{title}</p>
           {!read && (
             <span
-              className="size-2 rounded-full bg-primary"
+              className="size-2 rounded-full bg-primary-gradient"
               aria-label={t('common.cards.notification.unread')}
             />
           )}

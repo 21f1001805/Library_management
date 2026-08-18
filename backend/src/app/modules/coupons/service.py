@@ -2,6 +2,7 @@ import secrets
 import string
 
 from fastapi import HTTPException, status
+from prisma import Prisma
 from prisma.errors import UniqueViolationError
 
 from app.modules.audit_log import service as audit_log_service
@@ -49,8 +50,8 @@ async def generate_coupon(admin_id: str, payload: CouponCreate) -> CouponOut:
     return CouponOut.from_prisma(row)
 
 
-async def _find_valid_coupon(code: str):
-    coupon = await repository.find_by_code(code.strip().upper())
+async def _find_valid_coupon(code: str, *, client: Prisma | None = None):
+    coupon = await repository.find_by_code(code.strip().upper(), client=client)
     if coupon is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Coupon not found")
     if coupon.usesCount >= coupon.maxUses:
@@ -66,10 +67,17 @@ async def validate_coupon(code: str) -> CouponValidationOut:
 
 
 async def redeem_coupon(code: str, base_amount: int) -> int:
-    # Only called from payment creation (not from the preview/"Apply" validation step),
-    # so a use is only consumed once a payment actually goes through. ponytail: no
-    # row locking, so two payments redeeming the last use at the same instant could
-    # both succeed — an acceptable gap given there's no real payment gateway yet either.
+    # This helper is reachable only through the test-only direct-payment endpoint.
+    # Production gateway verification uses consume_coupon's conditional update.
     coupon = await _find_valid_coupon(code)
     await repository.increment_uses(coupon.id)
     return round(base_amount * (100 - coupon.discountPercent) / 100)
+
+
+async def consume_coupon(code: str, *, client: Prisma) -> None:
+    """Consume one use only after payment verification, without exceeding maxUses."""
+    coupon = await _find_valid_coupon(code, client=client)
+    if not await repository.increment_uses_if_available(coupon.id, client=client):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Coupon has been fully redeemed"
+        )

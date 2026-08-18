@@ -6,19 +6,28 @@ each role a real account so preview mode gets a real, working session instead.
 
 Run from backend/: `uv run python scripts/seed_dev_accounts.py`
 Safe to re-run — upserts by email, so it just resets the password each time.
+
+This creates a loggable-in account for EVERY role, admin included, so it must never
+touch a real environment: the guard below refuses to run unless APP_ENV is one of the
+throwaway environments, and the password can be overridden with DEV_SEED_PASSWORD.
 """
 
 import asyncio
 import os
+import sys
 
 from app.core.config import get_settings
+from app.core.constants import Role
 from app.core.security import hash_password
 from app.db.prisma import prisma
 
-DEV_PASSWORD = "DevPreview123!"
+# The E2E suite (playwright.config.ts, frontend/tests/e2e/helpers.ts) logs in with this
+# exact value, so it stays the default rather than becoming a required variable.
+DEV_PASSWORD = os.environ.get("DEV_SEED_PASSWORD", "DevPreview123!")
 DEV_EMAIL_DOMAIN = "devpreview.internal"
+SEEDABLE_ENVIRONMENTS = {"development", "test", "e2e"}
 
-ROLES = ["admin", "member", "manager", "it-head", "guardian"]
+ROLES = tuple(role.value for role in Role)
 
 
 def _email(role: str) -> str:
@@ -27,6 +36,11 @@ def _email(role: str) -> str:
 
 async def main() -> None:
     settings = get_settings()
+    if settings.app_env not in SEEDABLE_ENVIRONMENTS:
+        sys.exit(
+            f"refusing to seed known-password accounts with APP_ENV={settings.app_env!r} — "
+            f"allowed only in {sorted(SEEDABLE_ENVIRONMENTS)}"
+        )
     os.environ.setdefault("DATABASE_URL", settings.database_url)
     await prisma.connect()
 
@@ -47,7 +61,16 @@ async def main() -> None:
                         "fullName": f"Dev {role_name.title()} Preview",
                         "roleId": role.id,
                     },
-                    "update": {"passwordHash": password_hash, "roleId": role.id},
+                    # E2E exercises account deactivation and token invalidation. Reset every
+                    # mutable authentication guard so rerunning the seed always produces the
+                    # same usable preview accounts instead of inheriting state from a prior run.
+                    "update": {
+                        "passwordHash": password_hash,
+                        "roleId": role.id,
+                        "isActive": True,
+                        "deletedAt": None,
+                        "tokenVersion": 0,
+                    },
                 },
             )
             print(f"Seeded {email} ({role_name})")

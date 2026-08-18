@@ -30,6 +30,7 @@ const overviewNavItemByRole: Partial<Record<Role, NavItem>> = {
 const dedicatedNavigationByRole: Partial<Record<Role, NavItem[]>> = {
   admin: adminNavigation,
   manager: managerNavigation,
+  librarian: managerNavigation,
   guardian: guardianNavigation,
   'it-head': itHeadNavigation,
 };

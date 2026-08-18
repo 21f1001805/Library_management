@@ -1,5 +1,7 @@
 from fastapi import HTTPException, status
 
+from app.modules.audit_log import service as audit_log_service
+from app.modules.audit_log.constants import AuditAction
 from app.modules.permission_requests import repository
 from app.modules.permission_requests.schemas import PermissionRequestCreate, PermissionRequestOut
 
@@ -35,5 +37,25 @@ async def _decide(request_id: str, decided_by_id: str, status_value: str) -> Per
             status_code=status.HTTP_409_CONFLICT, detail="This request has already been decided"
         )
 
-    row = await repository.decide(request_id, status=status_value, decided_by_id=decided_by_id)
+    row = await repository.decide_if_pending(
+        request_id, status=status_value, decided_by_id=decided_by_id
+    )
+    if row is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This request has already been decided")
+
+    # Access decisions are exactly what an audit trail is for — this module governs
+    # permissions and previously recorded nothing at all.
+    await audit_log_service.record(
+        actor_id=decided_by_id,
+        action=(
+            AuditAction.PERMISSION_REQUEST_GRANTED
+            if status_value == "granted"
+            else AuditAction.PERMISSION_REQUEST_DENIED
+        ),
+        metadata={
+            "requestId": request_id,
+            "requestedById": existing.requestedById,
+            "permission": existing.permission,
+        },
+    )
     return PermissionRequestOut.from_prisma(row)

@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next';
+
 import { cn } from '@/lib/cn';
 
 export type ProgressBarTone = 'primary' | 'success' | 'warning' | 'danger';
 
 const fillToneClasses: Record<ProgressBarTone, string> = {
-  primary: 'bg-primary',
+  primary: 'bg-primary-gradient',
   success: 'bg-success',
   warning: 'bg-warning',
   danger: 'bg-danger',
@@ -17,6 +19,7 @@ export interface ProgressBarProps {
 }
 
 export function ProgressBar({ percent, label, tone = 'primary', className }: ProgressBarProps) {
+  const { t } = useTranslation();
   const clamped = Math.min(100, Math.max(0, percent));
 
   return (
@@ -32,7 +35,7 @@ export function ProgressBar({ percent, label, tone = 'primary', className }: Pro
         aria-valuenow={clamped}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={label}
+        aria-label={label ?? t('common.percentComplete', { percent: Math.round(clamped) })}
         className="h-2 w-full overflow-hidden rounded-full bg-secondary"
       >
         <div

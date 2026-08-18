@@ -22,8 +22,8 @@ const stepImages: Record<number, string> = {
 
 // Solid fill (number badge + connector arrow) and text/tint variants per step tone.
 const solidClasses: Record<IconBadgeTone, string> = {
-  'primary-tint': 'bg-primary text-primary-foreground',
-  'primary-solid': 'bg-primary text-primary-foreground',
+  'primary-tint': 'bg-primary-gradient text-primary-foreground',
+  'primary-solid': 'bg-primary-gradient text-primary-foreground',
   success: 'bg-success text-success-foreground',
   warning: 'bg-warning text-warning-foreground',
   info: 'bg-info text-info-foreground',
@@ -150,7 +150,7 @@ export function HowItWorks() {
                   className="border-2 border-surface"
                 />
               ))}
-              <span className="flex size-8 items-center justify-center rounded-full border-2 border-surface bg-primary text-xs font-semibold text-primary-foreground">
+              <span className="flex size-8 items-center justify-center rounded-full border-2 border-surface bg-primary-gradient text-xs font-semibold text-primary-foreground">
                 {t('landing.howItWorks.community.memberCount')}
               </span>
             </div>

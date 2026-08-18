@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { ListRow } from '@/components/common';
 import { Button, Input, Modal, Select } from '@/components/ui';
 import { apiGet, getErrorMessage } from '@/lib/api';
 import { useAuth, type BookRecordType } from '@/providers/AuthProvider';
@@ -92,19 +93,19 @@ export function LogBookChangeModal({ open, onClose, onLogged }: LogBookChangeMod
             {t('itHead.logBookChangeModal.bookLabel')}
           </p>
           {selectedBook ? (
-            <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 py-2">
-              <div>
-                <p className="text-sm font-medium text-foreground">{selectedBook.title}</p>
-                <p className="text-xs text-muted-foreground">{selectedBook.author}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedBook(null)}
-                className="text-xs font-medium text-primary hover:underline"
-              >
-                {t('itHead.logBookChangeModal.changeBook')}
-              </button>
-            </div>
+            <ListRow
+              title={selectedBook.title}
+              subtitle={selectedBook.author}
+              action={
+                <button
+                  type="button"
+                  onClick={() => setSelectedBook(null)}
+                  className="text-xs font-medium text-primary-gradient hover:underline"
+                >
+                  {t('itHead.logBookChangeModal.changeBook')}
+                </button>
+              }
+            />
           ) : (
             <div className="flex flex-col gap-1.5">
               <Input

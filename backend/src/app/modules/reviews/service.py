@@ -31,6 +31,11 @@ async def get_all_reviews(*, viewer_id: str) -> list[ReviewOut]:
     return [ReviewOut.from_prisma(review, current_user_id=viewer_id) for review in reviews]
 
 
+async def get_my_reviews(member_id: str) -> list[ReviewOut]:
+    reviews = await repository.list_for_member(member_id)
+    return [ReviewOut.from_prisma(review, current_user_id=member_id) for review in reviews]
+
+
 async def create_review(book_id: str, member_id: str, payload: ReviewCreate) -> ReviewOut:
     try:
         review = await repository.create(

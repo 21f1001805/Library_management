@@ -81,22 +81,31 @@ export const completeProfileSchema = z
 
 export type CompleteProfileFormValues = z.infer<typeof completeProfileSchema>;
 
-// Password fields are optional here — leave both blank to keep the current password.
-export const editProfileSchema = z
+export const editProfileSchema = z.object({
+  fullName: z
+    .string()
+    .trim()
+    .min(2, { message: 'auth.register.errors.name' })
+    .max(100, { message: 'auth.register.errors.name' })
+    .regex(/^[A-Za-z\s'-]+$/, { message: 'auth.register.errors.name' }),
+  phoneNumber: z.string().regex(PHONE_PATTERN, { message: 'auth.register.errors.phoneNumber' }),
+});
+
+export type EditProfileFormValues = z.infer<typeof editProfileSchema>;
+
+export const changePasswordSchema = z
   .object({
-    fullName: z.string().trim().min(2, { message: 'auth.register.errors.name' }).max(100, { message: 'auth.register.errors.name' }).regex(/^[A-Za-z\s'-]+$/, { message: 'auth.register.errors.name' }),
-    phoneNumber: z.string().regex(PHONE_PATTERN, { message: 'auth.register.errors.phoneNumber' }),
-    password: z
+    // The backend rejects a change that doesn't prove knowledge of the existing
+    // password, so collect it here rather than surfacing a 403 after submit.
+    currentPassword: z
       .string()
-      .optional()
-      .refine((value) => !value || PASSWORD_PATTERN.test(value), {
-        message: 'auth.register.errors.password',
-      }),
-    confirmPassword: z.string().optional(),
+      .min(1, { message: 'settings.changePassword.currentPasswordRequired' }),
+    password: z.string().regex(PASSWORD_PATTERN, { message: 'auth.register.errors.password' }),
+    confirmPassword: z.string(),
   })
-  .refine((data) => !data.password || data.password === data.confirmPassword, {
+  .refine((data) => data.confirmPassword === data.password, {
     message: 'auth.register.errors.confirmPassword',
     path: ['confirmPassword'],
   });
 
-export type EditProfileFormValues = z.infer<typeof editProfileSchema>;
+export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;

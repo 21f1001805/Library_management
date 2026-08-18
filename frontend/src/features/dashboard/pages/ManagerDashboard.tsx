@@ -7,7 +7,7 @@ import {
   ReceiptText,
   UserPlus,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { PageHeader, QuickActionsCard, StatisticCard } from '@/components/common';
@@ -15,18 +15,19 @@ import { CreateEventModal } from '@/features/events/components/CreateEventModal'
 import type { RegistrationRequest, WalkInRequest } from '@/mocks/manager';
 import {
   useAuth,
-  type AppNotificationRecord,
   type LoanDurationDays,
   type LoanRecord,
   type ManagerDashboardStats,
   type PendingReservationRequest,
 } from '@/providers/AuthProvider';
 
+import { useNotificationsQuery } from '../../notifications/hooks/useNotificationsQuery';
 import { ActiveLoans } from '../components/ActiveLoans';
 import { AddGuardianCard } from '../components/AddGuardianCard';
 import { BookSeatForMemberModal } from '../components/BookSeatForMemberModal';
 import { FileBillingRequestModal } from '../components/FileBillingRequestModal';
 import { IssueBookForMemberModal } from '../components/IssueBookForMemberModal';
+import { ManagerStatModal, type ManagerStatKey } from '../components/ManagerStatModal';
 import { NewRegistrations } from '../components/NewRegistrations';
 import { PendingPayments } from '../components/PendingPayments';
 import { PendingReservations } from '../components/PendingReservations';
@@ -54,19 +55,25 @@ export function ManagerDashboard() {
     getActiveLoans,
     returnLoan,
     sendFineReminder,
-    getMyNotifications,
     markNotificationRead,
   } = useAuth();
+  // Shared with the notification bell/panel — the pending-payment queue is just a
+  // filtered view of the same list, so it reuses that cache instead of refetching.
+  const { notifications, refetch: refetchNotifications } = useNotificationsQuery();
+  const pendingPayments = useMemo(
+    () => notifications.filter((n) => n.type === 'payment-pending' && !n.read),
+    [notifications],
+  );
   const [stats, setStats] = useState<ManagerDashboardStats | null>(null);
   const [pendingReservations, setPendingReservations] = useState<PendingReservationRequest[]>([]);
   const [activeLoans, setActiveLoans] = useState<LoanRecord[]>([]);
-  const [pendingPayments, setPendingPayments] = useState<AppNotificationRecord[]>([]);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isBookSeatOpen, setIsBookSeatOpen] = useState(false);
   const [isIssueBookOpen, setIsIssueBookOpen] = useState(false);
   const [createEventOpen, setCreateEventOpen] = useState(false);
   const [isBillingRequestOpen, setIsBillingRequestOpen] = useState(false);
   const [isRequestPermissionOpen, setIsRequestPermissionOpen] = useState(false);
+  const [activeStat, setActiveStat] = useState<ManagerStatKey | null>(null);
 
   function refreshStats() {
     getManagerDashboard()
@@ -87,19 +94,56 @@ export function ManagerDashboard() {
   }
 
   function refreshPendingPayments() {
-    getMyNotifications()
-      .then((notifications) =>
-        setPendingPayments(notifications.filter((n) => n.type === 'payment-pending' && !n.read)),
-      )
-      .catch(() => setPendingPayments([]));
+    refetchNotifications();
   }
 
-  useEffect(refreshStats, [getManagerDashboard]);
-  useEffect(refreshPendingReservations, [getPendingReservations]);
-  useEffect(refreshActiveLoans, [getActiveLoans]);
-  useEffect(refreshPendingPayments, [getMyNotifications]);
+  // refreshStats/refreshPendingReservations/refreshActiveLoans/refreshPendingPayments above
+  // stay simple (no cancellation flag) since they're also called directly from manual
+  // triggers below (modal onSaved/onBooked callbacks, action handlers) — only the
+  // mount-time effect invocation needs to guard against setting state after unmount.
+  useEffect(() => {
+    let cancelled = false;
+    getManagerDashboard()
+      .then((data) => {
+        if (!cancelled) setStats(data);
+      })
+      .catch(() => {
+        if (!cancelled) setStats(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [getManagerDashboard]);
 
-  async function handleMarkPaymentPaid(notificationId: string) {
+  useEffect(() => {
+    let cancelled = false;
+    getPendingReservations()
+      .then((data) => {
+        if (!cancelled) setPendingReservations(data);
+      })
+      .catch(() => {
+        if (!cancelled) setPendingReservations([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [getPendingReservations]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getActiveLoans()
+      .then((data) => {
+        if (!cancelled) setActiveLoans(data);
+      })
+      .catch(() => {
+        if (!cancelled) setActiveLoans([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [getActiveLoans]);
+
+  async function handleDismissPaymentRequest(notificationId: string) {
     await markNotificationRead(notificationId);
     refreshPendingPayments();
   }
@@ -122,7 +166,7 @@ export function ManagerDashboard() {
     refreshActiveLoans();
   }
 
-  const statCards = [
+  const statCards: { key: ManagerStatKey; icon: typeof Armchair; value: number | undefined }[] = [
     {
       key: 'seatsBookedToday',
       icon: Armchair,
@@ -161,6 +205,8 @@ export function ManagerDashboard() {
             icon={stat.icon}
             label={t(`managerDashboard.stats.${stat.key}`)}
             value={stat.value === undefined ? '—' : String(stat.value)}
+            onClick={stats ? () => setActiveStat(stat.key) : undefined}
+            selected={activeStat === stat.key}
           />
         ))}
       </div>
@@ -174,11 +220,15 @@ export function ManagerDashboard() {
       <ActiveLoans loans={activeLoans} onReturn={handleReturnLoan} onRemind={sendFineReminder} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <WalkInAssistance requests={NO_WALK_INS} />
+        <WalkInAssistance
+          requests={NO_WALK_INS}
+          onBookSeat={() => setIsBookSeatOpen(true)}
+          onIssueBook={() => setIsIssueBookOpen(true)}
+        />
         <NewRegistrations requests={NO_REGISTRATIONS} onRegister={() => setIsRegisterOpen(true)} />
       </div>
 
-      <PendingPayments payments={pendingPayments} onMarkPaid={handleMarkPaymentPaid} />
+      <PendingPayments payments={pendingPayments} onDismiss={handleDismissPaymentRequest} />
 
       <AddGuardianCard />
 
@@ -215,6 +265,18 @@ export function ManagerDashboard() {
             onClick: () => setIsRequestPermissionOpen(true),
           },
         ]}
+      />
+
+      <ManagerStatModal
+        statKey={activeStat}
+        onClose={() => setActiveStat(null)}
+        stats={stats}
+        activeLoans={activeLoans}
+        pendingReservations={pendingReservations}
+        pendingPaymentsCount={pendingPayments.length}
+        onBookSeat={() => setIsBookSeatOpen(true)}
+        onIssueBook={() => setIsIssueBookOpen(true)}
+        onRegisterMember={() => setIsRegisterOpen(true)}
       />
 
       <RequestPermissionModal

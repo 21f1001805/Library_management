@@ -1,66 +1,87 @@
-import { useEffect, useState } from 'react';
+import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query';
 
-import { apiGet } from '@/lib/api';
-import { useDebouncedFetch } from '@/lib/useDebouncedFetch';
+import { useDebouncedValue } from '@/lib/useDebouncedValue';
 
-export interface Book {
-  id: string;
-  title: string;
-  author: string;
-  category: string;
-  isbn: string | null;
-  description: string | null;
-  total_copies: number;
-  available: boolean;
-}
+import { fetchBookById, fetchBooks, fetchRelatedBooks, PAGE_SIZE } from '../api';
+import { bookKeys } from '../queryKeys';
+import type { Book, BookSort } from '../types';
 
-interface BookListResponse {
-  items: Book[];
-  total: number;
-}
+export { PAGE_SIZE } from '../api';
+export type { Book, BookSort } from '../types';
 
-export const PAGE_SIZE = 15;
+const SEARCH_DEBOUNCE_MS = 300;
 
-const EMPTY_BOOK_LIST: BookListResponse = { items: [], total: 0 };
+export function useBooks(search: string, category: string, sort: BookSort, page: number) {
+  // The old manual fetch debounced its whole effect (all four deps) by 300ms, not just the
+  // search box, so filter/page clicks got the same settle delay — replicated per-field here
+  // since they all update in the same render (React batches them into one debounce window).
+  const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
+  const debouncedCategory = useDebouncedValue(category, SEARCH_DEBOUNCE_MS);
+  const debouncedSort = useDebouncedValue(sort, SEARCH_DEBOUNCE_MS);
+  const debouncedPage = useDebouncedValue(page, SEARCH_DEBOUNCE_MS);
 
-export function useBooks(search: string, category: string, page: number) {
-  const { data, refresh } = useDebouncedFetch<BookListResponse>(
-    () => {
-      const params = new URLSearchParams({ page: String(page), page_size: String(PAGE_SIZE) });
-      if (search.trim()) params.set('search', search.trim());
-      if (category !== 'All') params.set('category', category);
-      return apiGet<BookListResponse>(`/books?${params}`);
-    },
-    [search, category, page],
-    EMPTY_BOOK_LIST,
-  );
+  const params = {
+    search: debouncedSearch,
+    category: debouncedCategory,
+    sort: debouncedSort,
+    page: debouncedPage,
+  };
+
+  const query = useQuery({
+    queryKey: bookKeys.list(params),
+    queryFn: () => fetchBooks(params),
+    // The old state-based version never cleared `items` between fetches, so the grid never
+    // flashed empty while paging/filtering — keepPreviousData reproduces that, not just speed.
+    placeholderData: keepPreviousData,
+    // Availability/counts shift when someone borrows or returns a book, not second-to-second;
+    // 30s cuts refetches on rapid filter/page changes without the list going noticeably stale.
+    staleTime: 30_000,
+  });
+
+  const total = query.data?.total ?? 0;
 
   return {
-    items: data.items,
-    total: data.total,
-    totalPages: Math.max(1, Math.ceil(data.total / PAGE_SIZE)),
-    refresh,
+    items: query.data?.items ?? [],
+    total,
+    totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    // query.refetch() runs immediately (no debounce) — original refresh() wasn't required to
+    // wait either, it just happened to be delayed by the same 300ms debounce as every other
+    // change since it shared that effect; nothing depends on that delay.
+    refresh: query.refetch,
+    isLoading: query.isPending,
+    isFetching: query.isFetching,
+    error: query.error,
   };
 }
 
 /** Resolves full book details for a set of ids (e.g. the wishlist), independent of any list/pagination. */
 export function useBooksByIds(ids: string[]) {
-  const [books, setBooks] = useState<Book[]>([]);
-  const idsKey = ids.join(',');
+  const results = useQueries({
+    queries: ids.map((id) => ({
+      queryKey: bookKeys.detail(id),
+      queryFn: () => fetchBookById(id),
+      // Shares its cache entry with useBookQuery below — opening a wishlisted book's details
+      // page (or vice versa) reuses this fetch instead of firing a duplicate one.
+      staleTime: 60_000,
+    })),
+  });
+  return results.filter((result) => result.data).map((result) => result.data as Book);
+}
 
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all(ids.map((id) => apiGet<Book>(`/books/${id}`).catch(() => null))).then(
-      (results) => {
-        if (!cancelled) setBooks(results.filter((book): book is Book => book !== null));
-      },
-    );
+export function useBookQuery(bookId: string | undefined) {
+  return useQuery({
+    queryKey: bookKeys.detail(bookId ?? ''),
+    queryFn: () => fetchBookById(bookId as string),
+    enabled: Boolean(bookId),
+    staleTime: 60_000,
+  });
+}
 
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idsKey]);
-
-  return books;
+export function useRelatedBooksQuery(bookId: string | undefined) {
+  return useQuery({
+    queryKey: bookKeys.related(bookId ?? ''),
+    queryFn: () => fetchRelatedBooks(bookId as string),
+    enabled: Boolean(bookId),
+    staleTime: 60_000,
+  });
 }

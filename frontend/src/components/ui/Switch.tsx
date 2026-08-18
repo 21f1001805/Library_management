@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 import { cn } from '@/lib/cn';
 
 export interface SwitchProps {
@@ -10,25 +12,30 @@ export interface SwitchProps {
 }
 
 export function Switch({ checked, onCheckedChange, disabled, label, id, className }: SwitchProps) {
+  const generatedId = useId();
+  const switchId = id ?? generatedId;
+  const labelId = label ? `${switchId}-label` : undefined;
+
   return (
-    <label
-      htmlFor={id}
+    <span
       className={cn(
         'inline-flex items-center gap-2 text-sm text-foreground',
         disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
       )}
     >
       <button
-        id={id}
+        id={switchId}
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-labelledby={labelId}
+        aria-label={label ? undefined : 'Toggle'}
         disabled={disabled}
         onClick={() => onCheckedChange(!checked)}
         className={cn(
           'relative h-6 w-11 shrink-0 rounded-full transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-          checked ? 'bg-primary' : 'bg-border-muted',
+          checked ? 'bg-primary-gradient' : 'bg-border-muted',
           className,
         )}
       >
@@ -39,7 +46,11 @@ export function Switch({ checked, onCheckedChange, disabled, label, id, classNam
           )}
         />
       </button>
-      {label}
-    </label>
+      {label && (
+        <span id={labelId} onClick={disabled ? undefined : () => onCheckedChange(!checked)}>
+          {label}
+        </span>
+      )}
+    </span>
   );
 }

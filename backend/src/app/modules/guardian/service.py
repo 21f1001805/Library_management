@@ -1,16 +1,17 @@
-from datetime import timedelta
-
 from fastapi import HTTPException, status
 from prisma.errors import ForeignKeyViolationError, UniqueViolationError
 from prisma.models import User
 
+from app.core.constants import Role
 from app.modules.guardian import repository
 from app.modules.guardian.schemas import GuardianChildOut, GuardianLinkCreate
 from app.modules.loans import service as loans_service
-from app.modules.members.repository import list_reading_progress
+from app.modules.members import repository as members_repository
 from app.modules.members.schemas import ReadingProgressOut
 from app.modules.notifications import service as notifications_service
 from app.modules.payments import repository as payments_repository
+from app.modules.payments import service as payments_service
+from app.modules.payments.schemas import PaymentOut
 from app.modules.pricing_plans import repository as pricing_plans_repository
 from app.modules.seat_booking import service as seat_booking_service
 from app.modules.seat_booking.schemas import (
@@ -23,10 +24,36 @@ RENEWAL_PLAN_CODE = "1m"
 
 
 async def link_child(payload: GuardianLinkCreate) -> None:
-    try:
-        await repository.create_link(
-            guardian_id=payload.guardian_id, member_id=payload.member_id
+    guardian = await members_repository.find_by_id(payload.guardian_id)
+    child = await members_repository.find_by_id(payload.member_id)
+    if guardian is None or child is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Guardian or member not found",
         )
+    if (
+        guardian.role is None
+        or guardian.role.name != Role.GUARDIAN
+        or not guardian.isActive
+        or guardian.deletedAt is not None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Guardian must be an active guardian account",
+        )
+    if (
+        child.role is None
+        or child.role.name != Role.MEMBER
+        or not child.isActive
+        or child.deletedAt is not None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Child must be an active member account",
+        )
+
+    try:
+        await repository.create_link(guardian_id=payload.guardian_id, member_id=payload.member_id)
     except UniqueViolationError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -50,7 +77,7 @@ async def _find_child_or_403(guardian_id: str, child_id: str) -> User:
 
 
 async def _child_out(child: User) -> GuardianChildOut:
-    child_progress = await list_reading_progress(child.id)
+    child_progress = await members_repository.list_reading_progress(child.id)
     progress = [ReadingProgressOut.from_prisma(p) for p in child_progress]
 
     loans = await loans_service.list_my_loans(child.id)
@@ -58,12 +85,8 @@ async def _child_out(child: User) -> GuardianChildOut:
     outstanding_fine = sum(loan.fine_amount for loan in unpaid)
     worst_loan = max(unpaid, key=lambda loan: loan.days_late, default=None)
 
-    membership_payment = await payments_repository.find_latest_membership_payment(child.id)
-    subscription_expires_on = (
-        membership_payment.createdAt + timedelta(days=30 * membership_payment.planMonths)
-        if membership_payment
-        else None
-    )
+    membership_payments = await payments_repository.list_membership_payments(child.id)
+    subscription_expires_on = payments_service.calculate_membership_expiry(membership_payments)
 
     return GuardianChildOut(
         id=child.id,
@@ -83,6 +106,16 @@ async def list_my_children(guardian_id: str) -> list[GuardianChildOut]:
     return [await _child_out(child) for child in children]
 
 
+async def list_child_payments(guardian_id: str, child_id: str) -> list[PaymentOut]:
+    child = await _find_child_or_403(guardian_id, child_id)
+    # This view isn't paginated itself (a guardian has few children, each with a short
+    # history) — page_size just mirrors the old hard cap so behavior is unchanged.
+    payments, _total = await payments_repository.list_payments_for_user(
+        child.id, page=1, page_size=200
+    )
+    return [PaymentOut.from_prisma(payment) for payment in payments]
+
+
 async def pay_child_fines(guardian_id: str, child_id: str) -> None:
     child = await _find_child_or_403(guardian_id, child_id)
 
@@ -92,16 +125,13 @@ async def pay_child_fines(guardian_id: str, child_id: str) -> None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "No outstanding fines for this child")
 
     total = sum(loan.fine_amount for loan in unpaid)
-    for loan in unpaid:
-        await loans_service.mark_fine_paid(loan.id)
-
-    await payments_repository.create_payment(
-        user_id=child.id, amount=total, label="Fines cleared by guardian"
-    )
-    await notifications_service.create_notification(
-        child.id,
-        "payment-received",
-        f"Your guardian paid ₹{total} to clear your outstanding fines.",
+    # This endpoint is a request to pay at the library, not proof that money moved.
+    # Only a verified gateway callback or staff cash-reconciliation flow may settle a
+    # loan/create a successful Payment row.
+    await notifications_service.notify_roles(
+        [Role.MANAGER],
+        "payment-pending",
+        f"A guardian wants to pay ₹{total} in cash to clear fines for {child.fullName}.",
     )
 
 
@@ -112,16 +142,12 @@ async def renew_child_subscription(guardian_id: str, child_id: str) -> None:
     if plan is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "No renewal plan configured")
 
-    await payments_repository.create_payment(
-        user_id=child.id,
-        amount=plan.price,
-        label=f"{plan.months} Month — ₹{plan.price}",
-        plan_months=plan.months,
-    )
-    await notifications_service.create_notification(
-        child.id,
-        "payment-received",
-        f"Your guardian renewed your membership for {plan.months} month(s).",
+    # Preserve the 204 request contract, but do not grant membership before payment.
+    await notifications_service.notify_roles(
+        [Role.MANAGER],
+        "payment-pending",
+        f"A guardian wants to pay ₹{plan.price} in cash for a {plan.months}-month "
+        f"membership renewal for {child.fullName}.",
     )
 
 

@@ -18,6 +18,7 @@ import { AccessControl } from '../components/AccessControl';
 import { BookRecords } from '../components/BookRecords';
 import { FeeStatus } from '../components/FeeStatus';
 import { IssueResolution } from '../components/IssueResolution';
+import { ITHeadStatModal, type ITHeadStatKey } from '../components/ITHeadStatModal';
 import { LateReturnFines } from '../components/LateReturnFines';
 import { LogBookChangeModal } from '../components/LogBookChangeModal';
 import { ResolveTicketModal } from '../components/ResolveTicketModal';
@@ -43,6 +44,7 @@ export function ITHeadDashboardPage() {
   const [bookRecords, setBookRecords] = useState<BookRecordEntry[]>([]);
   const [resolvingTicket, setResolvingTicket] = useState<SupportTicketRecord | null>(null);
   const [logBookChangeOpen, setLogBookChangeOpen] = useState(false);
+  const [activeStat, setActiveStat] = useState<ITHeadStatKey | null>(null);
 
   function refreshDashboard() {
     getITHeadDashboard()
@@ -97,26 +99,36 @@ export function ITHeadDashboardPage() {
             icon={Users}
             label={t('itHead.stats.activeMembers')}
             value={String(stats.active_members)}
+            onClick={() => setActiveStat('activeMembers')}
+            selected={activeStat === 'activeMembers'}
           />
           <StatisticCard
             icon={AlertCircle}
             label={t('itHead.stats.openIssues')}
             value={String(stats.open_issues)}
+            onClick={() => setActiveStat('openIssues')}
+            selected={activeStat === 'openIssues'}
           />
           <StatisticCard
             icon={KeyRound}
             label={t('itHead.stats.pendingPermissions')}
             value={String(stats.pending_permissions)}
+            onClick={() => setActiveStat('pendingPermissions')}
+            selected={activeStat === 'pendingPermissions'}
           />
           <StatisticCard
             icon={IndianRupee}
             label={t('itHead.stats.feesOutstanding')}
             value={formatCurrency(stats.fees_outstanding)}
+            onClick={() => setActiveStat('feesOutstanding')}
+            selected={activeStat === 'feesOutstanding'}
           />
           <StatisticCard
             icon={Clock}
             label={t('itHead.stats.lateFinesOutstanding')}
             value={formatCurrency(stats.late_fines_outstanding)}
+            onClick={() => setActiveStat('lateFinesOutstanding')}
+            selected={activeStat === 'lateFinesOutstanding'}
           />
         </div>
       )}
@@ -169,6 +181,23 @@ export function ITHeadDashboardPage() {
         open={logBookChangeOpen}
         onClose={() => setLogBookChangeOpen(false)}
         onLogged={refreshBookRecords}
+      />
+
+      <ITHeadStatModal
+        statKey={activeStat}
+        onClose={() => setActiveStat(null)}
+        members={members}
+        permissionRequests={permissionRequests}
+        tickets={tickets}
+        fines={fines}
+        feeEntries={dashboard?.fee_status ?? []}
+        onResolveTicket={setResolvingTicket}
+        onChanged={() => {
+          refreshAccessControl();
+          refreshTickets();
+          refreshFines();
+          refreshDashboard();
+        }}
       />
     </div>
   );
