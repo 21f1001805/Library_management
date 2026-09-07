@@ -1207,6 +1207,11 @@
         "identifyImageTooLarge": "छवि 5 MB या उससे छोटी होनी चाहिए।",
         "identifyRemoveImage": "छवि हटाएं"
       },
+      "editModal": {
+        "title": "पुस्तक संपादित करें",
+        "submit": "बदलाव सहेजें",
+        "loadError": "पुस्तक विवरण लोड नहीं हो सका"
+      },
       "pageDescription": "जाँचें कि अभी शेल्फ़ पर कौन-सी पुस्तकें हैं और चेक-आउट की गई प्रति कब वापस आनी है।",
       "pageTitle": "पुस्तकें",
       "searchPlaceholder": "शीर्षक या लेखक से खोजें",
@@ -1218,7 +1223,20 @@
         "category": "श्रेणी",
         "copies": "प्रतियाँ",
         "status": "स्थिति",
-        "title": "पुस्तक"
+        "title": "पुस्तक",
+        "actions": "कार्रवाई"
+      },
+      "editButton": "पुस्तक संपादित करें",
+      "deleteButton": "पुस्तक हटाएं",
+      "editSuccess": "पुस्तक अपडेट की गई",
+      "editError": "पुस्तक अपडेट नहीं हो सकी",
+      "deleteSuccess": "\"{{title}}\" हटा दी गई",
+      "deleteError": "पुस्तक हटाई नहीं जा सकी",
+      "deleteConfirm": {
+        "title": "इस पुस्तक को हटाएं?",
+        "description": "यह पूर्ववत नहीं किया जा सकता। \"{{title}}\" कैटलॉग से स्थायी रूप से हटा दी जाएगी।",
+        "confirmLabel": "हटाएं",
+        "cancelLabel": "रद्द करें"
       }
     },
     "borrowHistory": {

@@ -1207,6 +1207,11 @@
         "identifyImageTooLarge": "ਤਸਵੀਰ 5 MB ਜਾਂ ਇਸ ਤੋਂ ਛੋਟੀ ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ।",
         "identifyRemoveImage": "ਤਸਵੀਰ ਹਟਾਓ"
       },
+      "editModal": {
+        "title": "ਕਿਤਾਬ ਸੰਪਾਦਿਤ ਕਰੋ",
+        "submit": "ਬਦਲਾਅ ਸੇਵ ਕਰੋ",
+        "loadError": "ਕਿਤਾਬ ਦੇ ਵੇਰਵੇ ਲੋਡ ਨਹੀਂ ਹੋ ਸਕੇ"
+      },
       "pageDescription": "ਜਾਂਚੋ ਕਿ ਹੁਣੇ ਸ਼ੈਲਫ਼ 'ਤੇ ਕਿਹੜੀਆਂ ਕਿਤਾਬਾਂ ਹਨ ਅਤੇ ਚੈੱਕ-ਆਊਟ ਕੀਤੀ ਕਾਪੀ ਕਦੋਂ ਵਾਪਸ ਆਉਣੀ ਹੈ।",
       "pageTitle": "ਕਿਤਾਬਾਂ",
       "searchPlaceholder": "ਸਿਰਲੇਖ ਜਾਂ ਲੇਖਕ ਦੁਆਰਾ ਖੋਜੋ",
@@ -1218,7 +1223,20 @@
         "category": "ਸ਼੍ਰੇਣੀ",
         "copies": "ਕਾਪੀਆਂ",
         "status": "ਸਥਿਤੀ",
-        "title": "ਕਿਤਾਬ"
+        "title": "ਕਿਤਾਬ",
+        "actions": "ਕਾਰਵਾਈਆਂ"
+      },
+      "editButton": "ਕਿਤਾਬ ਸੰਪਾਦਿਤ ਕਰੋ",
+      "deleteButton": "ਕਿਤਾਬ ਹਟਾਓ",
+      "editSuccess": "ਕਿਤਾਬ ਅੱਪਡੇਟ ਕੀਤੀ ਗਈ",
+      "editError": "ਕਿਤਾਬ ਅੱਪਡੇਟ ਨਹੀਂ ਹੋ ਸਕੀ",
+      "deleteSuccess": "\"{{title}}\" ਹਟਾ ਦਿੱਤੀ ਗਈ",
+      "deleteError": "ਕਿਤਾਬ ਹਟਾਈ ਨਹੀਂ ਜਾ ਸਕੀ",
+      "deleteConfirm": {
+        "title": "ਇਹ ਕਿਤਾਬ ਹਟਾਉਣੀ ਹੈ?",
+        "description": "ਇਹ ਵਾਪਸ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਦਾ। \"{{title}}\" ਨੂੰ ਕੈਟਲਾਗ ਤੋਂ ਸਥਾਈ ਤੌਰ 'ਤੇ ਹਟਾ ਦਿੱਤਾ ਜਾਵੇਗਾ।",
+        "confirmLabel": "ਹਟਾਓ",
+        "cancelLabel": "ਰੱਦ ਕਰੋ"
       }
     },
     "borrowHistory": {

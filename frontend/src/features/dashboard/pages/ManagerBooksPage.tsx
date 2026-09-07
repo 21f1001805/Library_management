@@ -1,12 +1,14 @@
-import { BookX, Plus } from 'lucide-react';
+import { BookX, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 import { PageHeader, Pagination, TableToolbar } from '@/components/common';
 import { NoResults } from '@/components/feedback';
 import {
   Badge,
   Button,
+  ConfirmDialog,
   SearchBar,
   Table,
   TableBody,
@@ -16,9 +18,24 @@ import {
   TableRow,
 } from '@/components/ui';
 import { AddBookModal, type BookDraft } from '@/features/dashboard/components/AddBookModal';
+import { fetchBookById } from '@/features/books/api';
 import { formatDate } from '@/lib/format';
+import { getErrorMessage } from '@/lib/api';
 import { useDebouncedFetch } from '@/lib/useDebouncedFetch';
 import { useAuth, type ManagerBookAvailability } from '@/providers/AuthProvider';
+
+const EMPTY_EDIT_DRAFT: BookDraft = {
+  title: '',
+  author: '',
+  category: '',
+  description: '',
+  isbn: '',
+  publisher: '',
+  publishedYear: '',
+  language: '',
+  coverImageUrl: '',
+  totalCopies: '0',
+};
 
 const PAGE_SIZE = 20;
 const EMPTY_BOOK_LIST = { items: [] as ManagerBookAvailability[], total: 0 };
@@ -78,7 +95,7 @@ function StatusCell({ book }: { book: ManagerBookAvailability }) {
 // copies tied up by an online reservation, so that case shows "unknown").
 export function ManagerBooksPage() {
   const { t } = useTranslation();
-  const { role, getManagerBooks, createBook } = useAuth();
+  const { role, getManagerBooks, createBook, updateBook, deleteBook } = useAuth();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>(CATEGORIES[0]);
   const [status, setStatus] = useState<string>(STATUSES[0]);
@@ -87,10 +104,18 @@ export function ManagerBooksPage() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const [editingBookId, setEditingBookId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<BookDraft>(EMPTY_EDIT_DRAFT);
+  const [loadingEditId, setLoadingEditId] = useState<string | null>(null);
+  const [deletingBook, setDeletingBook] = useState<ManagerBookAvailability | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Mirrors the backend's manage_books role gate (ADMIN, LIBRARIAN, MANAGER) — the
   // API enforces this either way, but there's no point showing the button to a role
   // that can only ever get a 403 back from it.
   const canAddBooks = role === 'admin' || role === 'librarian' || role === 'manager';
+  // Mirrors the backend's delete_books role gate (ADMIN only) — stricter than edit/add.
+  const canDeleteBooks = role === 'admin';
 
   const { data } = useDebouncedFetch(
     () => getManagerBooks({ search, category, status, sort, page, page_size: PAGE_SIZE }),
@@ -114,6 +139,68 @@ export function ManagerBooksPage() {
     });
     setIsAddOpen(false);
     setRefreshKey((key) => key + 1);
+  }
+
+  async function handleEditClick(book: ManagerBookAvailability) {
+    setLoadingEditId(book.id);
+    try {
+      const full = await fetchBookById(book.id);
+      setEditDraft({
+        title: full.title,
+        author: full.author,
+        category: full.category,
+        description: full.description ?? '',
+        isbn: full.isbn ?? '',
+        publisher: full.publisher ?? '',
+        publishedYear: full.published_year ? String(full.published_year) : '',
+        language: full.language ?? '',
+        coverImageUrl: full.cover_image_url ?? '',
+        totalCopies: String(full.total_copies),
+      });
+      setEditingBookId(book.id);
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('managerDashboard.books.editModal.loadError')));
+    } finally {
+      setLoadingEditId(null);
+    }
+  }
+
+  async function handleEditSubmit(draft: BookDraft) {
+    if (!editingBookId) return;
+    try {
+      await updateBook(editingBookId, {
+        title: draft.title.trim(),
+        author: draft.author.trim(),
+        category: draft.category,
+        description: draft.description.trim() || undefined,
+        isbn: draft.isbn.trim() || undefined,
+        publisher: draft.publisher.trim() || undefined,
+        published_year: draft.publishedYear ? Number(draft.publishedYear) : undefined,
+        language: draft.language.trim() || undefined,
+        cover_image_url: draft.coverImageUrl || undefined,
+        total_copies: draft.totalCopies ? Number(draft.totalCopies) : 0,
+      });
+      toast.success(t('managerDashboard.books.editSuccess'));
+      setEditingBookId(null);
+      setRefreshKey((key) => key + 1);
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('managerDashboard.books.editError')));
+    }
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deletingBook) return;
+    setIsDeleting(true);
+    try {
+      await deleteBook(deletingBook.id);
+      toast.success(t('managerDashboard.books.deleteSuccess', { title: deletingBook.title }));
+      setDeletingBook(null);
+      setRefreshKey((key) => key + 1);
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('managerDashboard.books.deleteError')));
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   function updateSearch(value: string) {
@@ -167,6 +254,34 @@ export function ManagerBooksPage() {
           onClose={() => setIsAddOpen(false)}
           onSubmit={handleAddBook}
           categories={CATEGORIES.filter((value) => value !== 'all')}
+        />
+      )}
+
+      {canAddBooks && (
+        <AddBookModal
+          open={editingBookId !== null}
+          onClose={() => setEditingBookId(null)}
+          onSubmit={handleEditSubmit}
+          categories={CATEGORIES.filter((value) => value !== 'all')}
+          initialValues={editDraft}
+          title={t('managerDashboard.books.editModal.title')}
+          submitLabel={t('managerDashboard.books.editModal.submit')}
+        />
+      )}
+
+      {canDeleteBooks && (
+        <ConfirmDialog
+          open={deletingBook !== null}
+          title={t('managerDashboard.books.deleteConfirm.title')}
+          description={t('managerDashboard.books.deleteConfirm.description', {
+            title: deletingBook?.title ?? '',
+          })}
+          confirmLabel={t('managerDashboard.books.deleteConfirm.confirmLabel')}
+          cancelLabel={t('managerDashboard.books.deleteConfirm.cancelLabel')}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeletingBook(null)}
+          isLoading={isDeleting}
+          destructive
         />
       )}
 
@@ -233,6 +348,11 @@ export function ManagerBooksPage() {
                   <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.books.table.category')}</TableHead>
                   <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.books.table.copies')}</TableHead>
                   <TableHead className="whitespace-nowrap px-3.5 py-2.5 text-right">{t('managerDashboard.books.table.status')}</TableHead>
+                  {(canAddBooks || canDeleteBooks) && (
+                    <TableHead className="whitespace-nowrap px-3.5 py-2.5 text-right">
+                      {t('managerDashboard.books.table.actions')}
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -252,6 +372,33 @@ export function ManagerBooksPage() {
                     <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-right">
                       <StatusCell book={book} />
                     </TableCell>
+                    {(canAddBooks || canDeleteBooks) && (
+                      <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {canAddBooks && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              aria-label={t('managerDashboard.books.editButton')}
+                              isLoading={loadingEditId === book.id}
+                              onClick={() => void handleEditClick(book)}
+                            >
+                              <Pencil className="size-3.5" />
+                            </Button>
+                          )}
+                          {canDeleteBooks && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              aria-label={t('managerDashboard.books.deleteButton')}
+                              onClick={() => setDeletingBook(book)}
+                            >
+                              <Trash2 className="size-3.5 text-danger" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

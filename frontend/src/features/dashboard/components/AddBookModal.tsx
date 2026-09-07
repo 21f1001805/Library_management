@@ -23,6 +23,10 @@ export interface AddBookModalProps {
   onClose: () => void;
   onSubmit: (draft: BookDraft) => void | Promise<void>;
   categories: string[];
+  /** Pre-fills the form for editing an existing book instead of creating a new one. */
+  initialValues?: BookDraft;
+  title?: string;
+  submitLabel?: string;
 }
 
 const EMPTY_DRAFT: BookDraft = {
@@ -51,10 +55,18 @@ function readAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export function AddBookModal({ open, onClose, onSubmit, categories }: AddBookModalProps) {
+export function AddBookModal({
+  open,
+  onClose,
+  onSubmit,
+  categories,
+  initialValues,
+  title,
+  submitLabel,
+}: AddBookModalProps) {
   const { t } = useTranslation();
   const { suggestBookDescription, identifyBookFromCover } = useAuth();
-  const [draft, setDraft] = useState<BookDraft>(EMPTY_DRAFT);
+  const [draft, setDraft] = useState<BookDraft>(initialValues ?? EMPTY_DRAFT);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
@@ -67,13 +79,13 @@ export function AddBookModal({ open, onClose, onSubmit, categories }: AddBookMod
     matched: boolean;
   } | null>(null);
 
-  // Re-sync to a blank draft whenever the modal transitions to open, same pattern as
-  // CreatePostModal — this is a "create", never an "edit", so there's no initialValues case.
+  // Re-sync the draft whenever the modal transitions to open — to a blank draft when
+  // creating, or to the book's current values when initialValues is passed (editing).
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setDraft(EMPTY_DRAFT);
+      setDraft(initialValues ?? EMPTY_DRAFT);
       setIsSubmitting(false);
       setSuggestError(null);
       setIsIdentifying(false);
@@ -197,7 +209,7 @@ export function AddBookModal({ open, onClose, onSubmit, categories }: AddBookMod
     draft.title.trim().length > 0 && draft.author.trim().length > 0 && draft.category.length > 0;
 
   return (
-    <Modal open={open} onClose={onClose} title={t('managerDashboard.books.addModal.title')}>
+    <Modal open={open} onClose={onClose} title={title ?? t('managerDashboard.books.addModal.title')}>
       <form onSubmit={handleSubmit} onPaste={handlePaste} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2 rounded-lg border border-dashed border-border p-3">
           <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
@@ -371,7 +383,7 @@ export function AddBookModal({ open, onClose, onSubmit, categories }: AddBookMod
         />
 
         <Button type="submit" disabled={!canSubmit} isLoading={isSubmitting}>
-          {t('managerDashboard.books.addModal.submit')}
+          {submitLabel ?? t('managerDashboard.books.addModal.submit')}
         </Button>
       </form>
     </Modal>

@@ -1144,6 +1144,8 @@ interface AuthContextValue extends AuthState {
   unlinkMyGuardian: () => Promise<void>;
   getManagerBooks: (query?: ManagerBookQuery) => Promise<ManagerBookListResponse>;
   createBook: (payload: BookDraftPayload) => Promise<void>;
+  updateBook: (bookId: string, payload: BookDraftPayload) => Promise<void>;
+  deleteBook: (bookId: string) => Promise<void>;
   suggestBookDescription: (payload: SuggestBookDescriptionPayload) => Promise<string>;
   identifyBookFromCover: (image: string) => Promise<IdentifiedBookFields>;
   getPendingReservations: () => Promise<PendingReservationRequest[]>;
@@ -2036,6 +2038,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await apiPost('/books', payload, stateRef.current.token);
   }
 
+  async function updateBook(bookId: string, payload: BookDraftPayload): Promise<void> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    await apiPut(`/books/${bookId}`, payload, stateRef.current.token);
+  }
+
+  async function deleteBook(bookId: string): Promise<void> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    await apiDelete(`/books/${bookId}`, stateRef.current.token);
+  }
+
   async function suggestBookDescription(payload: SuggestBookDescriptionPayload): Promise<string> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
     const data = await apiPost<{ description: string }>(
@@ -2256,6 +2268,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       getBookRecords,
       createBookRecord,
       createBook,
+      updateBook,
+      deleteBook,
       suggestBookDescription,
       identifyBookFromCover,
       checkInMember,

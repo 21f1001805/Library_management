@@ -1363,7 +1363,20 @@
         "title": "Book",
         "category": "Category",
         "copies": "Copies",
-        "status": "Status"
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "editButton": "Edit book",
+      "deleteButton": "Delete book",
+      "editSuccess": "Book updated",
+      "editError": "Couldn't update book",
+      "deleteSuccess": "\"{{title}}\" deleted",
+      "deleteError": "Couldn't delete book",
+      "deleteConfirm": {
+        "title": "Delete this book?",
+        "description": "This can't be undone. \"{{title}}\" will be permanently removed from the catalog.",
+        "confirmLabel": "Delete",
+        "cancelLabel": "Cancel"
       },
       "copiesAvailable": "{{available}} of {{total}} available",
       "status": {
@@ -1406,6 +1419,11 @@
         "identifyInvalidImage": "Please choose an image file.",
         "identifyImageTooLarge": "Image must be 5 MB or smaller.",
         "identifyRemoveImage": "Remove image"
+      },
+      "editModal": {
+        "title": "Edit Book",
+        "submit": "Save Changes",
+        "loadError": "Couldn't load book details"
       }
     },
     "borrowHistory": {

@@ -8,6 +8,9 @@ export interface Book {
   genre: string | null;
   isbn: string | null;
   description: string | null;
+  publisher: string | null;
+  published_year: number | null;
+  language: string | null;
   total_copies: number;
   shelf_location: string | null;
   cover_image_url: string | null;
