@@ -2,10 +2,11 @@ from collections.abc import Callable, Coroutine
 from typing import Annotated, Any
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from prisma.models import User
 
+from app.core.cookies import ACCESS_COOKIE
 from app.core.security import decode_token
 from app.db.prisma import prisma
 
@@ -18,14 +19,26 @@ CredentialsError = HTTPException(
 )
 
 
+def _bearer_token(
+    request: Request, credentials: HTTPAuthorizationCredentials | None
+) -> str | None:
+    # Authorization header first (tools/tests/Postman), the httpOnly access_token cookie
+    # otherwise (the browser sends it automatically — see core/cookies.py).
+    if credentials is not None:
+        return credentials.credentials
+    return request.cookies.get(ACCESS_COOKIE)
+
+
 async def get_current_user(
+    request: Request,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
 ) -> User:
-    if credentials is None:
+    token = _bearer_token(request, credentials)
+    if token is None:
         raise CredentialsError
 
     try:
-        payload = decode_token(credentials.credentials)
+        payload = decode_token(token)
     except jwt.InvalidTokenError as exc:
         raise CredentialsError from exc
 
@@ -44,12 +57,14 @@ async def get_current_user(
 
 
 async def get_optional_user(
+    request: Request,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
 ) -> User | None:
-    if credentials is None:
+    token = _bearer_token(request, credentials)
+    if token is None:
         return None
     try:
-        payload = decode_token(credentials.credentials)
+        payload = decode_token(token)
     except jwt.InvalidTokenError:
         return None
     if payload.get("type") != "access":

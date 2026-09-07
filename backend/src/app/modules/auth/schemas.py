@@ -32,7 +32,10 @@ class UpdateProfileRequest(BaseModel):
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str
+    # Optional now that the refresh token is primarily read from the httpOnly cookie (see
+    # core/cookies.py) — still accepted in the body for callers that don't use cookies
+    # (tools/tests) or during the Vite-app coexistence window.
+    refresh_token: str | None = None
 
 
 class ForgotPasswordRequest(BaseModel):

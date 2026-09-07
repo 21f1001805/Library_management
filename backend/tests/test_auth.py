@@ -310,6 +310,10 @@ async def test_refresh_rejects_an_access_token(client):
     )
     access_token = register_response.json()["access_token"]
 
+    # register() above also set a real refresh_token cookie on this client, which the
+    # endpoint now prefers over the body — clear it so this actually exercises the
+    # body-supplied (wrong-type) token instead of silently succeeding via the cookie.
+    client.cookies.clear()
     response = await client.post("/api/v1/auth/refresh", json={"refresh_token": access_token})
 
     assert response.status_code == 401

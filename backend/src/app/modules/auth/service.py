@@ -22,7 +22,6 @@ from app.modules.auth.schemas import (
     ForgotPasswordRequest,
     GoogleLoginRequest,
     LoginRequest,
-    RefreshRequest,
     RegisterRequest,
     ResetPasswordRequest,
     TokenResponse,
@@ -175,9 +174,9 @@ async def update_profile(user: User, payload: UpdateProfileRequest) -> TokenResp
     return _issue_token(updated)
 
 
-async def refresh(payload: RefreshRequest) -> TokenResponse:
+async def refresh(refresh_token: str) -> TokenResponse:
     try:
-        claims = decode_token(payload.refresh_token)
+        claims = decode_token(refresh_token)
     except jwt.InvalidTokenError as exc:
         raise InvalidRefreshToken from exc
 

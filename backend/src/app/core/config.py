@@ -29,7 +29,14 @@ class Settings(BaseSettings):
         default="postgresql://app:app@localhost:5432/app",
         validation_alias="DATABASE_URL",
     )
-    backend_cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    # 5173/5180 are the Vite app (kept during the Next.js migration's coexistence window);
+    # 3000 is the Next.js dev server.
+    backend_cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
     jwt_secret: str = Field(default=DEFAULT_JWT_SECRET, validation_alias="JWT_SECRET")
     jwt_algorithm: str = "HS256"
     google_client_id: str = Field(default="", validation_alias="GOOGLE_CLIENT_ID")
