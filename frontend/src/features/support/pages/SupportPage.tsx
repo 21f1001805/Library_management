@@ -96,34 +96,33 @@ function RaiserView({ role }: { role: 'member' | 'guardian' }) {
       <TableToolbar
         filters={[
           {
-            label: 'Status',
+            label: t('support.filters.statusLabel'),
             value: statusFilter,
             onChange: (value) => {
               setStatusFilter(value as SupportTicketStatus | 'all');
               setPage(1);
             },
             options: [
-              { value: 'all', label: 'All' },
-              { value: 'open', label: 'Open' },
-              { value: 'resolved', label: 'Resolved' },
-              { value: 'closed', label: 'Closed' },
+              { value: 'all', label: t('support.staff.filters.all') },
+              { value: 'open', label: t('support.staff.filters.open') },
+              { value: 'resolved', label: t('support.staff.filters.resolved') },
+              { value: 'closed', label: t('support.staff.filters.closed') },
             ],
           },
         ]}
         sort={{
-          label: 'Sort',
+          label: t('common.actions.sort'),
           value: sort,
           onChange: (value) => {
             setSort(value as 'newest' | 'oldest');
             setPage(1);
           },
           options: [
-            { value: 'newest', label: 'Newest' },
-            { value: 'oldest', label: 'Oldest' },
+            { value: 'newest', label: t('support.sort.newest') },
+            { value: 'oldest', label: t('support.sort.oldest') },
           ],
         }}
         onReset={resetFilters}
-        resetLabel="Reset"
       />
 
       <div className="flex flex-col gap-3">

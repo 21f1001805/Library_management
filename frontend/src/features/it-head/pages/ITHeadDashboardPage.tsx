@@ -1,4 +1,4 @@
-import { AlertCircle, Clock, IndianRupee, KeyRound, UploadCloud, Users } from 'lucide-react';
+import { AlertCircle, IndianRupee, KeyRound, UploadCloud, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -6,6 +6,7 @@ import { PageHeader, QuickActionsCard, StatisticCard } from '@/components/common
 import { formatCurrency } from '@/lib/format';
 import {
   useAuth,
+  type AdminTrend,
   type BookRecordEntry,
   type ITHeadDashboard,
   type LoanRecord,
@@ -14,16 +15,29 @@ import {
   type SupportTicketRecord,
 } from '@/providers/AuthProvider';
 
+import { AccessByRoleCard } from '../components/AccessByRoleCard';
 import { AccessControl } from '../components/AccessControl';
 import { BookRecords } from '../components/BookRecords';
+import { FeeCollectionsChart } from '../components/FeeCollectionsChart';
 import { FeeStatus } from '../components/FeeStatus';
+import { FeeStatusSummaryCard } from '../components/FeeStatusSummaryCard';
 import { IssueResolution } from '../components/IssueResolution';
+import { IssueResolutionChart } from '../components/IssueResolutionChart';
+import { ITHeadAlertsRow } from '../components/ITHeadAlertsRow';
 import { ITHeadStatModal, type ITHeadStatKey } from '../components/ITHeadStatModal';
 import { LateReturnFines } from '../components/LateReturnFines';
 import { LogBookChangeModal } from '../components/LogBookChangeModal';
 import { ResolveTicketModal } from '../components/ResolveTicketModal';
+import { SystemActivityCard } from '../components/SystemActivityCard';
 
 const STAFF_ROLES = new Set(['member', 'manager']);
+
+// More owed is bad news — same "up = negative" override the admin dashboard applies to
+// its own expenses trend, since AdminTrend/_trend() only knows direction, not whether
+// that direction is good or bad for this particular metric.
+function owedSentiment(trend: AdminTrend): 'positive' | 'negative' {
+  return trend.direction === 'up' ? 'negative' : 'positive';
+}
 
 export function ITHeadDashboardPage() {
   const { t } = useTranslation();
@@ -94,11 +108,12 @@ export function ITHeadDashboardPage() {
       <h2 className="sr-only">{t('common.dashboardSectionsHeading')}</h2>
 
       {stats && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatisticCard
             icon={Users}
             label={t('itHead.stats.activeMembers')}
             value={String(stats.active_members)}
+            trend={stats.active_members_trend}
             onClick={() => setActiveStat('activeMembers')}
             selected={activeStat === 'activeMembers'}
           />
@@ -106,6 +121,21 @@ export function ITHeadDashboardPage() {
             icon={AlertCircle}
             label={t('itHead.stats.openIssues')}
             value={String(stats.open_issues)}
+            trend={{
+              direction: stats.open_issues_delta >= 0 ? 'up' : 'down',
+              percent: Math.abs(stats.open_issues_delta),
+              sentiment:
+                stats.open_issues_delta === 0
+                  ? 'neutral'
+                  : stats.open_issues_delta > 0
+                    ? 'negative'
+                    : 'positive',
+              displayValue:
+                stats.open_issues_delta === 0
+                  ? t('itHead.stats.noChange')
+                  : `${stats.open_issues_delta > 0 ? '+' : ''}${stats.open_issues_delta}`,
+              caption: t('itHead.stats.fromYesterday'),
+            }}
             onClick={() => setActiveStat('openIssues')}
             selected={activeStat === 'openIssues'}
           />
@@ -113,6 +143,21 @@ export function ITHeadDashboardPage() {
             icon={KeyRound}
             label={t('itHead.stats.pendingPermissions')}
             value={String(stats.pending_permissions)}
+            trend={{
+              direction: stats.pending_permissions_delta >= 0 ? 'up' : 'down',
+              percent: Math.abs(stats.pending_permissions_delta),
+              sentiment:
+                stats.pending_permissions_delta === 0
+                  ? 'neutral'
+                  : stats.pending_permissions_delta > 0
+                    ? 'negative'
+                    : 'positive',
+              displayValue:
+                stats.pending_permissions_delta === 0
+                  ? t('itHead.stats.noChange')
+                  : `${stats.pending_permissions_delta > 0 ? '+' : ''}${stats.pending_permissions_delta}`,
+              caption: t('itHead.stats.fromYesterday'),
+            }}
             onClick={() => setActiveStat('pendingPermissions')}
             selected={activeStat === 'pendingPermissions'}
           />
@@ -120,17 +165,28 @@ export function ITHeadDashboardPage() {
             icon={IndianRupee}
             label={t('itHead.stats.feesOutstanding')}
             value={formatCurrency(stats.fees_outstanding)}
+            trend={{ ...stats.fees_outstanding_trend, sentiment: owedSentiment(stats.fees_outstanding_trend) }}
             onClick={() => setActiveStat('feesOutstanding')}
             selected={activeStat === 'feesOutstanding'}
           />
-          <StatisticCard
-            icon={Clock}
-            label={t('itHead.stats.lateFinesOutstanding')}
-            value={formatCurrency(stats.late_fines_outstanding)}
-            onClick={() => setActiveStat('lateFinesOutstanding')}
-            selected={activeStat === 'lateFinesOutstanding'}
-          />
         </div>
+      )}
+
+      {dashboard && (
+        <>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <FeeCollectionsChart months={dashboard.fee_collections} />
+            <IssueResolutionChart months={dashboard.issue_resolution} />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <SystemActivityCard
+              days={dashboard.system_activity}
+              summary={dashboard.system_activity_summary}
+            />
+            <AccessByRoleCard roles={dashboard.access_by_role} />
+          </div>
+        </>
       )}
 
       <AccessControl
@@ -142,9 +198,16 @@ export function ITHeadDashboardPage() {
         }}
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <IssueResolution tickets={tickets} onResolveClick={setResolvingTicket} />
         <BookRecords records={bookRecords} />
+        {dashboard && (
+          <FeeStatusSummaryCard
+            feesOutstanding={dashboard.stats.fees_outstanding}
+            lateFinesOutstanding={dashboard.stats.late_fines_outstanding}
+            feeStatus={dashboard.fee_status}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -157,6 +220,8 @@ export function ITHeadDashboardPage() {
           }}
         />
       </div>
+
+      {dashboard && <ITHeadAlertsRow alerts={dashboard.alerts} />}
 
       <QuickActionsCard
         actions={[

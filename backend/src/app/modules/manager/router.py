@@ -3,11 +3,16 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, status
 from prisma.models import User
 
-from app.api.deps import require_role
+from app.api.deps import get_current_user, require_role
 from app.core.constants import Role
+from app.modules.guardian.schemas import GuardianContactOut
 from app.modules.loans.schemas import LoanOut
 from app.modules.manager import service
 from app.modules.manager.schemas import (
+    DemandForecastItemOut,
+    FootfallAnalyticsOut,
+    FootfallRange,
+    LateReturnRiskItemOut,
     ManagerBookListOut,
     ManagerDashboardStatsOut,
     ManagerGuardianLinkCreate,
@@ -54,6 +59,27 @@ async def link_guardian(
     await service.link_guardian(payload)
 
 
+@router.get("/guardian-links/{student_id}", response_model=GuardianContactOut | None)
+async def get_student_guardian(
+    student_id: str, _: Annotated[User, Depends(manage)]
+) -> GuardianContactOut | None:
+    return await service.get_student_guardian(student_id)
+
+
+# PUT rather than reusing POST: POST stays a strict create (409 if the student already has
+# a guardian), this is the deliberate "change who it is" action.
+@router.put("/guardian-links", status_code=status.HTTP_204_NO_CONTENT)
+async def set_guardian(
+    payload: ManagerGuardianLinkCreate, _: Annotated[User, Depends(manage)]
+) -> None:
+    await service.set_guardian(payload)
+
+
+@router.delete("/guardian-links/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def unlink_guardian(student_id: str, _: Annotated[User, Depends(manage)]) -> None:
+    await service.unlink_guardian(student_id)
+
+
 @router.get("/books", response_model=ManagerBookListOut)
 async def list_book_availability(
     _: Annotated[User, Depends(manage)],
@@ -85,3 +111,25 @@ async def reject_reservation(
     reservation_id: str, _: Annotated[User, Depends(manage)]
 ) -> ReservationOut:
     return await service.reject_reservation(reservation_id)
+
+
+@router.get("/demand-forecast", response_model=list[DemandForecastItemOut])
+async def get_demand_forecast(
+    _: Annotated[User, Depends(manage)],
+) -> list[DemandForecastItemOut]:
+    return await service.get_demand_forecast()
+
+
+@router.get("/late-return-risk", response_model=list[LateReturnRiskItemOut])
+async def get_late_return_risk(
+    _: Annotated[User, Depends(manage)],
+) -> list[LateReturnRiskItemOut]:
+    return await service.get_late_return_risk()
+
+
+@router.get("/footfall", response_model=FootfallAnalyticsOut)
+async def get_footfall_analytics(
+    _: Annotated[User, Depends(get_current_user)],
+    range: Annotated[FootfallRange, Query()] = "7d",
+) -> FootfallAnalyticsOut:
+    return await service.get_footfall_analytics(range)

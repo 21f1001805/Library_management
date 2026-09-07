@@ -171,7 +171,7 @@ export function BookSeatForMemberModal({ open, onClose, onBooked }: BookSeatForM
               className={
                 'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ' +
                 (selectedDate === option.value
-                  ? 'bg-primary-gradient text-primary-foreground'
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-secondary/60 text-foreground hover:bg-secondary')
               }
             >

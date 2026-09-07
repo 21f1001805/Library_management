@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn';
 export type ProgressBarTone = 'primary' | 'success' | 'warning' | 'danger';
 
 const fillToneClasses: Record<ProgressBarTone, string> = {
-  primary: 'bg-primary-gradient',
+  primary: 'bg-primary',
   success: 'bg-success',
   warning: 'bg-warning',
   danger: 'bg-danger',
@@ -16,9 +16,20 @@ export interface ProgressBarProps {
   label?: string;
   tone?: ProgressBarTone;
   className?: string;
+  /** Override the track/fill colors, e.g. for a progress bar sitting on a colored card
+   * background instead of the default surface. */
+  trackClassName?: string;
+  fillClassName?: string;
 }
 
-export function ProgressBar({ percent, label, tone = 'primary', className }: ProgressBarProps) {
+export function ProgressBar({
+  percent,
+  label,
+  tone = 'primary',
+  className,
+  trackClassName,
+  fillClassName,
+}: ProgressBarProps) {
   const { t } = useTranslation();
   const clamped = Math.min(100, Math.max(0, percent));
 
@@ -36,10 +47,10 @@ export function ProgressBar({ percent, label, tone = 'primary', className }: Pro
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={label ?? t('common.percentComplete', { percent: Math.round(clamped) })}
-        className="h-2 w-full overflow-hidden rounded-full bg-secondary"
+        className={cn('h-2 w-full overflow-hidden rounded-full bg-secondary', trackClassName)}
       >
         <div
-          className={cn('h-full rounded-full transition-all', fillToneClasses[tone])}
+          className={cn('h-full rounded-full transition-all', fillClassName ?? fillToneClasses[tone])}
           style={{ width: `${clamped}%` }}
         />
       </div>

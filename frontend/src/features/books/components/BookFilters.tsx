@@ -16,6 +16,16 @@ const bookCategories = [
   'Self-Help',
 ] as const;
 
+// Translation key for each non-"All" category — see books.categories in en.json.
+const CATEGORY_KEYS: Partial<Record<(typeof bookCategories)[number], string>> = {
+  Fiction: 'fiction',
+  'Non-Fiction': 'nonFiction',
+  Science: 'science',
+  Technology: 'technology',
+  Biography: 'biography',
+  'Self-Help': 'selfHelp',
+};
+
 const bookSorts: BookSort[] = ['newest', 'rating', 'recommended'];
 
 export interface BookFiltersProps {
@@ -54,7 +64,8 @@ export function BookFilters({
         className="sm:w-48"
         options={bookCategories.map((value) => ({
           value,
-          label: value === 'All' ? t('books.filters.allCategories') : value,
+          label:
+            value === 'All' ? t('books.filters.allCategories') : t(`books.categories.${CATEGORY_KEYS[value]}`, value),
         }))}
       />
       <Select

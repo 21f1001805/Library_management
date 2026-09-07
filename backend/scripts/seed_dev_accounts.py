@@ -34,6 +34,16 @@ def _email(role: str) -> str:
     return f"{role}@{DEV_EMAIL_DOMAIN}"
 
 
+DEV_AVATARS = {
+    "admin": "admin_1.jpg",
+    "manager": "staff_1.jpg",
+    "member": "member_female9.jpg",
+    "guardian": "member_male_7.jpg",
+    "it-head": "it-head_1.jpg",
+    "librarian": "staff_2.jpg",
+}
+
+
 async def main() -> None:
     settings = get_settings()
     if settings.app_env not in SEEDABLE_ENVIRONMENTS:
@@ -52,6 +62,7 @@ async def main() -> None:
                 data={"create": {"name": role_name}, "update": {}},
             )
             email = _email(role_name)
+            avatar_url = DEV_AVATARS.get(role_name)
             await prisma.user.upsert(
                 where={"email": email},
                 data={
@@ -59,6 +70,7 @@ async def main() -> None:
                         "email": email,
                         "passwordHash": password_hash,
                         "fullName": f"Dev {role_name.title()} Preview",
+                        "avatarUrl": avatar_url,
                         "roleId": role.id,
                     },
                     # E2E exercises account deactivation and token invalidation. Reset every
@@ -66,6 +78,7 @@ async def main() -> None:
                     # same usable preview accounts instead of inheriting state from a prior run.
                     "update": {
                         "passwordHash": password_hash,
+                        "avatarUrl": avatar_url,
                         "roleId": role.id,
                         "isActive": True,
                         "deletedAt": None,

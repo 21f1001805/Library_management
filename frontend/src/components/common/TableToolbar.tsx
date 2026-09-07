@@ -1,4 +1,5 @@
 import { RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { FiltersMenu } from './FiltersMenu';
 import { SortMenu } from './SortMenu';
@@ -31,18 +32,35 @@ export interface TableToolbarProps {
   resetLabel?: string;
   filtersLabel?: string;
   className?: string;
+  variant?: 'default' | 'icon-only';
 }
 
 export function TableToolbar({
   filters,
   sort,
   onReset,
-  resetLabel = 'Reset',
-  filtersLabel = 'Filters',
+  resetLabel,
+  filtersLabel,
   className,
+  variant = 'default',
 }: TableToolbarProps) {
+  const { t } = useTranslation();
+  const reset = resetLabel ?? t('common.actions.reset');
   const hasControls = Boolean(filters?.length || sort);
   if (!hasControls) return null;
+
+  if (variant === 'icon-only') {
+    return (
+      <FiltersMenu
+        filters={filters ?? []}
+        sort={sort}
+        onReset={onReset}
+        triggerLabel={filtersLabel}
+        className={className}
+        iconOnly
+      />
+    );
+  }
 
   return (
     <div className={className ?? 'flex flex-wrap items-center gap-3'}>
@@ -63,14 +81,13 @@ export function TableToolbar({
       {onReset && (
         <button
           type="button"
-          aria-label={resetLabel}
-          title={resetLabel}
+          aria-label={reset}
+          title={reset}
           onClick={onReset}
           className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
         >
           <RotateCcw className="size-4" />
         </button>
-
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import {
   Calendar,
   CalendarCheck,
   Cpu,
+  FileBarChart,
   History,
   LayoutDashboard,
   LifeBuoy,
@@ -80,6 +81,7 @@ export const itHeadOverviewNavItem: NavItem = {
 
 export const itHeadNavigation: NavItem[] = [
   itHeadOverviewNavItem,
+  { label: 'nav.itHeadReports', path: ROUTES.IT_HEAD_REPORTS, icon: FileBarChart },
   { label: 'nav.community', path: ROUTES.COMMUNITY, icon: MessageCircle },
   { label: 'nav.events', path: ROUTES.EVENTS, icon: Calendar },
   { label: 'nav.leaderboard', path: ROUTES.LEADERBOARD, icon: Trophy },

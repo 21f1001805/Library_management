@@ -19,7 +19,7 @@ function InvalidLink() {
         {t('auth.resetPassword.invalidTitle')}
       </h1>
       <p className="text-sm text-muted-foreground">{t('auth.resetPassword.invalidDescription')}</p>
-      <Link to={ROUTES.FORGOT_PASSWORD} className="font-medium text-primary-gradient hover:underline">
+      <Link to={ROUTES.FORGOT_PASSWORD} className="font-medium text-primary hover:underline">
         {t('auth.resetPassword.requestNewLink')}
       </Link>
     </div>

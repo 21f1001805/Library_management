@@ -7,8 +7,8 @@ import { usePageHeadingSlot } from '@/providers/PageHeadingProvider';
 import { TopBarHeading } from './TopBarHeading';
 
 export interface PageHeaderProps {
-  title: string;
-  description?: string;
+  title: ReactNode;
+  description?: ReactNode;
   actions?: ReactNode;
   className?: string;
 }

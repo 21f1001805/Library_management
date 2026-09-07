@@ -54,7 +54,7 @@ export function MemberPicker({
             <button
               type="button"
               onClick={() => onSelect(null)}
-              className="text-xs font-medium text-primary-gradient hover:underline"
+              className="text-xs font-medium text-primary hover:underline"
             >
               {changeLabel}
             </button>
@@ -67,6 +67,7 @@ export function MemberPicker({
             onChange={(event) => setQuery(event.target.value)}
             placeholder={searchPlaceholder}
             autoFocus={autoFocus}
+            className="bg-surface"
           />
           {isLoading && (
             <p className="px-1 text-xs text-muted-foreground" role="status">

@@ -14,6 +14,7 @@ from app.modules.members.schemas import (
     MemberUpdate,
     ReadingGoalOut,
     ReadingGoalUpsert,
+    ReadingProfileOut,
     ReadingProgressOut,
     ReadingProgressUpsert,
     ReadingStreakOut,
@@ -91,3 +92,10 @@ async def get_my_reading_streak(
     user: Annotated[User, Depends(get_current_user)],
 ) -> ReadingStreakOut:
     return await service.get_reading_streak(user.id)
+
+
+@router.get("/me/reading-profile", response_model=ReadingProfileOut | None)
+async def get_my_reading_profile(
+    user: Annotated[User, Depends(get_current_user)],
+) -> ReadingProfileOut | None:
+    return await service.get_reading_profile(user)

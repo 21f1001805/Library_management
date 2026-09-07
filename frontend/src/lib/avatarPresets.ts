@@ -30,3 +30,42 @@ export function getAvatarPresets(role: Role): string[] {
   const folder = ROLE_FOLDERS[role];
   return loadFolder(folder);
 }
+
+/** Returns the avatar preset images for registration (from Preset_Image if present, or role folder). */
+export function getRegistrationAvatarPresets(role: Role = 'member'): string[] {
+  const presetImages = Object.keys(avatarModules)
+    .filter((path) => path.toLowerCase().includes('preset_image'))
+    .sort()
+    .map((path) => avatarModules[path]);
+
+  if (presetImages.length > 0) {
+    return presetImages;
+  }
+  return getAvatarPresets(role);
+}
+
+/** Resolves any stored avatar URL/filename to a valid asset URL. */
+export function resolveAvatarUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+
+  // 1. Check if url matches an exact resolved asset URL in avatarModules
+  const values = Object.values(avatarModules);
+  if (values.includes(url)) {
+    return url;
+  }
+
+  // 2. Extract the base filename (e.g. "member_female9.jpg")
+  const baseName = url.split('/').pop()?.split('?')[0];
+  if (baseName) {
+    for (const [path, resolvedUrl] of Object.entries(avatarModules)) {
+      if (path.endsWith(baseName) || resolvedUrl.includes(baseName)) {
+        return resolvedUrl;
+      }
+    }
+  }
+
+  return url;
+}

@@ -92,7 +92,7 @@ export function Pagination({
               className={cn(
                 'hidden size-9 items-center justify-center rounded-xl text-sm font-medium transition-colors sm:inline-flex',
                 page === currentPage
-                  ? 'bg-primary-gradient text-primary-foreground shadow-sm'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-foreground hover:bg-muted/70',
               )}
             >

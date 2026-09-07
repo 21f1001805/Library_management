@@ -338,7 +338,7 @@ export function ContactUsPage() {
                       <TableRow key={contact.id}>
                         <TableCell>{t(`contactUs.table.${contact.id}`)}</TableCell>
                         <TableCell>
-                          <a href={`mailto:${contact.email}`} className="text-primary-gradient hover:underline">
+                          <a href={`mailto:${contact.email}`} className="text-primary hover:underline">
                             {contact.email}
                           </a>
                         </TableCell>

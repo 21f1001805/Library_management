@@ -387,7 +387,7 @@ export function CommunityPage() {
       <TableToolbar
         filters={[
           {
-            label: 'Filter',
+            label: t('community.filters.groupLabel'),
             value: filter,
             onChange: (value) => {
               setFilter(value as Filter);
@@ -402,16 +402,16 @@ export function CommunityPage() {
           },
         ]}
         sort={{
-          label: 'Sort',
+          label: t('common.actions.sort'),
           value: sort,
           onChange: (value) => {
             setSort(value as 'newest' | 'oldest' | 'likes');
             setPage(1);
           },
           options: [
-            { value: 'newest', label: 'Newest' },
-            { value: 'oldest', label: 'Oldest' },
-            { value: 'likes', label: 'Most liked' },
+            { value: 'newest', label: t('community.sort.newest') },
+            { value: 'oldest', label: t('community.sort.oldest') },
+            { value: 'likes', label: t('community.sort.mostLiked') },
           ],
         }}
         onReset={() => {
@@ -419,7 +419,6 @@ export function CommunityPage() {
           setSort('newest');
           setPage(1);
         }}
-        resetLabel="Reset"
       />
 
       {!isLoading && filteredPosts.length === 0 ? (

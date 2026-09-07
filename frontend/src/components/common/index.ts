@@ -5,6 +5,7 @@ export * from './Badge';
 export * from './BookCard';
 export * from './Charts';
 export * from './Container';
+export * from './DifficultyBadge';
 export * from './Divider';
 export * from './EventCard';
 export * from './ExportButton';

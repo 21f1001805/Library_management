@@ -1,7 +1,7 @@
 import { cn } from '@/lib/cn';
 
 const ROLE_BAR_COLORS = [
-  'bg-primary-gradient',
+  'bg-primary',
   'bg-info',
   'bg-success',
   'bg-warning',

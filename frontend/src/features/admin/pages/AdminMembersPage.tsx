@@ -1,4 +1,4 @@
-import { SearchX, ShieldCheck, ShieldOff } from 'lucide-react';
+import { CreditCard, SearchX, ShieldCheck, ShieldOff, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -32,7 +32,7 @@ import {
 } from '@/providers/AuthProvider';
 
 const PAGE_SIZE = 10;
-const ROLES: Role[] = ['member', 'librarian', 'manager', 'it-head', 'guardian', 'admin'];
+const ROLES: Role[] = ['member', 'manager', 'it-head', 'guardian', 'admin'];
 const EMPTY_MEMBER_LIST = { items: [] as AdminMemberRecord[], total: 0 };
 
 type PendingMemberAction =
@@ -53,15 +53,29 @@ const SORT_OPTIONS: { value: `${AdminMemberSortBy}-${SortDirection}`; labelKey: 
   { value: 'role-asc', labelKey: 'admin.members.sort.roleAsc' },
 ];
 
+const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  member: { bg: 'bg-primary/10', text: 'text-primary', border: 'border-primary/20' },
+  guardian: { bg: 'bg-info/10', text: 'text-info', border: 'border-info/20' },
+  manager: { bg: 'bg-success/10', text: 'text-success', border: 'border-success/20' },
+  librarian: { bg: 'bg-warning/10', text: 'text-warning', border: 'border-warning/20' },
+  'it-head': { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-300', border: 'border-purple-500/20' },
+  admin: { bg: 'bg-danger/10', text: 'text-danger', border: 'border-danger/20' },
+};
+
 function LastPaymentCell({ member }: { member: AdminMemberRecord }) {
   const { t } = useTranslation();
   if (member.last_payment_amount === null || member.last_payment_at === null) {
-    return <span className="text-muted-foreground">{t('admin.members.noPayment')}</span>;
+    return (
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-secondary/60 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+        <CreditCard className="size-3 shrink-0 opacity-60" />
+        {t('admin.members.noPayment')}
+      </span>
+    );
   }
   return (
-    <div>
-      <p className="font-medium text-foreground">{formatCurrency(member.last_payment_amount)}</p>
-      <p className="text-xs text-muted-foreground">
+    <div className="whitespace-nowrap">
+      <p className="font-semibold text-foreground text-xs">{formatCurrency(member.last_payment_amount)}</p>
+      <p className="text-[11px] text-muted-foreground">
         {member.last_payment_label} · {formatDate(member.last_payment_at)}
       </p>
     </div>
@@ -71,12 +85,17 @@ function LastPaymentCell({ member }: { member: AdminMemberRecord }) {
 function PlanCell({ member }: { member: AdminMemberRecord }) {
   const { t } = useTranslation();
   if (member.plan_label === null || member.plan_expires_at === null) {
-    return <span className="text-muted-foreground">{t('admin.members.noPlan')}</span>;
+    return (
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-secondary/60 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+        <Sparkles className="size-3 shrink-0 opacity-60" />
+        {t('admin.members.noPlan')}
+      </span>
+    );
   }
   return (
-    <div>
-      <p className="font-medium text-foreground">{member.plan_label}</p>
-      <p className="text-xs text-muted-foreground">
+    <div className="whitespace-nowrap">
+      <p className="font-semibold text-foreground text-xs">{member.plan_label}</p>
+      <p className="text-[11px] text-muted-foreground">
         {t(member.plan_is_active ? 'admin.members.planActiveUntil' : 'admin.members.planExpired', {
           date: formatDate(member.plan_expires_at),
         })}
@@ -107,7 +126,7 @@ function EventsCell({ member }: { member: AdminMemberRecord }) {
   if (member.event_registrations === 0) {
     return <span className="text-muted-foreground">—</span>;
   }
-  return <span>{t('admin.members.eventsCount', { count: member.event_registrations })}</span>;
+  return <span className="text-xs font-semibold text-foreground">{t('admin.members.eventsCount', { count: member.event_registrations })}</span>;
 }
 
 export function AdminMembersPage() {
@@ -221,7 +240,8 @@ export function AdminMembersPage() {
         description={t('admin.members.pageDescription')}
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+      {/* Styled Filter & Search Toolbar Container */}
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5 shadow-xs sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <SearchBar
           value={search}
           onChange={updateSearch}
@@ -229,38 +249,40 @@ export function AdminMembersPage() {
           className="max-w-sm"
         />
 
-        <Select
-          label={t('admin.members.filters.roleLabel')}
-          value={roleFilter}
-          onChange={(event) => updateRoleFilter(event.target.value)}
-          className="w-full sm:w-44"
-          options={[
-            { value: 'all', label: t('admin.members.filters.roleAll') },
-            ...ROLES.map((role) => ({ value: role, label: t(`auth.login.roles.${role}`) })),
-          ]}
-        />
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Select
+            label={t('admin.members.filters.roleLabel')}
+            value={roleFilter}
+            onChange={(event) => updateRoleFilter(event.target.value)}
+            className="w-full sm:w-40"
+            options={[
+              { value: 'all', label: t('admin.members.filters.roleAll') },
+              ...ROLES.map((role) => ({ value: role, label: t(`auth.login.roles.${role}`) })),
+            ]}
+          />
 
-        <Select
-          label={t('admin.members.filters.statusLabel')}
-          value={statusFilter}
-          onChange={(event) => updateStatusFilter(event.target.value)}
-          className="w-full sm:w-40"
-          options={STATUS_FILTERS.map((option) => ({
-            value: option.value,
-            label: t(option.labelKey),
-          }))}
-        />
+          <Select
+            label={t('admin.members.filters.statusLabel')}
+            value={statusFilter}
+            onChange={(event) => updateStatusFilter(event.target.value)}
+            className="w-full sm:w-36"
+            options={STATUS_FILTERS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+            }))}
+          />
 
-        <Select
-          label={t('admin.members.sort.label')}
-          value={sort}
-          onChange={(event) => updateSort(event.target.value)}
-          className="w-full sm:w-48"
-          options={SORT_OPTIONS.map((option) => ({
-            value: option.value,
-            label: t(option.labelKey),
-          }))}
-        />
+          <Select
+            label={t('admin.members.sort.label')}
+            value={sort}
+            onChange={(event) => updateSort(event.target.value)}
+            className="w-full sm:w-44"
+            options={SORT_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+            }))}
+          />
+        </div>
       </div>
 
       {isLoading && items.length === 0 ? (
@@ -279,92 +301,114 @@ export function AdminMembersPage() {
         />
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('admin.members.table.member')}</TableHead>
-                <TableHead>{t('admin.members.table.role')}</TableHead>
-                <TableHead>{t('admin.members.table.lastPayment')}</TableHead>
-                <TableHead>{t('admin.members.table.plan')}</TableHead>
-                <TableHead>{t('admin.members.table.progress')}</TableHead>
-                <TableHead>{t('admin.members.table.reported')}</TableHead>
-                <TableHead>{t('admin.members.table.joined')}</TableHead>
-                <TableHead>{t('admin.members.table.events')}</TableHead>
-                <TableHead>{t('admin.members.table.status')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Avatar name={member.full_name} size="sm" />
-                      <div>
-                        <p className="font-medium text-foreground">{member.full_name}</p>
-                        <p className="text-xs text-muted-foreground">{member.email}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <select
-                      value={member.role}
-                      disabled={updatingId === member.id}
-                      onChange={(event) => changeRole(member, event.target.value)}
-                      aria-label={t('admin.members.roleSelectLabel', { name: member.full_name })}
-                      className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
-                    >
-                      {ROLES.map((role) => (
-                        <option key={role} value={role}>
-                          {t(`auth.login.roles.${role}`)}
-                        </option>
-                      ))}
-                    </select>
-                  </TableCell>
-                  <TableCell>
-                    <LastPaymentCell member={member} />
-                  </TableCell>
-                  <TableCell>
-                    <PlanCell member={member} />
-                  </TableCell>
-                  <TableCell>
-                    <ProgressCell member={member} />
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={member.reported ? 'danger' : 'outline'}>
-                      {t(
-                        member.reported ? 'admin.members.reportedYes' : 'admin.members.reportedNo',
-                      )}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{formatDate(member.joined_at)}</TableCell>
-                  <TableCell>
-                    <EventsCell member={member} />
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      variant={member.is_active ? 'danger' : 'success'}
-                      isLoading={updatingId === member.id}
-                      leadingIcon={
-                        member.is_active ? (
-                          <ShieldOff className="size-3.5" />
-                        ) : (
-                          <ShieldCheck className="size-3.5" />
-                        )
-                      }
-                      onClick={() => toggleActive(member)}
-                    >
-                      {t(
-                        member.is_active
-                          ? 'admin.members.actions.deactivate'
-                          : 'admin.members.actions.activate',
-                      )}
-                    </Button>
-                  </TableCell>
+          <div className="w-full overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
+            <Table className="min-w-[1000px]">
+              <TableHeader className="bg-secondary/20">
+                <TableRow>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.member')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.role')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.lastPayment')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.plan')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.progress')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.reported')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.joined')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.events')}</TableHead>
+                  <TableHead className="sticky right-0 z-10 whitespace-nowrap border-l border-border/50 bg-card px-3 py-2.5 text-right shadow-xs">
+                    {t('admin.members.table.status')}
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {items.map((member) => {
+                  const roleColors = ROLE_COLORS[member.role] ?? {
+                    bg: 'bg-secondary',
+                    text: 'text-foreground',
+                    border: 'border-border',
+                  };
+
+                  return (
+                    <TableRow key={member.id} className="group transition-colors hover:bg-secondary/40">
+                      <TableCell className="px-3 py-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={member.full_name} size="sm" />
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-semibold text-foreground text-xs sm:text-sm">{member.full_name}</p>
+                              {!member.is_active && (
+                                <span className="rounded bg-danger/10 px-1.5 py-0.2 text-[10px] font-semibold text-danger">
+                                  Inactive
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">{member.email}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
+                        <div className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold ${roleColors.bg} ${roleColors.text} ${roleColors.border}`}>
+                          <select
+                            value={member.role}
+                            disabled={updatingId === member.id}
+                            onChange={(event) => changeRole(member, event.target.value)}
+                            aria-label={t('admin.members.roleSelectLabel', { name: member.full_name })}
+                            className="bg-transparent focus-visible:outline-none disabled:opacity-50 font-semibold cursor-pointer"
+                          >
+                            {ROLES.map((role) => (
+                              <option key={role} value={role} className="bg-surface text-foreground font-normal">
+                                {t(`auth.login.roles.${role}`)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
+                        <LastPaymentCell member={member} />
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
+                        <PlanCell member={member} />
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
+                        <ProgressCell member={member} />
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
+                        <Badge variant={member.reported ? 'danger' : 'success'}>
+                          {t(
+                            member.reported ? 'admin.members.reportedYes' : 'admin.members.reportedNo',
+                          )}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-muted-foreground">{formatDate(member.joined_at)}</TableCell>
+                      <TableCell className="px-3 py-2.5">
+                        <EventsCell member={member} />
+                      </TableCell>
+                      <TableCell className="sticky right-0 z-10 border-l border-border/50 bg-card px-3 py-2.5 text-right shadow-xs group-hover:bg-card">
+                        <Button
+                          size="sm"
+                          variant={member.is_active ? 'outline' : 'success'}
+                          className={member.is_active ? 'border-danger/30 text-danger hover:bg-danger/10 hover:text-danger' : ''}
+                          isLoading={updatingId === member.id}
+                          leadingIcon={
+                            member.is_active ? (
+                              <ShieldOff className="size-3.5" />
+                            ) : (
+                              <ShieldCheck className="size-3.5" />
+                            )
+                          }
+                          onClick={() => toggleActive(member)}
+                        >
+                          {t(
+                            member.is_active
+                              ? 'admin.members.actions.deactivate'
+                              : 'admin.members.actions.activate',
+                          )}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
 
           <Pagination
             currentPage={page}

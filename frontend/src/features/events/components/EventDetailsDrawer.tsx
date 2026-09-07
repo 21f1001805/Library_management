@@ -1,7 +1,8 @@
-import { Calendar, MapPin, Pencil, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, MapPin, Pencil, Trash2, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { Badge, Button, Drawer } from '@/components/ui';
+import { Badge, Button, ConfirmDialog, Drawer } from '@/components/ui';
 import type { Event } from '../pages/EventsPage';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -16,6 +17,8 @@ export interface EventDetailsDrawerProps {
   onRemoveRegistrant?: (eventId: string, memberId: string) => void;
   /** Admin/manager-only: opens the edit form for this event. */
   onEdit?: (event: Event) => void;
+  /** Admin/manager-only: deletes this event. */
+  onDelete?: (event: Event) => void | Promise<void>;
 }
 
 export function EventDetailsDrawer({
@@ -25,9 +28,13 @@ export function EventDetailsDrawer({
   registrationBusy = false,
   onRemoveRegistrant,
   onEdit,
+  onDelete,
 }: EventDetailsDrawerProps) {
   const { t } = useTranslation();
   const { role, token } = useAuth();
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const isStaff =
     role === 'admin' || role === 'manager' || role === 'librarian' || role === 'it-head';
   const hasHappened = event ? new Date(event.date).getTime() < new Date().getTime() : false;
@@ -38,26 +45,40 @@ export function EventDetailsDrawer({
   const registrationBlocked = Boolean(event && !event.registered && (hasHappened || isFull));
 
   return (
-    <Drawer
-      open={event != null}
-      onClose={onClose}
-      title={event?.title ?? t('events.details.defaultTitle')}
-    >
-      {event && (
-        <div className="flex flex-col gap-5">
-          {canManage && onEdit && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="self-end"
-              leadingIcon={<Pencil className="size-4" />}
-              onClick={() => onEdit(event)}
-            >
-              {t('events.details.edit')}
-            </Button>
-          )}
+    <>
+      <Drawer
+        open={event != null}
+        onClose={onClose}
+        title={event?.title ?? t('events.details.defaultTitle')}
+      >
+        {event && (
+          <div className="flex flex-col gap-5">
+            {canManage && (onEdit || onDelete) && (
+              <div className="flex items-center gap-2 self-end">
+                {onEdit && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    leadingIcon={<Pencil className="size-4" />}
+                    onClick={() => onEdit(event)}
+                  >
+                    {t('events.details.edit')}
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    leadingIcon={<Trash2 className="size-4" />}
+                    onClick={() => setConfirmDeleteOpen(true)}
+                  >
+                    {t('events.details.delete', 'Delete')}
+                  </Button>
+                )}
+              </div>
+            )}
 
-          <p className="text-sm text-muted-foreground">{event.description}</p>
+            <p className="text-sm text-muted-foreground">{event.description}</p>
 
           <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
             <span className="flex items-center gap-2">
@@ -162,5 +183,34 @@ export function EventDetailsDrawer({
         </div>
       )}
     </Drawer>
-  );
+
+    <ConfirmDialog
+      open={confirmDeleteOpen}
+      title={t('events.details.deleteConfirmTitle', 'Delete Event?')}
+      description={
+        event
+          ? t('events.details.deleteConfirmDescription', {
+              title: event.title,
+              defaultValue: `Are you sure you want to delete "${event.title}"? This action cannot be undone.`,
+            })
+          : ''
+      }
+      confirmLabel={t('events.details.delete', 'Delete')}
+      cancelLabel={t('common.actions.cancel', 'Cancel')}
+      destructive
+      isLoading={isDeleting}
+      onCancel={() => setConfirmDeleteOpen(false)}
+      onConfirm={async () => {
+        if (!event || !onDelete) return;
+        setIsDeleting(true);
+        try {
+          await onDelete(event);
+          setConfirmDeleteOpen(false);
+        } finally {
+          setIsDeleting(false);
+        }
+      }}
+    />
+  </>
+);
 }

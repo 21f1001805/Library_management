@@ -46,6 +46,7 @@ export function Select({
           disabled={disabled}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
+          aria-label={props['aria-label'] || label || placeholder}
           className={cn(
             'h-10 w-full appearance-none rounded-md border border-border bg-surface px-3 pr-9 text-sm text-foreground',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',

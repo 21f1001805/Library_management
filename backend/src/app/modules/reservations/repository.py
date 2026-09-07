@@ -21,6 +21,15 @@ async def find_by_id(reservation_id: str, *, client: Prisma | None = None) -> Re
     )
 
 
+async def list_for_member(member_id: str) -> list[Reservation]:
+    """Every reservation this member has ever made, any status — used to build the AI
+    reading profile's category-interest signal (see members/reading_profile.py), where
+    even a since-cancelled request still reflects a real interest at the time."""
+    return await prisma.reservation.find_many(
+        where={"memberId": member_id}, include={"book": True}, order={"createdAt": "desc"}
+    )
+
+
 async def list_active_for_member(member_id: str) -> list[Reservation]:
     return await prisma.reservation.find_many(
         where={"memberId": member_id, "status": {"in": ["pending", "approved"]}},

@@ -29,4 +29,7 @@ export interface BookReviews {
   average_rating: number;
   total_reviews: number;
   breakdown: RatingBreakdownEntry[];
+  /** AI-generated "what readers are saying" summary — null until there's at least one
+   * review, or while the first one is still being generated. */
+  review_digest: string | null;
 }

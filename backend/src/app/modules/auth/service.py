@@ -44,7 +44,11 @@ InvalidResetToken = HTTPException(
 
 
 async def register(payload: RegisterRequest) -> TokenResponse:
-    role = await repository.upsert_role(Role.MEMBER.value)
+    target_role_str = (payload.role or Role.MEMBER.value).lower()
+    if target_role_str not in (Role.MEMBER.value, Role.GUARDIAN.value):
+        target_role_str = Role.MEMBER.value
+
+    role = await repository.upsert_role(target_role_str)
 
     try:
         user = await repository.create_member(
@@ -52,7 +56,7 @@ async def register(payload: RegisterRequest) -> TokenResponse:
             password_hash=hash_password(payload.password),
             full_name=payload.full_name,
             phone=payload.phone,
-            avatar_url=None,
+            avatar_url=payload.avatar_url,
             role_id=role.id,
         )
     except UniqueViolationError as exc:

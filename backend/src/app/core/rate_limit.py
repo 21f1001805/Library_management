@@ -24,5 +24,5 @@ limiter = Limiter(
     key_func=get_remote_address,
     storage_uri=_settings.redis_url,
     in_memory_fallback_enabled=True,
-    enabled=_settings.app_env not in {"test", "e2e"},
+    enabled=_settings.app_env not in {"development", "test", "e2e"},
 )

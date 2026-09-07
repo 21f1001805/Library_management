@@ -1,4 +1,4 @@
-import { TrendingDown, TrendingUp, type LucideIcon } from 'lucide-react';
+import { Minus, TrendingDown, TrendingUp, type LucideIcon } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -10,7 +10,13 @@ export interface StatisticTrend {
   percent: number;
   /** Color the trend green/red by real-world sentiment, not just arrow direction — a drop in
    * expenses is good news. Defaults to matching direction (up = positive, down = negative). */
-  sentiment?: 'positive' | 'negative';
+  sentiment?: 'positive' | 'negative' | 'neutral';
+  /** Overrides the trailing "vs last month" caption — for a stat compared against a
+   * different baseline (e.g. yesterday) rather than the default month-over-month one. */
+  caption?: string;
+  /** Overrides the leading "{percent}%" — for a trend expressed as a raw count delta
+   * (e.g. "+3") rather than a percentage. `percent` still drives up/down + sentiment. */
+  displayValue?: string;
 }
 
 export interface StatisticCardProps {
@@ -68,7 +74,7 @@ export function StatisticCard({
       <span
         className={cn(
           'inline-flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors',
-          selected && 'bg-primary-gradient text-primary-foreground',
+          selected && 'bg-primary text-primary-foreground',
         )}
       >
         <Icon className="size-5" />
@@ -87,17 +93,23 @@ export function StatisticCard({
           <p
             className={cn(
               'mt-1 flex items-center gap-1 text-xs font-medium',
-              sentiment === 'positive' ? 'text-success' : 'text-danger',
+              sentiment === 'neutral'
+                ? 'text-muted-foreground'
+                : sentiment === 'positive'
+                  ? 'text-success'
+                  : 'text-danger',
             )}
           >
-            {trend.direction === 'up' ? (
+            {sentiment === 'neutral' ? (
+              <Minus className="size-3.5" aria-hidden="true" />
+            ) : trend.direction === 'up' ? (
               <TrendingUp className="size-3.5" aria-hidden="true" />
             ) : (
               <TrendingDown className="size-3.5" aria-hidden="true" />
             )}
-            {trend.percent}%
+            {trend.displayValue ?? `${trend.percent}%`}
             <span className="font-normal text-muted-foreground">
-              {t('common.trend.vsLastMonth')}
+              {trend.caption ?? t('common.trend.vsLastMonth')}
             </span>
           </p>
         )}

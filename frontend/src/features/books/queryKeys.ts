@@ -7,4 +7,5 @@ export const bookKeys = {
   details: () => [...bookKeys.all, 'detail'] as const,
   detail: (bookId: string) => [...bookKeys.details(), bookId] as const,
   related: (bookId: string) => [...bookKeys.all, 'related', bookId] as const,
+  insights: (bookId: string) => [...bookKeys.all, 'insights', bookId] as const,
 };

@@ -71,38 +71,37 @@ export function ActiveLoans({ loans, onReturn, onRemind }: ActiveLoansProps) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle>{t('managerDashboard.activeLoans.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
         <TableToolbar
+          variant="icon-only"
           filters={[
             {
-              label: 'Status',
+              label: t('managerDashboard.activeLoans.filters.statusLabel'),
               value: statusFilter,
               onChange: (value) => {
                 setStatusFilter(value);
                 setPage(1);
               },
               options: [
-                { value: 'all', label: 'All' },
-                { value: 'due-today', label: 'Due Today' },
-                { value: 'overdue', label: 'Overdue' },
-                { value: 'active', label: 'Active Loans' },
+                { value: 'all', label: t('managerDashboard.activeLoans.filters.all') },
+                { value: 'due-today', label: t('managerDashboard.activeLoans.filters.dueToday') },
+                { value: 'overdue', label: t('managerDashboard.activeLoans.filters.overdue') },
+                { value: 'active', label: t('managerDashboard.activeLoans.filters.activeLoans') },
               ],
             },
           ]}
           sort={{
-            label: 'Sort',
+            label: t('common.actions.sort'),
             value: sortValue,
             onChange: (value) => {
               setSortValue(value);
               setPage(1);
             },
             options: [
-              { value: 'due-date', label: 'Due Date' },
-              { value: 'member', label: 'Member Name' },
-              { value: 'book', label: 'Book Title' },
+              { value: 'due-date', label: t('managerDashboard.activeLoans.sort.dueDate') },
+              { value: 'member', label: t('managerDashboard.activeLoans.sort.memberName') },
+              { value: 'book', label: t('managerDashboard.activeLoans.sort.bookTitle') },
             ],
           }}
           onReset={() => {
@@ -112,6 +111,8 @@ export function ActiveLoans({ loans, onReturn, onRemind }: ActiveLoansProps) {
           }}
           resetLabel={t('common.actions.reset')}
         />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
         {filteredLoans.length === 0 ? (
           <EmptyState
             title={t('managerDashboard.activeLoans.emptyTitle')}

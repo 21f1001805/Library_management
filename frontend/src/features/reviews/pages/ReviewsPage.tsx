@@ -3,6 +3,7 @@ import {
   MessageSquareOff,
   Pencil,
   RotateCcw,
+  Sparkles,
   Star,
   Trash2,
   Users,
@@ -41,9 +42,9 @@ import type { Book } from '../../books/hooks/useBooks';
 import { RatingSummary } from '../components/RatingSummary';
 import { WriteReviewModal, type ReviewDraft } from '../components/WriteReviewModal';
 
-const MEMBER_RATED_PAGE_SIZE = 5;
-const MEMBER_REVIEWS_PAGE_SIZE = 5;
-const BOOK_REVIEWS_PAGE_SIZE = 5;
+const MEMBER_RATED_PAGE_SIZE = 6;
+const MEMBER_REVIEWS_PAGE_SIZE = 6;
+const BOOK_REVIEWS_PAGE_SIZE = 6;
 const STAFF_REVIEWS_PAGE_SIZE = 10;
 
 type RatingFilter = 'all' | '1' | '2' | '3' | '4' | '5';
@@ -59,6 +60,7 @@ const EMPTY_BOOK_REVIEWS: BookReviews = {
   average_rating: 0,
   total_reviews: 0,
   breakdown: [5, 4, 3, 2, 1].map((stars) => ({ stars, percent: 0 })),
+  review_digest: null,
 };
 
 export function ReviewsPage() {
@@ -388,7 +390,7 @@ export function ReviewsPage() {
                     <>
                       <Link
                         to={bookLink(selectedBook.id)}
-                        className="font-semibold text-primary-gradient hover:underline"
+                        className="font-semibold text-primary hover:underline"
                       >
                         {selectedBook.title}
                       </Link>{' '}
@@ -410,6 +412,20 @@ export function ReviewsPage() {
                 totalReviews={bookReviews.total_reviews}
                 breakdown={bookReviews.breakdown}
               />
+
+              {bookReviews.review_digest && (
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardContent className="flex gap-3 p-4">
+                    <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                        {t('reviews.digest.heading', 'What readers are saying')}
+                      </p>
+                      <p className="text-sm text-foreground">{bookReviews.review_digest}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               <div className="flex flex-col gap-4">
                 <h2 className="text-xl font-bold text-foreground">
@@ -683,7 +699,7 @@ export function ReviewsPage() {
                                   <TableCell className="font-medium">
                                     <Link
                                       to={bookLink(review.book_id)}
-                                      className="text-primary-gradient hover:underline"
+                                      className="text-primary hover:underline"
                                     >
                                       {review.book_title}
                                     </Link>

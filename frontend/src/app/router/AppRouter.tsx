@@ -133,6 +133,11 @@ const ITHeadDashboardPage = lazy(() =>
     default: m.ITHeadDashboardPage,
   })),
 );
+const ITHeadReportsPage = lazy(() =>
+  import('@/features/it-head/pages/ITHeadReportsPage').then((m) => ({
+    default: m.ITHeadReportsPage,
+  })),
+);
 const GuardianDashboardPage = lazy(() =>
   import('@/features/guardian/pages/GuardianDashboardPage').then((m) => ({
     default: m.GuardianDashboardPage,
@@ -224,7 +229,10 @@ const router = createBrowserRouter([
       </RoleRoute>
     ),
     errorElement: <ErrorState onRetry={() => window.location.assign(ROUTES.HOME)} />,
-    children: [{ path: relative(ROUTES.IT_HEAD), element: withSuspense(<ITHeadDashboardPage />) }],
+    children: [
+      { path: relative(ROUTES.IT_HEAD), element: withSuspense(<ITHeadDashboardPage />) },
+      { path: relative(ROUTES.IT_HEAD_REPORTS), element: withSuspense(<ITHeadReportsPage />) },
+    ],
   },
   {
     element: (

@@ -35,6 +35,14 @@ model User {
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
+  // Cached AI reading profile (top interests/difficulty/preference/insight) — see
+  // members/reading_profile.py. readingProfileActivityCount records the member's total
+  // loan+review+reservation count when it was generated, same staleness-by-count check
+  // as Book.reviewDigest/reviewDigestReviewCount — regenerated only once new activity
+  // has actually happened, not on every profile page load.
+  readingProfile               Json? @map("reading_profile")
+  readingProfileActivityCount  Int?  @map("reading_profile_activity_count")
+
   payments        Payment[]
   readingProgress ReadingProgress[] @relation("MemberReadingProgress")
   readingGoal     ReadingGoal?      @relation("MemberReadingGoal")
@@ -56,6 +64,11 @@ model User {
   notifications      Notification[]      @relation("NotificationUser")
   reviews            Review[]            @relation("MemberReview")
   loggedExpenses     Expense[]           @relation("ExpenseLoggedBy")
+
+  libraryReviews        LibraryReview[] @relation("LibraryReviewMember")
+  libraryReviewsDecided LibraryReview[] @relation("LibraryReviewDecidedBy")
+
+  wishlist Wishlist[] @relation("WishlistMember")
 
   billingRequestsAsMember BillingRequest[] @relation("BillingRequestMember")
   billingRequestsFiled    BillingRequest[] @relation("BillingRequestCreatedBy")
@@ -80,6 +93,9 @@ model User {
 
   bookRecordsLogged BookRecord[] @relation("BookRecordLoggedBy")
 
+  libraryVisits         LibraryVisit[] @relation("LibraryVisitMember")
+  recordedLibraryVisits LibraryVisit[] @relation("LibraryVisitRecordedBy")
+
   @@map("users")
 }
 
@@ -90,6 +106,10 @@ model GuardianLink {
   memberId   String   @unique @map("member_id") @db.Uuid
   member     User     @relation("GuardianLinkMember", fields: [memberId], references: [id])
   createdAt  DateTime @default(now()) @map("created_at")
+  // When the monthly reading-digest sweep last notified this guardian about this child.
+  // Same role as Loan.lastRemindedAt — without it, every server restart would re-send
+  // the digest for the rest of the month instead of sending it once.
+  lastDigestSentAt DateTime? @map("last_digest_sent_at")
 
   @@map("guardian_links")
 }
@@ -120,23 +140,66 @@ model Book {
   title         String    @db.VarChar(255)
   author        String    @db.VarChar(150)
   category      String    @db.VarChar(80)
+  // Fine-grained genre (e.g. "Mystery", "Historical Fiction") — deliberately separate
+  // from category, which is a small fixed taxonomy (Fiction/Non-Fiction/Science/...)
+  // used for filtering and the cover-identification mapper. Nullable: not every book
+  // (manual entries, older imports) has one.
+  genre         String?   @db.VarChar(80)
   isbn          String?   @unique @db.VarChar(20)
   description   String?
+  publisher     String?   @db.VarChar(150)
   publishedYear Int?      @map("published_year")
   language      String?   @db.VarChar(40)
   coverImageUrl String?   @map("cover_image_url")
   totalCopies   Int       @default(0) @map("total_copies")
+  // Free-text physical location, e.g. "Aisle 3, Shelf B" — display-only, not searchable.
+  shelfLocation String?   @map("shelf_location") @db.VarChar(120)
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
   deletedAt     DateTime? @map("deleted_at")
+
+  // AI-generated "what readers are saying" summary, cached so it's regenerated only
+  // when the review count actually changes rather than on every page load.
+  // reviewDigestReviewCount records how many reviews existed when it was generated —
+  // a mismatch with the live review count means the cache is stale.
+  reviewDigest            String? @map("review_digest")
+  reviewDigestReviewCount Int?    @map("review_digest_review_count")
+
+  // Cached embedding vector (title+author+category+description) for the "You may also
+  // like" similarity ranking — see books/embeddings.py. Empty until first computed;
+  // cleared back to [] whenever an edit touches one of the fields it was built from, so
+  // it's lazily recomputed on the next read instead of silently going stale.
+  embedding Float[] @default([]) @map("embedding")
+
+  // Cached single-call AI analysis (summary/key concepts/themes/difficulty/vocabulary/
+  // prerequisites/why-read) — see books/insights.py. Null until first requested; cleared
+  // whenever an edit touches the fields it was built from, same invalidation trigger as
+  // embedding above.
+  aiInsights Json? @map("ai_insights")
 
   readingProgress ReadingProgress[]
   reservations    Reservation[]
   reviews         Review[]
   loans           Loan[]
   bookRecords     BookRecord[]
+  wishlistedBy    Wishlist[]
 
   @@map("books")
+}
+
+// A member's saved-for-later list — any authenticated role can hold one, same as book
+// browsing itself isn't member-only. Structurally identical to CommunityPostSave (a
+// plain (member, book) toggle join), copied rather than reinvented.
+model Wishlist {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  memberId  String   @map("member_id") @db.Uuid
+  member    User     @relation("WishlistMember", fields: [memberId], references: [id], onDelete: Cascade)
+  bookId    String   @map("book_id") @db.Uuid
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([memberId, bookId])
+  @@map("wishlists")
 }
 
 model Event {
@@ -239,6 +302,24 @@ model Review {
 
   @@unique([memberId, bookId])
   @@map("reviews")
+}
+
+// A member's testimonial about the library as a whole, not a specific book — pending
+// until an admin approves it, then shown in the "What Our Members Say" homepage section.
+// Distinct from Review (book review), which is unmoderated and always book-scoped.
+model LibraryReview {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  memberId    String    @map("member_id") @db.Uuid
+  member      User      @relation("LibraryReviewMember", fields: [memberId], references: [id], onDelete: Cascade)
+  rating      Int
+  comment     String
+  status      String    @default("pending") @db.VarChar(20) // pending | approved | rejected
+  decidedById String?   @map("decided_by_id") @db.Uuid
+  decidedBy   User?     @relation("LibraryReviewDecidedBy", fields: [decidedById], references: [id])
+  decidedAt   DateTime? @map("decided_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("library_reviews")
 }
 
 // status: pending (awaiting manager decision) -> approved (a Loan now tracks the due
@@ -570,4 +651,21 @@ model Loan {
   reservation Reservation?
 
   @@map("loans")
+}
+
+model LibraryVisit {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  memberId     String    @map("member_id") @db.Uuid
+  member       User      @relation("LibraryVisitMember", fields: [memberId], references: [id], onDelete: Cascade)
+  checkedInAt  DateTime  @default(now()) @map("checked_in_at")
+  checkedOutAt DateTime? @map("checked_out_at")
+  recordedById String    @map("recorded_by_id") @db.Uuid
+  recordedBy   User      @relation("LibraryVisitRecordedBy", fields: [recordedById], references: [id])
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([memberId])
+  @@index([checkedOutAt])
+  @@index([memberId, checkedOutAt])
+  @@map("library_visits")
 }

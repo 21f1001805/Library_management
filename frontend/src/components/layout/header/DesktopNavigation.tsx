@@ -1,5 +1,6 @@
 import type { Role } from '@/providers/AuthProvider';
 
+import { ThemeToggle } from '../ThemeToggle';
 import { AuthActions } from './AuthActions';
 import { NavigationLinks, type HeaderNavLink } from './NavigationLinks';
 
@@ -23,6 +24,7 @@ export function DesktopNavigation({
       </div>
 
       <div className="hidden items-center gap-2 lg:flex">
+        <ThemeToggle />
         <AuthActions
           isAuthenticated={isAuthenticated}
           role={role}

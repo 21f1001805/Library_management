@@ -1,4 +1,4 @@
-import { BookOpen, Megaphone, Users, Wrench, type LucideIcon } from 'lucide-react';
+import { BookOpen, Megaphone, Pencil, Users, Wrench, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge, IconBadge, ProgressBar, type IconBadgeTone, type ProgressBarTone } from '@/components/common';
@@ -9,6 +9,7 @@ import type { BudgetCategory, ExpenseCategory } from '@/providers/AuthProvider';
 export interface BudgetExpensesProps {
   categories: BudgetCategory[];
   onLogExpense: (category: ExpenseCategory) => void;
+  onEditBudget?: () => void;
 }
 
 const CATEGORY_ICONS: Record<ExpenseCategory, LucideIcon> = {
@@ -32,7 +33,7 @@ function statusFor(percent: number): BudgetStatus {
   return 'onTrack';
 }
 
-export function BudgetExpenses({ categories, onLogExpense }: BudgetExpensesProps) {
+export function BudgetExpenses({ categories, onLogExpense, onEditBudget }: BudgetExpensesProps) {
   const { t } = useTranslation();
 
   const totalBudgeted = categories.reduce((sum, category) => sum + category.budgeted, 0);
@@ -41,8 +42,19 @@ export function BudgetExpenses({ categories, onLogExpense }: BudgetExpensesProps
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle>{t('admin.budget.title')}</CardTitle>
+        {onEditBudget && (
+          <button
+            type="button"
+            onClick={onEditBudget}
+            aria-label={t('admin.budget.editAllocations', 'Edit Allocations')}
+            title={t('admin.budget.editAllocations', 'Edit Allocations')}
+            className="inline-flex size-8 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary transition-all hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shadow-xs"
+          >
+            <Pencil className="size-4" />
+          </button>
+        )}
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <div className="flex flex-col gap-1.5 rounded-lg bg-secondary/50 p-3">

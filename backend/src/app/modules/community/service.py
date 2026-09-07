@@ -4,6 +4,7 @@ from prisma.models import User
 from app.core.constants import Role
 from app.modules.audit_log import service as audit_log_service
 from app.modules.audit_log.constants import AuditAction
+from app.modules.chat.guardrails import contains_harmful_content
 from app.modules.community import repository
 from app.modules.community.schemas import (
     BannedAuthorOut,
@@ -57,7 +58,15 @@ async def create_post(user: User, payload: PostCreate) -> PostOut:
     if _role(user) in _STAFF_ROLES:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Staff accounts cannot create posts")
     await _ensure_not_banned(user)
-    post = await repository.create_post(user.id, _post_data(payload))
+    # Auto-flag before a member ever has to report it — nothing is blocked or deleted,
+    # this just puts the post straight into the same queue a member report would, using
+    # the identical `reported` flag the rest of the moderation UI already keys off.
+    flagged = contains_harmful_content(payload.content)
+    post = await repository.create_post(user.id, {**_post_data(payload), "reported": flagged})
+    if flagged:
+        await _notify_moderators(
+            f"A new post by {user.fullName} was automatically flagged for review."
+        )
     return PostOut.from_prisma(post, current_user_id=user.id)
 
 
@@ -114,7 +123,14 @@ async def add_comment(user: User, post_id: str, payload: CommentCreate) -> PostO
         parent = await repository.find_comment(payload.parent_id)
         if parent is None or parent.postId != post_id:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Comment not found")
-    post = await repository.add_comment(post_id, user.id, payload.content, payload.parent_id)
+    flagged = contains_harmful_content(payload.content)
+    post = await repository.add_comment(
+        post_id, user.id, payload.content, payload.parent_id, reported=flagged
+    )
+    if flagged:
+        await _notify_moderators(
+            f"A new comment by {user.fullName} was automatically flagged for review."
+        )
     if parent is not None:
         if parent.authorId != user.id:
             await notifications_service.create_notification(

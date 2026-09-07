@@ -24,12 +24,14 @@ import type { RegistrationRequest, WalkInRequest } from '@/mocks/manager';
 import {
   useAuth,
   type AuditLogEntry,
+  type ChildVisitStatus,
   type GuardianChild,
   type LeaderboardEntry,
   type LoanRecord,
   type ManagerDashboardStats,
   type MemberRecord,
   type PermissionRequestRecord,
+  type ReadingProfile,
   type ReadingProgressEntry,
   type SupportTicketRecord,
 } from '@/providers/AuthProvider';
@@ -51,6 +53,7 @@ import { IssueResolution } from '@/features/it-head/components/IssueResolution';
 import { ResolveTicketModal } from '@/features/it-head/components/ResolveTicketModal';
 
 import { ProfileHeader } from '../components/ProfileHeader';
+import { ReadingProfileCard } from '../components/ReadingProfileCard';
 
 const ACHIEVEMENT_DEFINITIONS = [
   {
@@ -143,11 +146,13 @@ function AdminProfile() {
 // instead of fabricated per-child data (mirrors GuardianDashboardPage).
 function GuardianProfile() {
   const { t } = useTranslation();
-  const { fullName, email, getGuardianChildren } = useAuth();
+  const { fullName, email, getGuardianChildren, getChildrenVisitStatus } = useAuth();
   const [realChildren, setRealChildren] = useState<GuardianChild[]>([]);
+  const [childrenVisitStatus, setChildrenVisitStatus] = useState<ChildVisitStatus[]>([]);
 
   useEffect(() => {
     getGuardianChildren().then(setRealChildren).catch(() => setRealChildren([]));
+    getChildrenVisitStatus().then(setChildrenVisitStatus).catch(() => setChildrenVisitStatus([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -225,7 +230,7 @@ function GuardianProfile() {
         />
       </div>
 
-      <ChildrenPresence children={mappedChildren} />
+      <ChildrenPresence children={childrenVisitStatus} />
       <BorrowedBooksByChild books={borrowedBooks} children={mappedChildren} />
     </div>
   );
@@ -393,12 +398,16 @@ function MemberProfile() {
     getMyReadingProgress,
     getLeaderboard,
     getMyLoans,
+    getReadingProfile,
   } = useAuth();
   const { membership } = useMembershipQuery();
   const { payments } = useMyPaymentsQuery();
   const [progress, setProgress] = useState<ReadingProgressEntry[]>([]);
   const [loans, setLoans] = useState<LoanRecord[]>([]);
   const [myLeaderboardEntry, setMyLeaderboardEntry] = useState<LeaderboardEntry | null>(null);
+  const [readingProfile, setReadingProfile] = useState<ReadingProfile | null>(null);
+  const [readingProfileLoading, setReadingProfileLoading] = useState(true);
+  const [readingProfileError, setReadingProfileError] = useState(false);
 
   useEffect(() => {
     getMyReadingProgress().then(setProgress).catch(() => setProgress([]));
@@ -409,6 +418,10 @@ function MemberProfile() {
         setMyLeaderboardEntry(me ?? null);
       })
       .catch(() => setMyLeaderboardEntry(null));
+    getReadingProfile()
+      .then(setReadingProfile)
+      .catch(() => setReadingProfileError(true))
+      .finally(() => setReadingProfileLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
@@ -447,6 +460,12 @@ function MemberProfile() {
         email={email ?? undefined}
         joinDate={membership ? formatJoinDate(membership.purchased_at) : undefined}
         planLabel={membership?.is_active ? membership.plan_label : undefined}
+      />
+
+      <ReadingProfileCard
+        profile={readingProfile}
+        isLoading={readingProfileLoading}
+        isError={readingProfileError}
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">

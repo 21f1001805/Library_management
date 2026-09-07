@@ -1,5 +1,5 @@
 import { SearchX, Ticket } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -10,35 +10,29 @@ import { Button, Dialog, EmptyState, SearchBar } from '@/components/ui';
 import { usePagination, useSortedItems } from '@/hooks';
 import { ROUTES } from '@/constants/routes';
 import { getErrorMessage } from '@/lib/api';
-import { type Reservation, useAuth } from '@/providers/AuthProvider';
+import { useAuth } from '@/providers/AuthProvider';
 
 import { ReservationCard } from '../components/ReservationCard';
+import { useReservationsQuery } from '../hooks/useReservationsQuery';
+import { useReservationsStream } from '../hooks/useReservationsStream';
 
 export function ReservationsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { getMyReservations, cancelReservation } = useAuth();
-  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const { cancelReservation } = useAuth();
+  // Shared cache with the dashboard's reservations stat, kept live by the stream below:
+  // a manager's approve/reject now lands here without a reload.
+  const {
+    reservations,
+    isLoading,
+    error: loadError,
+    refetch: loadReservations,
+  } = useReservationsQuery();
+  useReservationsStream();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'cancelled'>('all');
   const [sort, setSort] = useState<'newest' | 'oldest' | 'titleAsc' | 'titleDesc'>('newest');
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<unknown>(null);
-
-  const loadReservations = useCallback(() => {
-    setIsLoading(true);
-    setLoadError(null);
-    getMyReservations()
-      .then(setReservations)
-      .catch(setLoadError)
-      .finally(() => setIsLoading(false));
-  }, [getMyReservations]);
-
-  useEffect(() => {
-    const timer = setTimeout(loadReservations, 0);
-    return () => clearTimeout(timer);
-  }, [loadReservations]);
 
   const cancellingReservation = reservations.find((entry) => entry.id === cancellingId);
 
@@ -75,7 +69,7 @@ export function ReservationsPage() {
     if (!cancellingReservation) return;
     try {
       await cancelReservation(cancellingReservation.id);
-      setReservations((prev) => prev.filter((entry) => entry.id !== cancellingReservation.id));
+      void loadReservations();
       toast.success(t('reservations.cancelSuccessToast', { book: cancellingReservation.book_title }));
     } catch (error) {
       toast.error(getErrorMessage(error, t('common.errors.generic')));
@@ -95,7 +89,8 @@ export function ReservationsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader title={t('reservations.pageTitle')} description={t('reservations.pageDescription')} />
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-end">
+      {/* Styled Filter & Search Toolbar Container matching Admin Members page */}
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
         <SearchBar
           value={search}
           onChange={(value) => {
@@ -107,43 +102,42 @@ export function ReservationsPage() {
           aria-label={t('reservations.search.ariaLabel')}
           className="sm:max-w-sm"
         />
-      </div>
 
-      <TableToolbar
-        filters={[
-          {
-            label: 'Status',
-            value: statusFilter,
+        <TableToolbar
+          filters={[
+            {
+              label: t('reservations.filters.statusLabel'),
+              value: statusFilter,
+              onChange: (value) => {
+                setStatusFilter(value as 'all' | 'pending' | 'approved' | 'rejected' | 'cancelled');
+                setPage(1);
+              },
+              options: [
+                { value: 'all', label: t('reservations.filters.all') },
+                { value: 'pending', label: t('reservations.filters.pending') },
+                { value: 'approved', label: t('reservations.filters.approved') },
+                { value: 'rejected', label: t('reservations.filters.rejected') },
+                { value: 'cancelled', label: t('reservations.filters.cancelled') },
+              ],
+            },
+          ]}
+          sort={{
+            label: t('common.actions.sort'),
+            value: sort,
             onChange: (value) => {
-              setStatusFilter(value as 'all' | 'pending' | 'approved' | 'rejected' | 'cancelled');
+              setSort(value as 'newest' | 'oldest' | 'titleAsc' | 'titleDesc');
               setPage(1);
             },
             options: [
-              { value: 'all', label: 'All' },
-              { value: 'pending', label: 'Pending' },
-              { value: 'approved', label: 'Approved' },
-              { value: 'rejected', label: 'Rejected' },
-              { value: 'cancelled', label: 'Cancelled' },
+              { value: 'newest', label: t('reservations.sort.newest') },
+              { value: 'oldest', label: t('reservations.sort.oldest') },
+              { value: 'titleAsc', label: t('reservations.sort.titleAsc') },
+              { value: 'titleDesc', label: t('reservations.sort.titleDesc') },
             ],
-          },
-        ]}
-        sort={{
-          label: 'Sort',
-          value: sort,
-          onChange: (value) => {
-            setSort(value as 'newest' | 'oldest' | 'titleAsc' | 'titleDesc');
-            setPage(1);
-          },
-          options: [
-            { value: 'newest', label: 'Newest' },
-            { value: 'oldest', label: 'Oldest' },
-            { value: 'titleAsc', label: 'Title A–Z' },
-            { value: 'titleDesc', label: 'Title Z–A' },
-          ],
-        }}
-        onReset={resetFilters}
-        resetLabel="Reset"
-      />
+          }}
+          onReset={resetFilters}
+        />
+      </div>
 
       <section aria-labelledby="current-reservations-heading" className="flex flex-col gap-3">
         <h2 id="current-reservations-heading" className="text-lg font-semibold text-foreground">
@@ -155,7 +149,7 @@ export function ReservationsPage() {
           <ErrorState
             className="min-h-48"
             description={getErrorMessage(loadError, t('common.errors.generic'))}
-            onRetry={loadReservations}
+            onRetry={() => void loadReservations()}
           />
         ) : reservations.length === 0 ? (
           <EmptyState

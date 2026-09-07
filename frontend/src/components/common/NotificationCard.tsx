@@ -3,6 +3,7 @@ import {
   Armchair,
   BellRing,
   BookMarked,
+  BookOpen,
   CheckCircle2,
   ClipboardList,
   Clock,
@@ -51,7 +52,8 @@ export type NotificationType =
   | 'support-ticket'
   | 'support-ticket-resolved'
   | 'support-ticket-reopened'
-  | 'fine-reminder';
+  | 'fine-reminder'
+  | 'reading-digest';
 
 export interface NotificationCardProps {
   type: NotificationType;
@@ -63,7 +65,7 @@ export interface NotificationCardProps {
   className?: string;
 }
 
-const typeIcon: Record<NotificationType, LucideIcon> = {
+export const notificationTypeIcon: Record<NotificationType, LucideIcon> = {
   'book-due': BookMarked,
   'reservation-ready': BellRing,
   'new-book': Gift,
@@ -89,6 +91,7 @@ const typeIcon: Record<NotificationType, LucideIcon> = {
   'support-ticket-resolved': CheckCircle2,
   'support-ticket-reopened': AlertCircle,
   'fine-reminder': Clock,
+  'reading-digest': BookOpen,
 };
 
 export function NotificationCard({
@@ -104,7 +107,7 @@ export function NotificationCard({
   // (see NotificationsPanel's `as NotificationType` cast) — not something TS can
   // actually guarantee matches this union, so fall back rather than crash on an
   // unrecognized value.
-  const Icon = typeIcon[type] ?? BellRing;
+  const Icon = notificationTypeIcon[type] ?? BellRing;
   const { t } = useTranslation();
 
   return (
@@ -123,7 +126,7 @@ export function NotificationCard({
           <p className="font-medium text-foreground">{title}</p>
           {!read && (
             <span
-              className="size-2 rounded-full bg-primary-gradient"
+              className="size-2 rounded-full bg-primary"
               aria-label={t('common.cards.notification.unread')}
             />
           )}

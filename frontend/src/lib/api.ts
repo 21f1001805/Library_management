@@ -1,6 +1,10 @@
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 const API_PREFIX = import.meta.env.VITE_API_PREFIX ?? '/api/v1';
 
+export function apiUrl(path: string): string {
+  return `${API_URL}${API_PREFIX}${path}`;
+}
+
 export class ApiError extends Error {
   status: number;
 

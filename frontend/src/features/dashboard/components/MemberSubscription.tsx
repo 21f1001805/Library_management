@@ -1,14 +1,22 @@
+import { Crown } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { Button, Card, CardContent, CardHeader, CardTitle, Modal } from '@/components/ui';
+import { ProgressBar } from '@/components/common';
+import { Badge, Button, Card, CardContent, Modal } from '@/components/ui';
+import { cn } from '@/lib/cn';
 import { ROUTES } from '@/constants/routes';
 
 export interface MemberSubscriptionProps {
+  className?: string;
   planLabel: string;
   /** No active plan yet (first-time member) when omitted. */
   expiresOn?: string;
+  /** Raw ISO dates, used only to compute the elapsed-time progress bar. */
+  purchasedAtIso?: string;
+  expiresAtIso?: string;
+  isActive?: boolean;
   outstandingFine: string;
   fineReasonKey?: string;
   fineBookTitle?: string;
@@ -17,14 +25,27 @@ export interface MemberSubscriptionProps {
   fineEscalatedAmount?: string;
 }
 
+function elapsedPercent(purchasedAtIso?: string, expiresAtIso?: string): number | null {
+  if (!purchasedAtIso || !expiresAtIso) return null;
+  const start = new Date(purchasedAtIso).getTime();
+  const end = new Date(expiresAtIso).getTime();
+  const total = end - start;
+  if (total <= 0) return null;
+  return Math.min(100, Math.max(0, ((Date.now() - start) / total) * 100));
+}
+
 // Mirrors the guardian's SubscriptionAndFines card, but for the signed-in
 // member's own plan. Renew goes straight to Payment for the existing plan
 // (Payment offers a "Change Plan" link back to Pricing for anyone who wants
 // a different one); with no active plan yet there's nothing to renew, so
 // that case still goes to Pricing to pick a first plan.
 export function MemberSubscription({
+  className,
   planLabel,
   expiresOn,
+  purchasedAtIso,
+  expiresAtIso,
+  isActive,
   outstandingFine,
   fineReasonKey,
   fineBookTitle,
@@ -36,6 +57,7 @@ export function MemberSubscription({
   const navigate = useNavigate();
   const [showFineDetails, setShowFineDetails] = useState(false);
   const hasFine = outstandingFine !== '₹0';
+  const percent = elapsedPercent(purchasedAtIso, expiresAtIso);
 
   function payFine() {
     const amount = Number(outstandingFine.replace(/[^\d.]/g, ''));
@@ -57,42 +79,72 @@ export function MemberSubscription({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('dashboard.subscription.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+    <Card className={cn('overflow-hidden border-none bg-ink text-ink-foreground', className)}>
+      <CardContent className="flex flex-col gap-4 p-5">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-medium text-ink-muted">{t('dashboard.subscription.title')}</p>
+          {expiresOn && (
+            <Badge className="border border-white/10 bg-white/6 text-ink-foreground">
+              {isActive
+                ? t('dashboard.subscription.statusActive')
+                : t('dashboard.subscription.statusInactive')}
+            </Badge>
+          )}
+        </div>
+
         <div>
-          <p className="font-medium text-foreground">{planLabel}</p>
-          <p className="text-muted-foreground">
+          <p className="text-2xl font-semibold">{planLabel}</p>
+          <p className="text-sm text-ink-muted">
             {expiresOn
               ? t('dashboard.subscription.expiresOn', { date: expiresOn })
               : t('dashboard.subscription.noPlan')}
           </p>
-          <p className={hasFine ? 'text-danger' : 'text-muted-foreground'}>
-            {hasFine
-              ? t('dashboard.subscription.fineOwed', { amount: outstandingFine })
-              : t('dashboard.subscription.noFine')}
+        </div>
+
+        {percent !== null && (
+          <ProgressBar
+            percent={percent}
+            trackClassName="bg-white/10"
+            fillClassName="bg-ink-foreground"
+          />
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+          <div>
+            <p className="text-ink-muted">{t('dashboard.subscription.outstandingFine')}</p>
+            <p className={hasFine ? 'font-semibold text-red-300' : 'font-semibold'}>
+              {outstandingFine}
+            </p>
             {hasFine && (
               <button
                 type="button"
                 onClick={() => setShowFineDetails(true)}
-                className="ml-2 text-sm font-medium text-primary-gradient underline underline-offset-2 hover:no-underline"
+                className="text-xs font-medium text-ink-foreground underline underline-offset-2 hover:no-underline"
               >
                 {t('dashboard.subscription.viewFineDetails')}
               </button>
             )}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {hasFine && (
-            <Button size="sm" variant="outline" onClick={payFine}>
-              {t('dashboard.subscription.payFine')}
+          </div>
+          <div className="flex gap-2">
+            {hasFine && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-white/10 bg-white/6 text-ink-foreground hover:bg-white/10"
+                onClick={payFine}
+              >
+                {t('dashboard.subscription.payFine')}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              className="bg-ink-foreground text-ink hover:bg-ink-foreground/90"
+              leadingIcon={<Crown className="size-4" />}
+              onClick={renewOrViewPlans}
+            >
+              {expiresOn ? t('dashboard.subscription.renew') : t('dashboard.subscription.viewPlans')}
             </Button>
-          )}
-          <Button size="sm" onClick={renewOrViewPlans}>
-            {expiresOn ? t('dashboard.subscription.renew') : t('dashboard.subscription.viewPlans')}
-          </Button>
+          </div>
         </div>
       </CardContent>
 

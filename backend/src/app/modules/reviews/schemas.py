@@ -57,3 +57,6 @@ class BookReviewsOut(BaseModel):
     average_rating: float
     total_reviews: int
     breakdown: list[RatingBreakdownEntry]
+    # AI-generated "what readers are saying" summary — None until there's at least one
+    # review, and while a fresh one is being generated for the first time.
+    review_digest: str | None = None

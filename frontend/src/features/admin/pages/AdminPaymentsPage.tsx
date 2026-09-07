@@ -73,38 +73,40 @@ export function AdminPaymentsPage() {
       <PageHeader
         title={t('admin.payments.pageTitle')}
         description={t('admin.payments.pageDescription')}
-        actions={
-          <>
-            <input
-              type="month"
-              value={month}
-              onChange={(event) => updateMonth(event.target.value)}
-              className="h-10 min-w-0 max-w-full rounded-md border border-border bg-transparent px-3 text-sm text-foreground"
-              aria-label={t('admin.payments.monthFilter')}
-            />
-            <ExportButton
-              filename="payments-report"
-              title={t('admin.payments.pageTitle')}
-              headers={[
-                t('admin.payments.table.member'),
-                t('admin.payments.table.email'),
-                t('admin.payments.table.amount'),
-                t('admin.payments.table.label'),
-                t('admin.payments.table.status'),
-                t('admin.payments.table.date'),
-              ]}
-              rows={loadExportRows}
-            />
-          </>
-        }
       />
 
-      <SearchBar
-        value={search}
-        onChange={updateSearch}
-        placeholder={t('admin.payments.searchPlaceholder')}
-        className="max-w-sm"
-      />
+      {/* Styled Filter & Search Toolbar Container matching Admin Members page */}
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+        <SearchBar
+          value={search}
+          onChange={updateSearch}
+          placeholder={t('admin.payments.searchPlaceholder')}
+          className="max-w-sm"
+        />
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <input
+            type="month"
+            value={month}
+            onChange={(event) => updateMonth(event.target.value)}
+            className="h-9 min-w-0 rounded-lg border border-border bg-secondary/50 px-3 text-xs font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label={t('admin.payments.monthFilter')}
+          />
+          <ExportButton
+            filename="payments-report"
+            title={t('admin.payments.pageTitle')}
+            headers={[
+              t('admin.payments.table.member'),
+              t('admin.payments.table.email'),
+              t('admin.payments.table.amount'),
+              t('admin.payments.table.label'),
+              t('admin.payments.table.status'),
+              t('admin.payments.table.date'),
+            ]}
+            rows={loadExportRows}
+          />
+        </div>
+      </div>
 
       {items.length === 0 ? (
         <NoResults
@@ -114,42 +116,48 @@ export function AdminPaymentsPage() {
         />
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('admin.payments.table.member')}</TableHead>
-                <TableHead>{t('admin.payments.table.amount')}</TableHead>
-                <TableHead>{t('admin.payments.table.label')}</TableHead>
-                <TableHead>{t('admin.payments.table.status')}</TableHead>
-                <TableHead>{t('admin.payments.table.date')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Avatar name={payment.member_name} size="sm" />
-                      <div>
-                        <p className="font-medium text-foreground">{payment.member_name}</p>
-                        <p className="text-xs text-muted-foreground">{payment.member_email}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium text-foreground">
-                    {formatCurrency(payment.amount)}
-                  </TableCell>
-                  <TableCell>{payment.label}</TableCell>
-                  <TableCell>
-                    <Badge variant={payment.status === 'success' ? 'success' : 'outline'}>
-                      {payment.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{formatDate(payment.created_at)}</TableCell>
+          <div className="w-full overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
+            <Table className="min-w-full">
+              <TableHeader className="bg-secondary/20">
+                <TableRow>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.payments.table.member')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.payments.table.amount')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.payments.table.label')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.payments.table.status')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5 text-right">{t('admin.payments.table.date')}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {items.map((payment) => (
+                  <TableRow key={payment.id} className="transition-colors hover:bg-secondary/40">
+                    <TableCell className="px-3 py-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={payment.member_name} size="sm" />
+                        <div>
+                          <p className="font-semibold text-foreground text-xs sm:text-sm">{payment.member_name}</p>
+                          <p className="text-xs text-muted-foreground">{payment.member_email}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap px-3 py-2.5 font-semibold text-foreground text-xs sm:text-sm">
+                      {formatCurrency(payment.amount)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap px-3 py-2.5 text-xs text-foreground font-medium">
+                      {payment.label}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap px-3 py-2.5">
+                      <Badge variant={payment.status === 'success' ? 'success' : 'outline'}>
+                        {payment.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap px-3 py-2.5 text-right text-xs text-muted-foreground">
+                      {formatDate(payment.created_at)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
           <Pagination
             currentPage={page}

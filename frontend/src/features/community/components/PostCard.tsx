@@ -1,12 +1,48 @@
-import { Bookmark, Flag, Heart, MessageCircle, Pencil, Send, Trash2, UserX } from 'lucide-react';
+import {
+  Bookmark,
+  Flag,
+  Heart,
+  Languages,
+  MessageCircle,
+  Pencil,
+  Send,
+  Trash2,
+  UserX,
+} from 'lucide-react';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Avatar, Badge, Card, CardContent, CardHeader } from '@/components/ui';
+import { useOnDemandTranslation } from '@/features/translate/hooks/useOnDemandTranslation';
 import { cn } from '@/lib/cn';
 import { formatRelativeTime } from '@/lib/formatRelativeTime';
 import type { CommunityPost, PostComment } from '@/providers/AuthProvider';
 import { useAuth } from '@/providers/AuthProvider';
+
+/** Small "Translate this" toggle shared by post bodies and comments — same affordance,
+ * same behavior, just placed differently by each caller. */
+function TranslateToggle({ onClick, active }: { onClick: () => void; active: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className="inline-flex items-center gap-1 text-xs font-medium transition-opacity hover:opacity-80"
+    >
+      <Languages className="size-3.5 text-primary" />
+      <span
+        className={cn(
+          active
+            ? 'text-primary font-semibold'
+            : 'bg-gradient-to-r from-primary via-primary/70 to-primary bg-clip-text text-transparent font-semibold',
+        )}
+      >
+        {active ? t('community.post.showOriginal') : t('community.post.translate')}
+      </span>
+    </button>
+  );
+}
 
 // If a member reported a comment themselves, hide it from their view.
 // Other members will still see it (marked as [Reported]), and staff see all comments.
@@ -56,6 +92,7 @@ function CommentRow({
   const { t } = useTranslation();
   const [isReplying, setIsReplying] = useState(false);
   const [replyDraft, setReplyDraft] = useState('');
+  const translation = useOnDemandTranslation(comment.content);
 
   function handleReplySubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -78,7 +115,10 @@ function CommentRow({
                 <Badge variant="danger">{t('community.post.reportedBadge')}</Badge>
               )}
             </div>
-            <p className="text-sm text-foreground">{comment.content}</p>
+            <p className="text-sm text-foreground">{translation.text}</p>
+            {translation.error && (
+              <p className="mt-0.5 text-xs text-danger">{t('community.post.translateFailed')}</p>
+            )}
           </div>
           <div className="mt-1 flex items-center gap-3 px-1">
             <button
@@ -88,6 +128,10 @@ function CommentRow({
             >
               {t('community.post.reply')}
             </button>
+            <TranslateToggle onClick={translation.toggle} active={translation.isShown} />
+            {translation.loading && (
+              <span className="text-xs text-muted-foreground">{t('community.post.translating')}</span>
+            )}
             {!comment.reported && comment.author_id !== currentUserId && onReportComment && (
               <button
                 type="button"
@@ -182,6 +226,7 @@ export const PostCard = memo(function PostCard({
   const [manualCommentsOpen, setManualCommentsOpen] = useState<boolean | null>(null);
   const isCommentsOpen = manualCommentsOpen ?? flagReportedComment;
   const [commentDraft, setCommentDraft] = useState('');
+  const translation = useOnDemandTranslation(post.content);
 
   function handleAddComment(event: React.FormEvent) {
     event.preventDefault();
@@ -249,7 +294,18 @@ export const PostCard = memo(function PostCard({
         )}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <p className="whitespace-pre-wrap text-sm text-foreground">{post.content}</p>
+        <div className="flex flex-col gap-1.5">
+          <p className="whitespace-pre-wrap text-sm text-foreground">{translation.text}</p>
+          <div className="flex items-center gap-2">
+            <TranslateToggle onClick={translation.toggle} active={translation.isShown} />
+            {translation.loading && (
+              <span className="text-xs text-muted-foreground">{t('community.post.translating')}</span>
+            )}
+            {translation.error && (
+              <span className="text-xs text-danger">{t('community.post.translateFailed')}</span>
+            )}
+          </div>
+        </div>
 
         {post.images.length > 0 && (
           <div className="flex flex-wrap gap-2">

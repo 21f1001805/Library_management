@@ -9,15 +9,22 @@ describe('AppRouter', () => {
     window.history.pushState({}, '', '/dashboard');
   });
 
-  it('redirects unauthenticated users away from protected routes to login', async () => {
-    const { AppRouter } = await import('./AppRouter');
+  it(
+    'redirects unauthenticated users away from protected routes to login',
+    async () => {
+      const { AppRouter } = await import('./AppRouter');
 
-    render(
-      <AppProviders>
-        <AppRouter />
-      </AppProviders>,
-    );
+      render(
+        <AppProviders>
+          <AppRouter />
+        </AppProviders>,
+      );
 
-    expect(await screen.findByRole('heading', { name: /log in/i })).toBeInTheDocument();
-  });
+      expect(await screen.findByRole('heading', { name: /log in/i }, { timeout: 15000 })).toBeInTheDocument();
+    },
+    // ponytail: the router's cold import now pulls in every routed page (a lot of them,
+    // and growing) — the default 5s timeout stopped being enough. Bump per-test rather
+    // than globally, since this is the one test that pays the full cold-import cost.
+    45000,
+  );
 });

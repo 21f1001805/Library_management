@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+from prisma import Json
 from prisma.models import Book, Loan, Review
 
 from app.db.pagination import paginate
@@ -38,6 +39,28 @@ async def list_ratings_for_books(book_ids: list[str]) -> list[Review]:
     return await prisma.review.find_many(where={"bookId": {"in": book_ids}})
 
 
+async def save_review_digest(book_id: str, *, digest: str, review_count: int) -> None:
+    await prisma.book.update(
+        where={"id": book_id},
+        data={"reviewDigest": digest, "reviewDigestReviewCount": review_count},
+    )
+
+
+async def save_embedding(book_id: str, vector: list[float]) -> None:
+    await prisma.book.update(where={"id": book_id}, data={"embedding": vector})
+
+
+async def save_ai_insights(book_id: str, data: dict) -> None:
+    await prisma.book.update(where={"id": book_id}, data={"aiInsights": Json(data)})
+
+
+async def list_active_excluding(book_id: str) -> list[Book]:
+    """Every non-deleted book but the one being related against — the candidate pool
+    for embedding-similarity ranking. Small enough catalog (~400 books) that fetching
+    it whole and ranking in Python beats standing up vector-index infrastructure."""
+    return await prisma.book.find_many(where={"deletedAt": None, "id": {"not": book_id}})
+
+
 async def list_books(
     *, search: str | None, category: str | None, page: int, page_size: int
 ) -> tuple[list[Book], int]:
@@ -50,12 +73,10 @@ async def list_books(
     )
 
 
-# Used by sort modes ("rating"/"recommended") that need every matching book scored
-# before they can be paginated, unlike the DB-level skip/take "newest" sort above.
 async def list_books_by_rating(
     *, search: str | None, category: str | None, skip: int, take: int
 ) -> tuple[list[Book], int]:
-    """A page of books ordered by average rating, ranked and paginated in SQL.
+    """Sorts books by their average rating (highest first) entirely in SQL.
 
     Rating order used to mean loading the entire matching catalogue plus every review
     for it, sorting in Python and slicing — on a list endpoint the chat tool also hits.

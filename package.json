@@ -2,8 +2,8 @@
   "name": "may2026-team-041",
   "private": true,
   "scripts": {
-    "backend": "python start_backend.py",
-    "frontend": "npm --prefix frontend run dev",
+    "backend": "git config core.hooksPath .githooks && python start_backend.py",
+    "frontend": "git config core.hooksPath .githooks && npm --prefix frontend run dev",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps"
   },

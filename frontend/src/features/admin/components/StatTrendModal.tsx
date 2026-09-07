@@ -34,6 +34,7 @@ const MONEY_COLOR: Record<Exclude<StatKey, 'totalMembers'>, string> = {
 };
 
 function MoneyTrendBody({ statKey, months }: { statKey: Exclude<StatKey, 'totalMembers'>; months: MonthlyFigure[] }) {
+  const { t } = useTranslation();
   const field = MONEY_FIELD[statKey];
 
   return (
@@ -42,6 +43,8 @@ function MoneyTrendBody({ statKey, months }: { statKey: Exclude<StatKey, 'totalM
         data={months.map((m) => ({ label: formatMonth(m.month), value: m[field] as number }))}
         color={MONEY_COLOR[statKey]}
         valueFormatter={formatCurrency}
+        ariaLabel={t(STAT_TITLE_KEYS[statKey])}
+        axisPrefix="₹"
       />
       <div className="flex flex-col gap-1.5 border-t border-border pt-3 text-sm">
         {months.map((m) => (
@@ -74,6 +77,7 @@ function MembersTrendBody({
       <TrendLineChart
         data={months.map((m) => ({ label: formatMonth(m.month), value: m.total_members }))}
         color="var(--color-info)"
+        ariaLabel={t(STAT_TITLE_KEYS.totalMembers)}
       />
       <div className="flex flex-col gap-1.5 border-t border-border pt-3 text-sm">
         {months.map((m) => (

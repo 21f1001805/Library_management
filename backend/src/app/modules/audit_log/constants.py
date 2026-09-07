@@ -26,3 +26,5 @@ class AuditAction(StrEnum):
     FINE_MARKED_PAID = "fineMarkedPaid"
     COMMUNITY_USER_BANNED = "communityUserBanned"
     COMMUNITY_USER_UNBANNED = "communityUserUnbanned"
+    LIBRARY_REVIEW_APPROVED = "libraryReviewApproved"
+    LIBRARY_REVIEW_REJECTED = "libraryReviewRejected"

@@ -5,6 +5,7 @@ import { Button, MenuToggleIcon } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import type { Role } from '@/providers/AuthProvider';
 
+import { ThemeToggle } from '../ThemeToggle';
 import { AuthActions } from './AuthActions';
 import { NavigationLinks, type HeaderNavLink } from './NavigationLinks';
 
@@ -14,12 +15,13 @@ export interface MobileNavToggleProps {
   ref?: Ref<HTMLButtonElement>;
 }
 
-// Hamburger button rendered inline in the header's nav row.
+// Theme toggle + hamburger button rendered inline in the header's nav row.
 export function MobileNavToggle({ open, onToggle, ref }: MobileNavToggleProps) {
   const { t } = useTranslation();
 
   return (
     <div className="flex items-center gap-2 lg:hidden">
+      <ThemeToggle />
       <Button
         ref={ref}
         variant="ghost"

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ProgressBar } from '@/components/common';
+import { MultiSegmentPie, ProgressBar } from '@/components/common';
 import { NoResults } from '@/components/feedback';
 import { Loader, Modal } from '@/components/ui';
 import { formatCurrency, formatMonth } from '@/lib/format';
@@ -12,6 +12,17 @@ import {
   type ProfitAndLossReport,
   type RevenueByPlanReport,
 } from '@/providers/AuthProvider';
+
+const CATEGORY_COLORS: Record<string, string> = {
+  staffSalaries: 'var(--color-primary)',
+  salaries: 'var(--color-primary)',
+  bookProcurement: 'var(--color-info)',
+  books: 'var(--color-info)',
+  utilities: 'var(--color-success)',
+  maintenance: 'var(--color-success)',
+  marketing: 'var(--color-warning)',
+  operations: 'var(--color-warning)',
+};
 
 export type ReportKey =
   | 'revenueByPlan'
@@ -107,20 +118,24 @@ function ExpenseBreakdownContent({ report }: { report: ExpenseBreakdownReport })
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {report.items.map((item) => (
-        <div key={item.category} className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-foreground">{t(`admin.budget.categories.${item.category}`)}</span>
-            <span className="font-medium text-foreground">
-              {formatCurrency(item.amount)} ({item.percent}%)
-            </span>
-          </div>
-          <ProgressBar percent={item.percent} />
-        </div>
-      ))}
-      <div className="mt-2 flex items-center justify-between border-t border-border pt-2 text-sm font-semibold">
-        <span className="text-foreground">{t('admin.cashFlow.total')}</span>
+    <div className="flex flex-col gap-5">
+      <div className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-2.5 text-center text-xs text-foreground shadow-xs">
+        <span className="font-semibold text-primary">All-Time Historical Scope:</span> Cumulative expenditure breakdown across all library operations
+      </div>
+      <MultiSegmentPie
+        ariaLabel={t('admin.reports.titles.expenseBreakdown')}
+        valueFormatter={formatCurrency}
+        segments={report.items.map((item, idx) => ({
+          key: item.category,
+          label: t(`admin.budget.categories.${item.category}`, { defaultValue: item.category }),
+          value: item.amount,
+          color:
+            CATEGORY_COLORS[item.category] ||
+            ['#3b82f6', '#eab308', '#c084fc', '#22c55e', '#f97316', '#ec4899'][idx % 6],
+        }))}
+      />
+      <div className="flex items-center justify-between border-t border-border pt-3 text-sm font-semibold">
+        <span className="text-foreground">{t('admin.reports.totalHistoricalExpenses', 'Total Historical Expenses')}</span>
         <span className="text-foreground">{formatCurrency(report.total)}</span>
       </div>
     </div>

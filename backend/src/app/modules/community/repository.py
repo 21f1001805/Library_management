@@ -84,7 +84,12 @@ async def toggle_save(post_id: str, user_id: str) -> CommunityPost:
 
 
 async def add_comment(
-    post_id: str, author_id: str, content: str, parent_id: str | None
+    post_id: str,
+    author_id: str,
+    content: str,
+    parent_id: str | None,
+    *,
+    reported: bool = False,
 ) -> CommunityPost:
     await prisma.communitycomment.create(
         data={
@@ -92,6 +97,7 @@ async def add_comment(
             "authorId": author_id,
             "content": content,
             "parentId": parent_id,
+            "reported": reported,
         }
     )
     return _required_post(await find_post(post_id))

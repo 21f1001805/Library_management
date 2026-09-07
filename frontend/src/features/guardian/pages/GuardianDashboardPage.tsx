@@ -13,7 +13,7 @@ import { RaiseTicketModal } from '@/features/support/components/RaiseTicketModal
 import { GUARDIAN_CATEGORIES } from '@/features/support/constants';
 import { getErrorMessage } from '@/lib/api';
 import { guardianStats } from '@/mocks/guardian';
-import { useAuth, type GuardianChild } from '@/providers/AuthProvider';
+import { useAuth, type ChildVisitStatus, type GuardianChild } from '@/providers/AuthProvider';
 
 import { BorrowedBooksByChild } from '../components/BorrowedBooksByChild';
 import { ChildrenPresence } from '../components/ChildrenPresence';
@@ -55,10 +55,10 @@ function ChildrenReadingProgress({ realChildren }: { realChildren: GuardianChild
         )}
         <Link
           to={ROUTES.READING_PROGRESS}
-          className="flex items-center gap-1.5 text-sm font-medium hover:underline"
+          className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
         >
-          <BookOpen className="size-4 text-primary" />
-          <span className="text-primary-gradient">{t('readingProgress.pageTitle')}</span>
+          <BookOpen className="size-4" />
+          {t('readingProgress.pageTitle')}
         </Link>
       </CardContent>
     </Card>
@@ -67,21 +67,29 @@ function ChildrenReadingProgress({ realChildren }: { realChildren: GuardianChild
 
 export function GuardianDashboardPage() {
   const { t } = useTranslation();
-  const { getGuardianChildren, payChildFines, renewChildSubscription } = useAuth();
+  const { getGuardianChildren, getChildrenVisitStatus, payChildFines, renewChildSubscription } = useAuth();
   const [realChildren, setRealChildren] = useState<GuardianChild[]>([]);
+  const [childrenVisitStatus, setChildrenVisitStatus] = useState<ChildVisitStatus[]>([]);
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
   const [activeStat, setActiveStat] = useState<GuardianStatKey | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
 
   function refreshChildren() {
     getGuardianChildren().then(setRealChildren).catch(() => setRealChildren([]));
+    getChildrenVisitStatus().then(setChildrenVisitStatus).catch(() => setChildrenVisitStatus([]));
   }
 
-  useEffect(refreshChildren, [getGuardianChildren]);
+  useEffect(refreshChildren, [getGuardianChildren, getChildrenVisitStatus]);
 
   const childrenWithFines = useMemo(
     () => realChildren.filter((child) => child.outstanding_fine > 0),
     [realChildren],
+  );
+
+  const currentlyInLibraryCount = useMemo(
+    () => childrenVisitStatus.filter((c) => c.is_in_library).length,
+    [childrenVisitStatus],
   );
 
   async function handlePayAllFines() {
@@ -129,6 +137,8 @@ export function GuardianDashboardPage() {
               value={
                 stat.labelKey === 'guardian.stats.linkedChildren'
                   ? String(realChildren.length)
+                  : stat.labelKey === 'guardian.stats.currentlyInLibrary'
+                  ? String(currentlyInLibraryCount)
                   : stat.value
               }
               onClick={() => setActiveStat(statKey)}
@@ -139,7 +149,7 @@ export function GuardianDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ChildrenPresence children={[]} />
+        <ChildrenPresence children={childrenVisitStatus} />
         <BorrowedBooksByChild books={[]} children={[]} />
       </div>
 
@@ -150,7 +160,7 @@ export function GuardianDashboardPage() {
 
       <ChildrenReadingProgress realChildren={realChildren} />
 
-      <LibraryReviewCard onOpenModal={() => setIsReviewModalOpen(true)} />
+      <LibraryReviewCard onOpenModal={() => setIsReviewModalOpen(true)} refreshKey={reviewRefreshKey} />
 
       <QuickActionsCard
         actions={[
@@ -180,6 +190,7 @@ export function GuardianDashboardPage() {
       <LeaveLibraryReviewModal
         open={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
+        onSubmitted={() => setReviewRefreshKey((key) => key + 1)}
       />
 
       <RaiseTicketModal

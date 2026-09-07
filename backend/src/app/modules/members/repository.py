@@ -1,7 +1,7 @@
 from contextlib import suppress
 from datetime import UTC, datetime
 
-from prisma import Prisma
+from prisma import Json, Prisma
 from prisma.errors import UniqueViolationError
 from prisma.models import LoginActivity, ReadingGoal, ReadingProgress, Role, User
 
@@ -27,6 +27,13 @@ async def find_by_id(member_id: str) -> User | None:
 async def find_by_email(email: str) -> User | None:
     return await prisma.user.find_unique(
         where={"email": email.strip().lower()}, include=MEMBER_INCLUDE
+    )
+
+
+async def save_reading_profile(member_id: str, data: dict, *, activity_count: int) -> None:
+    await prisma.user.update(
+        where={"id": member_id},
+        data={"readingProfile": Json(data), "readingProfileActivityCount": activity_count},
     )
 
 

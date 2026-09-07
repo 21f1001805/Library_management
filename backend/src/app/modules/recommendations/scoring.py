@@ -74,6 +74,11 @@ AVAILABILITY_WEIGHT = 3
 # Small on purpose — a returning member's borrowing history is a bonus signal, not
 # something that should drown out what they told the quiz just now.
 HISTORY_AUTHOR_WEIGHT = 1
+# Same tier as HISTORY_AUTHOR_WEIGHT: the AI reading profile (members/reading_profile.py)
+# is another soft behavioral signal, not a replacement for what the member just told the
+# quiz. Reading profile_interests is optional and defaults to empty, so a member with no
+# cached profile yet scores identically to before this existed.
+PROFILE_INTEREST_WEIGHT = 1
 
 
 def _era_key_for_year(year: int | None) -> str | None:
@@ -102,34 +107,50 @@ def score_candidates(
     ratings: dict[str, tuple[float, int]],
     loan_counts: dict[str, int],
     history_authors: Counter[str],
+    profile_interests: frozenset[str] = frozenset(),
 ) -> list[ScoredBook]:
     scored: list[ScoredBook] = []
     for book in books:
         score = 0.0
         reasons: list[str] = []
 
-        if answers.author and answers.author != NO_PREFERENCE and book.author == answers.author:
+        authors = [answers.author] if isinstance(answers.author, str) else (answers.author or [])
+        if book.author in authors and book.author != NO_PREFERENCE:
             score += AUTHOR_MATCH_WEIGHT
             reasons.append(f"By {book.author}, the author you picked")
 
-        era_wanted = answers.era and answers.era != NO_PREFERENCE
-        if era_wanted and _era_key_for_year(book.publishedYear) == answers.era:
+        eras = [answers.era] if isinstance(answers.era, str) else (answers.era or [])
+        book_era = _era_key_for_year(book.publishedYear)
+        if book_era and book_era in eras and book_era != NO_PREFERENCE:
             score += ERA_MATCH_WEIGHT
             reasons.append("Matches the era you picked")
 
-        if answers.story_type and answers.story_type != NO_PREFERENCE and book.description:
-            keywords = STORY_TYPE_KEYWORDS.get(answers.story_type, [])
-            text = book.description.lower()
-            hits = min(sum(1 for kw in keywords if kw in text), STORY_TYPE_MAX_HITS)
-            if hits:
-                score += hits * STORY_TYPE_HIT_WEIGHT
-                reasons.append(f"Themes that fit {_STORY_TYPE_LABELS[answers.story_type].lower()}")
+        story_types = (
+            [answers.story_type]
+            if isinstance(answers.story_type, str)
+            else (answers.story_type or [])
+        )
+        if book.description:
+            for st in story_types:
+                if st != NO_PREFERENCE:
+                    keywords = STORY_TYPE_KEYWORDS.get(st, [])
+                    text = book.description.lower()
+                    hits = min(sum(1 for kw in keywords if kw in text), STORY_TYPE_MAX_HITS)
+                    if hits:
+                        score += hits * STORY_TYPE_HIT_WEIGHT
+                        reasons.append(f"Themes that fit {_STORY_TYPE_LABELS[st].lower()}")
+                        break
 
+        pops = (
+            [answers.popularity]
+            if isinstance(answers.popularity, str)
+            else (answers.popularity or [])
+        )
         loan_count = loan_counts.get(book.id, 0)
-        if answers.popularity == "trending" and loan_count > 0:
+        if "trending" in pops and loan_count > 0:
             score += POPULARITY_WEIGHT
             reasons.append("Popular with other members")
-        elif answers.popularity == "hidden_gems" and loan_count == 0:
+        elif "hidden_gems" in pops and loan_count == 0:
             score += POPULARITY_WEIGHT
             reasons.append("A hidden gem — not widely borrowed yet")
 
@@ -146,6 +167,10 @@ def score_candidates(
         if history_hits:
             score += history_hits * HISTORY_AUTHOR_WEIGHT
             reasons.append(f"You've enjoyed other books by {book.author}")
+
+        if book.category in profile_interests:
+            score += PROFILE_INTEREST_WEIGHT
+            reasons.append("Matches your AI reading profile's interests")
 
         scored.append(ScoredBook(book=book, score=score, reasons=reasons))
 

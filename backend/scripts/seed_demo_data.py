@@ -1,5 +1,6 @@
-"""Generates 3 months of realistic historical demo data exercising every feature of
-the app: staff + salaries, guardians + linked children, 100-110 new members per month,
+"""Generates realistic historical demo data (April of the current year through today)
+exercising every feature of the app: staff + salaries, guardians + linked children,
+100-110 new members per month,
 membership/renewal/fine payments (against the updated pricing plans), coupons, loans
 (on-time/late/overdue/active), reservations, reviews, reading progress/goals, login
 activity, seat bookings + notify requests, events + registrations, community posts/
@@ -7,10 +8,10 @@ comments/likes/saves, notifications, expenses (incl. staff salaries), billing/
 permission requests, support tickets, book records, and an announcement.
 
 Run from backend/: `uv run python scripts/seed_demo_data.py`
-NOT idempotent — every run inserts a fresh batch of ~300+ new members tagged under
-the @seed-demo.example.com domain. Re-running adds a second batch rather than
-updating the first. Intended for a local dev database only (reads DATABASE_URL from
-.env, same as the other scripts/ seeders).
+Idempotent at the batch level: if any @seed-demo.example.com user already exists, the
+run skips rather than inserting a second batch — safe to invoke on every backend boot
+(see app.main's lifespan). Intended for a local dev database only (reads DATABASE_URL
+from .env, same as the other scripts/ seeders).
 """
 
 import asyncio
@@ -19,6 +20,15 @@ import random
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+# Windows' console defaults to a legacy codepage that can't encode the ₹ sign this
+# script prints — same fix as backend/src/app/main.py and start_backend.py. Needed
+# here too since app.main's lifespan now runs this script as a piped subprocess,
+# which gets that same cp1252 default rather than inheriting a UTF-8 terminal.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 sys.path.insert(0, str(Path(__file__).parent))
 import seed_pricing_plans  # noqa: E402
@@ -183,7 +193,15 @@ def _random_dt_between(start: datetime, end: datetime) -> datetime:
 
 NOW = datetime.now(UTC)
 THIS_MONTH_START = _month_start(NOW)
-MONTH_STARTS = [_add_months(THIS_MONTH_START, offset) for offset in (-3, -2, -1)]
+
+# "Since April" — if run before April, fall back to last year's so the range is
+# never empty (an empty MONTH_STARTS would crash the first `MONTH_STARTS[0]` use below).
+_seed_start_year = NOW.year if NOW.month >= 4 else NOW.year - 1
+MONTH_STARTS = []
+_cursor = datetime(_seed_start_year, 4, 1, tzinfo=UTC)
+while _cursor <= THIS_MONTH_START:
+    MONTH_STARTS.append(_cursor)
+    _cursor = _add_months(_cursor, 1)
 MONTH_ENDS = [_add_months(start, 1) for start in MONTH_STARTS]
 
 _email_counter = 0
@@ -1159,6 +1177,11 @@ async def main() -> None:
     await prisma.connect()
 
     try:
+        existing = await prisma.user.find_first(where={"email": {"endswith": f"@{SEED_DOMAIN}"}})
+        if existing is not None:
+            print(f"Demo data already seeded (found {existing.email}) — skipping.")
+            return
+
         print(f"Seeding demo data for {[m.strftime('%Y-%m') for m in MONTH_STARTS]}...")
 
         # seed_pricing_plans.main() connects/disconnects prisma itself — replicate its

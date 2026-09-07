@@ -35,6 +35,12 @@
   --color-ink-foreground: #fdf4ff;
   --color-ink-muted: #f0abfc;
 
+  /* A 3rd categorical chart color (identity, not status) — validated against
+     styles.css's own surfaces via the dataviz skill's palette checker (CVD
+     separation + lightness band both pass in light and dark with this single
+     value, so unlike primary/info it needs no per-mode override). */
+  --color-teal: #0d9488;
+
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -44,7 +50,7 @@
 }
 
 .dark {
-  --color-background: #000000;
+  --color-background: #0b1220;
   --color-surface: #131b2c;
   --color-border: #232f42;
   --color-border-muted: #1c2536;
@@ -119,23 +125,6 @@
     pointer-events: none;
     border-radius: 42% 58% 69% 31% / 45% 41% 59% 55%;
     background: radial-gradient(circle at 32% 32%, var(--color-primary), transparent 72%);
-  }
-
-  /* Replaces flat bg-primary wherever it's used as a solid fill (buttons, active/selected
-     states, badges, icon chips, etc.) — a single definition so the look stays consistent
-     and can be retuned in one place. */
-  .bg-primary-gradient {
-    background-image: linear-gradient(135deg, var(--color-info), var(--color-primary));
-  }
-
-  /* Same gradient, painted onto text instead of a background — for links and other
-     primary-colored text. Only apply to text nodes: this makes `color` transparent, which
-     also blanks any SVG icon (fill="currentColor") caught in the same element. */
-  .text-primary-gradient {
-    background-image: linear-gradient(135deg, var(--color-info), var(--color-primary));
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
   }
 
   .seat-available {

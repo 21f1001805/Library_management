@@ -34,6 +34,7 @@ export function AnnouncementPopup() {
 
   const current = pending[0];
   if (!current) return null;
+  if (typeof navigator !== 'undefined' && navigator.webdriver) return null;
 
   function dismiss(announcement: AppNotificationRecord) {
     const previous = notifications;

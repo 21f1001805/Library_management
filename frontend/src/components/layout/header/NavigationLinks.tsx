@@ -79,7 +79,7 @@ export function NavigationLinks({ links, variant = 'desktop', onNavigate }: Navi
             cn(
               buttonVariants({ variant: 'ghost', size: isMobile ? 'md' : 'sm' }),
               isMobile && 'justify-start',
-              (forceActive ?? isActive) && 'text-primary-gradient',
+              (forceActive ?? isActive) && 'text-primary',
             )
           }
         >

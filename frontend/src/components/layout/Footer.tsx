@@ -2,6 +2,7 @@ import { Globe, Link2, Mail, MessageCircle, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { ROUTES } from '@/constants/routes';
 import { LIBRARY_CONTACT } from '@/constants/contact';
 
@@ -15,7 +16,7 @@ export function Footer({ minimal }: FooterProps) {
   if (minimal) {
     return (
       <footer className="border-t border-border bg-surface px-6 py-4 text-sm text-muted-foreground">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-6xl text-center">
           © 2026 Community Reading Club & Library Management Platform.
         </div>
       </footer>
@@ -45,9 +46,10 @@ export function Footer({ minimal }: FooterProps) {
             </a>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <LanguageSwitcher />
             <Link
               to={`${ROUTES.CONTACT_US}#contact-us`}
-              className="text-sm font-medium text-primary-gradient hover:opacity-80"
+              className="text-sm font-medium text-primary hover:text-foreground"
             >
               {t('nav.contactUs')}
             </Link>

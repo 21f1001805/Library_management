@@ -89,7 +89,7 @@ export function Overlay({
         aria-modal="true"
         aria-labelledby={labelledBy}
         tabIndex={-1}
-        className={cn('relative outline-none', panelClassName)}
+        className={cn('relative z-10 outline-none', panelClassName)}
       >
         {children}
       </div>

@@ -30,7 +30,7 @@ export function QuickActionsCard({ title, actions }: QuickActionsCardProps) {
             onClick={action.onClick}
             className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/6 p-3 text-left transition-all duration-150 hover:-translate-y-0.5 hover:bg-white/10 active:translate-y-0"
           >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-gradient text-primary-foreground">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <action.icon className="size-4" />
             </span>
             <span className="text-sm font-medium text-ink-foreground">{action.label}</span>

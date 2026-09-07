@@ -69,14 +69,13 @@ const BADGE_CONFIG: Record<string, { icon: string; titleKey: string; descKey: st
   },
 };
 
-type LeaderboardView = 'top50' | 'all';
 type LeaderboardSort = 'scoreHigh' | 'scoreLow' | 'nameAsc' | 'nameDesc';
 
 export function LeaderboardPage() {
   const { t } = useTranslation();
-  const { getLeaderboard } = useAuth();
+  const { getLeaderboard, avatarUrl: authAvatarUrl, fullName: authFullName } = useAuth();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [view, setView] = useState<LeaderboardView>('top50');
+  const [rankCutoff, setRankCutoff] = useState<number>(50);
   const [sort, setSort] = useState<LeaderboardSort>('scoreHigh');
   const [showRules, setShowRules] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,12 +95,22 @@ export function LeaderboardPage() {
     return () => clearTimeout(timer);
   }, [loadLeaderboard]);
 
-  const filteredEntries = useMemo(
-    () =>
-      view === 'all'
-        ? entries
-        : entries.filter((entry) => entry.rank <= 50 || entry.is_current_user),
-    [entries, view],
+  const normalizedEntries = useMemo(() => {
+    return entries.map((entry) => {
+      if (entry.is_current_user) {
+        return {
+          ...entry,
+          avatar_url: authAvatarUrl ?? entry.avatar_url,
+          full_name: authFullName ?? entry.full_name,
+        };
+      }
+      return entry;
+    });
+  }, [entries, authAvatarUrl, authFullName]);
+
+  const filteredBoardEntries = useMemo(
+    () => normalizedEntries.filter((entry) => entry.rank <= rankCutoff),
+    [normalizedEntries, rankCutoff],
   );
 
   const sortConfig = useMemo(
@@ -135,15 +144,35 @@ export function LeaderboardPage() {
     [sort],
   );
 
-  const visibleEntries = useSortedItems(filteredEntries, sortConfig);
+  const visibleEntries = useSortedItems(filteredBoardEntries, sortConfig);
 
   const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
     visibleEntries,
     PAGE_SIZE,
   );
 
+  const currentUserEntry = useMemo(
+    () => normalizedEntries.find((e) => e.is_current_user),
+    [normalizedEntries],
+  );
+
+  const handleJumpToMyRank = useCallback(() => {
+    if (!currentUserEntry || currentUserEntry.rank > 50) return;
+    setRankCutoff(50);
+    setSort('scoreHigh');
+    const index = visibleEntries.findIndex((e) => e.is_current_user);
+    if (index !== -1) {
+      const targetPage = Math.floor(index / PAGE_SIZE) + 1;
+      setPage(targetPage);
+      setTimeout(() => {
+        const el = document.getElementById(`rank-row-${currentUserEntry.rank}`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+    }
+  }, [currentUserEntry, visibleEntries, setPage]);
+
   function resetFilters() {
-    setView('top50');
+    setRankCutoff(50);
     setSort('scoreHigh');
     setPage(1);
   }
@@ -164,6 +193,69 @@ export function LeaderboardPage() {
           {t(showRules ? 'leaderboard.rules.hide' : 'leaderboard.rules.show')}
         </button>
       </div>
+
+      {currentUserEntry && (
+        <div className="rounded-xl border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-card p-4 sm:p-5 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex size-16 sm:size-20 shrink-0 flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-primary-foreground shadow-md ring-4 ring-primary/20">
+              <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider opacity-90">RANK</span>
+              <span className="text-xl sm:text-2xl font-extrabold leading-none">#{currentUserEntry.rank}</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-foreground text-base sm:text-lg">Your Standing</h3>
+                <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-xs font-semibold">
+                  {currentUserEntry.rank <= 3
+                    ? '🏆 Podium Leader'
+                    : `#${currentUserEntry.rank} of ${entries.length} Members`}
+                </Badge>
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                {currentUserEntry.rank <= 50
+                  ? 'Awesome! You are currently ranked in the Top 50 readers of the library.'
+                  : 'Earn +50 pts with your next 7-day streak & complete books to climb into the Top 50!'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 border-border/50 pt-3 lg:pt-0">
+            <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/80 px-3 py-1.5 shadow-2xs">
+              <Trophy className="size-4 text-primary" />
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Score</p>
+                <p className="text-sm font-bold text-foreground">{currentUserEntry.score.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">pts</span></p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/80 px-3 py-1.5 shadow-2xs">
+              <BookOpen className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Books</p>
+                <p className="text-sm font-bold text-foreground">{currentUserEntry.books_completed}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/80 px-3 py-1.5 shadow-2xs">
+              <Flame className="size-4 text-amber-500" />
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Streak</p>
+                <p className="text-sm font-bold text-foreground">{currentUserEntry.reading_streak} <span className="text-xs font-normal text-muted-foreground">Days</span></p>
+              </div>
+            </div>
+
+            {currentUserEntry.rank <= 50 && (
+              <button
+                type="button"
+                onClick={handleJumpToMyRank}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors"
+              >
+                <Target className="size-3.5" />
+                Jump to Rank
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {showRules && (
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 sm:p-5 text-sm space-y-4">
@@ -252,38 +344,41 @@ export function LeaderboardPage() {
         />
       ) : (
         <>
-          <TableToolbar
-            filters={[
-              {
-                label: 'Show',
-                value: view,
+          <div className="rounded-xl border border-border bg-card p-3.5 shadow-xs">
+            <TableToolbar
+              filters={[
+                {
+                  label: t('leaderboard.show.label'),
+                  value: `top${rankCutoff}`,
+                  onChange: (value) => {
+                    const cutoff = parseInt(value.replace('top', ''), 10);
+                    setRankCutoff(isNaN(cutoff) ? 50 : cutoff);
+                    setPage(1);
+                  },
+                  options: [
+                    { value: 'top50', label: t('leaderboard.show.top50') },
+                    { value: 'top25', label: 'Top 25' },
+                    { value: 'top10', label: 'Top 10' },
+                  ],
+                },
+              ]}
+              sort={{
+                label: t('common.actions.sort'),
+                value: sort,
                 onChange: (value) => {
-                  setView(value as LeaderboardView);
+                  setSort(value as LeaderboardSort);
                   setPage(1);
                 },
                 options: [
-                  { value: 'top50', label: 'Top 50' },
-                  { value: 'all', label: 'Everyone' },
+                  { value: 'scoreHigh', label: t('leaderboard.sort.highestScore') },
+                  { value: 'scoreLow', label: t('leaderboard.sort.lowestScore') },
+                  { value: 'nameAsc', label: t('leaderboard.sort.nameAsc') },
+                  { value: 'nameDesc', label: t('leaderboard.sort.nameDesc') },
                 ],
-              },
-            ]}
-            sort={{
-              label: 'Sort',
-              value: sort,
-              onChange: (value) => {
-                setSort(value as LeaderboardSort);
-                setPage(1);
-              },
-              options: [
-                { value: 'scoreHigh', label: 'Highest Score' },
-                { value: 'scoreLow', label: 'Lowest Score' },
-                { value: 'nameAsc', label: 'Name A–Z' },
-                { value: 'nameDesc', label: 'Name Z–A' },
-              ],
-            }}
-            onReset={resetFilters}
-            resetLabel="Reset"
-          />
+              }}
+              onReset={resetFilters}
+            />
+          </div>
 
           {visibleEntries.length === 0 ? (
             <NoResults
@@ -294,7 +389,7 @@ export function LeaderboardPage() {
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="text-sm font-medium text-primary-gradient"
+                  className="text-sm font-medium text-primary"
                 >
                   Reset
                 </button>
@@ -302,78 +397,84 @@ export function LeaderboardPage() {
             />
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">{t('leaderboard.table.rank')}</TableHead>
-                    <TableHead>{t('leaderboard.table.reader')}</TableHead>
-                    <TableHead>{t('leaderboard.table.score')}</TableHead>
-                    <TableHead>{t('leaderboard.table.badges')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedItems.map((entry) => (
-                    <TableRow
-                      key={entry.member_id}
-                      className={cn(entry.is_current_user && 'bg-primary/5 font-medium')}
-                    >
-                      <TableCell>
-                        <span className="flex items-center gap-1.5 font-bold text-foreground">
-                          {entry.rank <= 3 && (
-                            <Award className={cn('size-4', medalColor[entry.rank])} />
-                          )}
-                          {entry.rank}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="flex items-center gap-2">
-                          <Avatar
-                            src={entry.avatar_url ?? undefined}
-                            name={entry.full_name}
-                            size="sm"
-                          />
-                          <span className="font-medium">{entry.full_name}</span>
-                          {entry.is_current_user && (
-                            <Badge variant="outline" className="ml-1 text-[11px] py-0">
-                              {t('common.you')}
-                            </Badge>
-                          )}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-semibold text-primary">
-                          {entry.score.toLocaleString()}{' '}
-                          <span className="text-xs font-normal text-muted-foreground">pts</span>
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {entry.badges && entry.badges.length > 0 ? (
-                            entry.badges.map((badgeKey) => {
-                              const config = BADGE_CONFIG[badgeKey];
-                              if (!config) return null;
-                              return (
-                                <span
-                                  key={badgeKey}
-                                  title={`${t(config.titleKey)} — ${t(config.descKey)}`}
-                                  className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-xs shadow-xs hover:scale-105 transition-transform cursor-help"
-                                >
-                                  <span>{config.icon}</span>
-                                  <span className="hidden sm:inline font-medium text-foreground text-[11px]">
-                                    {t(config.titleKey)}
-                                  </span>
-                                </span>
-                              );
-                            })
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">—</span>
-                          )}
-                        </div>
-                      </TableCell>
+              <div className="w-full overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
+                <Table className="min-w-full">
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow>
+                      <TableHead className="w-20 whitespace-nowrap px-3.5 py-2.5">{t('leaderboard.table.rank')}</TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('leaderboard.table.reader')}</TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('leaderboard.table.score')}</TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('leaderboard.table.badges')}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedItems.map((entry) => (
+                      <TableRow
+                        key={entry.member_id}
+                        id={`rank-row-${entry.rank}`}
+                        className={cn(
+                          'transition-all hover:bg-secondary/40',
+                          entry.is_current_user && 'bg-primary/10 border-l-4 border-l-primary font-semibold',
+                        )}
+                      >
+                        <TableCell className="whitespace-nowrap px-3.5 py-2.5">
+                          <span className="flex items-center gap-1.5 font-bold text-foreground">
+                            {entry.rank <= 3 && (
+                              <Award className={cn('size-4', medalColor[entry.rank])} />
+                            )}
+                            {entry.rank}
+                          </span>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap px-3.5 py-2.5">
+                          <span className="flex items-center gap-2.5">
+                            <Avatar
+                              src={entry.avatar_url ?? undefined}
+                              name={entry.full_name}
+                              size="sm"
+                            />
+                            <span className="font-semibold text-foreground text-xs sm:text-sm">{entry.full_name}</span>
+                            {entry.is_current_user && (
+                              <Badge variant="outline" className="ml-1 text-[11px] py-0">
+                                {t('common.you')}
+                              </Badge>
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap px-3.5 py-2.5">
+                          <span className="font-semibold text-primary">
+                            {entry.score.toLocaleString()}{' '}
+                            <span className="text-xs font-normal text-muted-foreground">pts</span>
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-3.5 py-2.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {entry.badges && entry.badges.length > 0 ? (
+                              entry.badges.map((badgeKey) => {
+                                const config = BADGE_CONFIG[badgeKey];
+                                if (!config) return null;
+                                return (
+                                  <span
+                                    key={badgeKey}
+                                    title={`${t(config.titleKey)} — ${t(config.descKey)}`}
+                                    className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-xs shadow-xs hover:scale-105 transition-transform cursor-help"
+                                  >
+                                    <span>{config.icon}</span>
+                                    <span className="hidden sm:inline font-medium text-foreground text-[11px]">
+                                      {t(config.titleKey)}
+                                    </span>
+                                  </span>
+                                );
+                              })
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">—</span>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
               <Pagination
                 currentPage={page}

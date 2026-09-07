@@ -142,6 +142,18 @@ export function EventsPage() {
     }
   }
 
+  async function deleteEvent(event: Event) {
+    if (!token) return;
+    try {
+      await apiDelete(`/events/${event.id}`, token);
+      toast.success(t('events.details.deleteSuccessToast', { title: event.title, defaultValue: `Event "${event.title}" deleted` }));
+      setEvents((prev) => prev.filter((e) => e.id !== event.id));
+      setActiveEventId(null);
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('events.details.deleteError', 'Failed to delete event')));
+    }
+  }
+
 
 
   const visibleEvents = useMemo(() => {
@@ -197,7 +209,7 @@ export function EventsPage() {
         actions={
           canManage ? (
             <Button leadingIcon={<CalendarPlus className="size-4" />} onClick={() => setCreateOpen(true)}>
-              Create Event
+              {t('events.form.createTitle')}
             </Button>
           ) : undefined
         }
@@ -311,6 +323,7 @@ export function EventsPage() {
           setActiveEventId(null);
           setEditingEvent(event);
         }}
+        onDelete={deleteEvent}
       />
 
       <CreateEventModal

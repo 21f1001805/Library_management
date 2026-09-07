@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -9,7 +11,7 @@ import { formatCurrency } from '@/lib/format';
 import { formatRelativeTime } from '@/lib/formatRelativeTime';
 import { useAuth, type AuditLogEntry } from '@/providers/AuthProvider';
 
-function useActionText(entry: AuditLogEntry) {
+export function useActionText(entry: AuditLogEntry) {
   const { t } = useTranslation();
   const { action, params } = entry;
   const amount = formatCurrency(Number(params.amount));
@@ -46,7 +48,7 @@ function useActionText(entry: AuditLogEntry) {
   }
 }
 
-function useActorText(entry: AuditLogEntry) {
+export function useActorText(entry: AuditLogEntry) {
   const { t } = useTranslation();
   const { userId } = useAuth();
   if (userId === entry.actor_id) return t('common.you');
@@ -106,42 +108,43 @@ export function AuditLog({ entries }: { entries: AuditLogEntry[] }) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle>{t('admin.auditLog.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
         <TableToolbar
+          variant="icon-only"
           filters={[
             {
-              label: 'Type',
+              label: t('admin.auditLog.filters.typeLabel'),
               value: filter,
               onChange: (value) => {
                 setFilter(value);
                 setPage(1);
               },
               options: [
-                { value: 'all', label: 'All' },
-                { value: 'credits', label: 'Credits' },
-                { value: 'debits', label: 'Debits' },
-                { value: 'refunds', label: 'Refunds' },
+                { value: 'all', label: t('admin.auditLog.filters.typeOptions.all') },
+                { value: 'credits', label: t('admin.auditLog.filters.typeOptions.credits') },
+                { value: 'debits', label: t('admin.auditLog.filters.typeOptions.debits') },
+                { value: 'refunds', label: t('admin.auditLog.filters.typeOptions.refunds') },
               ],
             },
           ]}
           sort={{
-            label: 'Sort',
+            label: t('common.actions.sort'),
             value: sort,
             onChange: (value) => {
               setSort(value);
               setPage(1);
             },
             options: [
-              { value: 'newest', label: 'Newest First' },
-              { value: 'oldest', label: 'Oldest First' },
+              { value: 'newest', label: t('admin.auditLog.sort.newestFirst') },
+              { value: 'oldest', label: t('admin.auditLog.sort.oldestFirst') },
             ],
           }}
           onReset={resetToolbar}
           resetLabel={t('common.actions.reset')}
         />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
 
         {filteredEntries.length === 0 ? (
           <NoResults title={t('admin.auditLog.empty')} />

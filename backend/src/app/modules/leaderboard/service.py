@@ -106,10 +106,9 @@ async def get_leaderboard(current_user_id: str) -> list[LeaderboardEntryOut]:
         )
     )
 
-    # Rank across everyone, then return only the top slice. "reading_champion" depends
-    # on rank 1, so the cut has to happen after ranking, not before.
+    # Rank across everyone. "reading_champion" depends on rank 1.
     results = []
-    for rank, stats in enumerate(member_stats[:LEADERBOARD_LIMIT], start=1):
+    for rank, stats in enumerate(member_stats, start=1):
         badges = []
         if stats.books_completed >= 10:
             badges.append("bookworm")

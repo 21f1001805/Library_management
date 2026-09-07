@@ -80,8 +80,8 @@ async def count_described_books() -> int:
 
 async def find_candidates(
     *,
-    author: str | None = None,
-    era: str | None = None,
+    author: str | list[str] | None = None,
+    era: str | list[str] | None = None,
     exclude_ids: set[str] | None = None,
 ) -> list[Book]:
     """With neither `author` nor `era`, this is the whole-catalog fallback stage —
@@ -90,15 +90,32 @@ async def find_candidates(
     """
     where: dict = {"deletedAt": None}
     if author:
-        where["author"] = author
+        if isinstance(author, list):
+            where["author"] = {"in": author} if len(author) > 1 else (author[0] if author else None)
+        else:
+            where["author"] = author
     if era:
-        year_min, year_max = ERA_BOUNDS[era]
-        year_filter: dict = {}
-        if year_min is not None:
-            year_filter["gte"] = year_min
-        if year_max is not None:
-            year_filter["lte"] = year_max
-        where["publishedYear"] = year_filter
+        eras = [era] if isinstance(era, str) else era
+        valid_eras = [e for e in eras if e in ERA_BOUNDS]
+        if len(valid_eras) == 1:
+            year_min, year_max = ERA_BOUNDS[valid_eras[0]]
+            year_filter: dict = {}
+            if year_min is not None:
+                year_filter["gte"] = year_min
+            if year_max is not None:
+                year_filter["lte"] = year_max
+            where["publishedYear"] = year_filter
+        elif len(valid_eras) > 1:
+            or_conditions = []
+            for e in valid_eras:
+                ymin, ymax = ERA_BOUNDS[e]
+                yf: dict = {}
+                if ymin is not None:
+                    yf["gte"] = ymin
+                if ymax is not None:
+                    yf["lte"] = ymax
+                or_conditions.append({"publishedYear": yf})
+            where["OR"] = or_conditions
     if exclude_ids:
         where["id"] = {"notIn": list(exclude_ids)}
     return await prisma.book.find_many(where=where)

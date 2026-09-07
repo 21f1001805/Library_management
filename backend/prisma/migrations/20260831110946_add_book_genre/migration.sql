@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "books" ADD COLUMN     "genre" VARCHAR(80);

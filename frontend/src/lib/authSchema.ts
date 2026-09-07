@@ -40,12 +40,14 @@ const PLAN_IDS = ['1m', '3m', '6m', '12m'] as const;
 
 export const registerSchema = z
   .object({
+    accountType: z.enum(['member', 'guardian']),
     name: z.string().trim().min(2, { message: 'auth.register.errors.name' }).max(100, { message: 'auth.register.errors.name' }).regex(/^[A-Za-z\s'-]+$/, { message: 'auth.register.errors.name' }),
     email,
     phoneNumber: z.string().regex(PHONE_PATTERN, { message: 'auth.register.errors.phoneNumber' }),
     password: z.string().regex(PASSWORD_PATTERN, { message: 'auth.register.errors.password' }),
     confirmPassword: z.string(),
-    membershipPlan: z.enum(PLAN_IDS),
+    membershipPlan: z.enum(PLAN_IDS).optional(),
+    avatarUrl: z.string().optional(),
     acceptTerms: z.boolean(),
   })
   .refine((data) => data.confirmPassword === data.password, {
@@ -55,6 +57,10 @@ export const registerSchema = z
   .refine((data) => data.acceptTerms, {
     message: 'auth.register.errors.terms',
     path: ['acceptTerms'],
+  })
+  .refine((data) => data.accountType !== 'member' || Boolean(data.membershipPlan), {
+    message: 'auth.register.errors.membershipPlan',
+    path: ['membershipPlan'],
   });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;

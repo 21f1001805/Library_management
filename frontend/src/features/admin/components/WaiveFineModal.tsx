@@ -101,7 +101,7 @@ export function WaiveFineModal({ open, onClose, onWaived }: WaiveFineModalProps)
                 <button
                   type="button"
                   onClick={() => setSelectedMember(null)}
-                  className="text-xs font-medium text-primary-gradient hover:underline"
+                  className="text-xs font-medium text-primary hover:underline"
                 >
                   {t('admin.waiveFine.changeMember')}
                 </button>

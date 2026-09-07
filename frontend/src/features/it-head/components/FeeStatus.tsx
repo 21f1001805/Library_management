@@ -41,38 +41,37 @@ export function FeeStatus({ entries }: { entries: FeeStatusEntryRecord[] }) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle>{t('itHead.feeStatus.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
         <TableToolbar
+          variant="icon-only"
           filters={[
             {
-              label: 'Status',
+              label: t('itHead.feeStatus.filters.statusLabel'),
               value: statusFilter,
               onChange: (value) => {
                 setStatusFilter(value);
                 setPage(1);
               },
               options: [
-                { value: 'all', label: 'All' },
-                { value: 'paid', label: 'Paid' },
-                { value: 'due', label: 'Pending' },
-                { value: 'overdue', label: 'Overdue' },
+                { value: 'all', label: t('itHead.feeStatus.filters.all') },
+                { value: 'paid', label: t('itHead.feeStatus.status.paid') },
+                { value: 'due', label: t('itHead.feeStatus.filters.pending') },
+                { value: 'overdue', label: t('itHead.feeStatus.status.overdue') },
               ],
             },
           ]}
           sort={{
-            label: 'Sort',
+            label: t('common.actions.sort'),
             value: sortValue,
             onChange: (value) => {
               setSortValue(value);
               setPage(1);
             },
             options: [
-              { value: 'amount', label: 'Amount Low to High' },
-              { value: 'amount-desc', label: 'Amount High to Low' },
-              { value: 'member', label: 'Member Name' },
+              { value: 'amount', label: t('itHead.feeStatus.sort.amountLowToHigh') },
+              { value: 'amount-desc', label: t('itHead.feeStatus.sort.amountHighToLow') },
+              { value: 'member', label: t('itHead.feeStatus.sort.memberName') },
             ],
           }}
           onReset={() => {
@@ -82,6 +81,8 @@ export function FeeStatus({ entries }: { entries: FeeStatusEntryRecord[] }) {
           }}
           resetLabel={t('common.actions.reset')}
         />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
         {outstanding.length === 0 ? (
           <NoResults title={t('itHead.feeStatus.empty')} />
         ) : (

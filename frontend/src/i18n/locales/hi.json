@@ -6,6 +6,7 @@
     "getStarted": "शुरू करें",
     "you": "आप",
     "quickActionsTitle": "त्वरित कार्रवाई",
+    "weekdays": ["सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार", "रविवार"],
     "trend": {
       "vsLastMonth": "पिछले महीने की तुलना में"
     },
@@ -22,7 +23,9 @@
       "viewReport": "रिपोर्ट देखें",
       "cancel": "रद्द करें",
       "close": "बंद करें",
-      "reset": "रीसेट करें"
+      "reset": "रीसेट करें",
+      "filters": "फ़िल्टर",
+      "sort": "क्रमबद्ध करें"
     },
     "pagination": {
       "showing": "{{total}} में से {{start}}–{{end}} दिखाए जा रहे हैं",
@@ -140,7 +143,7 @@
       "staff": {
         "title": "शेल्फ़ चलती रहें",
         "description": "किताबें जारी और वापस लें, और कैटलॉग अद्यतन रखें।",
-        "cta": "कैटलॉग प्रबंधित करें"
+        "cta": "लाइब्रेरी गतिविधि देखें"
       },
       "admin": {
         "title": "अपने आंकड़े जानें",
@@ -262,6 +265,20 @@
   "admin": {
     "pageTitle": "एडमिन डैशबोर्ड",
     "pageDescription": "व्यवसाय प्रदर्शन, नकदी प्रवाह और प्लेटफ़ॉर्म प्रबंधन",
+    "dashboard": {
+      "revenueOverview": "राजस्व अवलोकन",
+      "revenuePeriod": {
+        "label": "राजस्व अवधि",
+        "last3": "पिछले 3 महीने",
+        "last6": "पिछले 6 महीने"
+      }
+    },
+    "recentActivities": {
+      "title": "हाल की गतिविधियाँ",
+      "empty": "अभी तक कोई हालिया गतिविधि नहीं है।",
+      "viewAll": "सभी गतिविधियाँ देखें",
+      "genericAction": "{{action}}"
+    },
     "members": {
       "pageTitle": "सदस्य",
       "pageDescription": "सभी पंजीकृत खाते, उनकी योजनाएँ, गतिविधि और स्थिति।",
@@ -358,7 +375,27 @@
       "approveToast": "{{name}} का अनुरोध स्वीकृत किया जा रहा है",
       "confirmApproveTitle": "क्या इस अनुरोध को स्वीकृत करें?",
       "confirmRejectTitle": "क्या इस अनुरोध को अस्वीकार करें?",
-      "confirmDescription": "{{name}} का {{amount}} का अनुरोध। यह क्रिया वापस नहीं ली जा सकती।"
+      "confirmDescription": "{{name}} का {{amount}} का अनुरोध। यह क्रिया वापस नहीं ली जा सकती।",
+      "filters": {
+        "statusLabel": "स्थिति",
+        "statusOptions": {
+          "all": "सभी",
+          "pending": "लंबित",
+          "approved": "स्वीकृत",
+          "rejected": "अस्वीकृत"
+        },
+        "typeLabel": "प्रकार",
+        "typeOptions": {
+          "all": "सभी"
+        }
+      },
+      "sort": {
+        "newestFirst": "सबसे नया पहले",
+        "oldestFirst": "सबसे पुराना पहले",
+        "amountHighToLow": "राशि: अधिक से कम",
+        "amountLowToHigh": "राशि: कम से अधिक",
+        "memberName": "सदस्य का नाम"
+      }
     },
     "waiveFine": {
       "title": "जुर्माना माफ करें",
@@ -370,6 +407,16 @@
       "reasonLabel": "कारण",
       "submit": "जुर्माना माफ करें",
       "successToast": "{{name}} का जुर्माना माफ किया गया"
+    },
+    "pendingLibraryReviews": {
+      "title": "लंबित लाइब्रेरी समीक्षाएँ",
+      "empty": "स्वीकृति के लिए कोई समीक्षा लंबित नहीं है।",
+      "from": "{{name}} से",
+      "approveToast": "{{name}} की समीक्षा स्वीकृत — अब होमपेज पर लाइव है",
+      "rejectToast": "{{name}} की समीक्षा अस्वीकृत की गई",
+      "confirmApproveTitle": "क्या इस समीक्षा को स्वीकृत करें?",
+      "confirmRejectTitle": "क्या इस समीक्षा को अस्वीकृत करें?",
+      "confirmDescription": "{{name}} की समीक्षा। स्वीकृत करने पर यह होमपेज पर 'हमारे सदस्य क्या कहते हैं' में दिखाई देगी।"
     },
     "auditLog": {
       "title": "वित्तीय गतिविधि लॉग",
@@ -384,6 +431,19 @@
         "announcementSent_one": "{{count}} सदस्य को घोषणा भेजी गई",
         "announcementSent_other": "{{count}} सदस्यों को घोषणा भेजी गई",
         "couponGenerated": "कूपन {{code}} बनाया गया ({{percent}}% छूट, {{maxUses}} उपयोग)"
+      },
+      "filters": {
+        "typeLabel": "प्रकार",
+        "typeOptions": {
+          "all": "सभी",
+          "credits": "क्रेडिट",
+          "debits": "डेबिट",
+          "refunds": "रिफंड"
+        }
+      },
+      "sort": {
+        "newestFirst": "सबसे नया पहले",
+        "oldestFirst": "सबसे पुराना पहले"
       }
     },
     "reports": {
@@ -393,6 +453,12 @@
         "profitAndLoss": "लाभ और हानि सारांश",
         "expenseBreakdown": "व्यय विवरण",
         "membershipGrowth": "सदस्यता वृद्धि"
+      },
+      "descriptions": {
+        "revenueByPlan": "प्रत्येक सदस्यता योजना से उत्पन्न राजस्व",
+        "profitAndLoss": "आय, व्यय और शुद्ध लाभ का सारांश",
+        "expenseBreakdown": "पुस्तकालय के सभी व्ययों का विस्तृत विवरण",
+        "membershipGrowth": "सदस्य पंजीकरण, नवीनीकरण और वृद्धि रुझान"
       },
       "empty": "अभी तक कोई डेटा नहीं।",
       "paymentsCount_one": "{{count}} भुगतान",
@@ -410,6 +476,18 @@
         "newMembers_other": "{{count}} नए सदस्य",
         "totalMembers_one": "{{count}} कुल सदस्य",
         "totalMembers_other": "{{count}} कुल सदस्य"
+      },
+      "filters": {
+        "categoryLabel": "श्रेणी",
+        "categoryOptions": {
+          "all": "सभी",
+          "financial": "वित्तीय",
+          "membership": "सदस्यता"
+        }
+      },
+      "sort": {
+        "nameAsc": "नाम A–Z",
+        "nameDesc": "नाम Z–A"
       }
     },
     "quickActions": {
@@ -418,7 +496,8 @@
       "inviteMember": "सदस्य आमंत्रित करें",
       "announcement": "घोषणा",
       "viewGrowthReport": "वृद्धि रिपोर्ट देखें",
-      "waiveFine": "जुर्माना माफ करें"
+      "waiveFine": "जुर्माना माफ करें",
+      "reviewLibraryReviews": "लाइब्रेरी समीक्षाएँ जाँचें"
     },
     "inviteMember": {
       "title": "सदस्य आमंत्रित करें",
@@ -499,7 +578,51 @@
       "openIssues": "लंबित समस्याएँ",
       "pendingPermissions": "लंबित अनुमतियाँ",
       "feesOutstanding": "बकाया शुल्क",
-      "lateFinesOutstanding": "बकाया विलंब जुर्माना"
+      "lateFinesOutstanding": "बकाया विलंब जुर्माना",
+      "fromYesterday": "कल से",
+      "noChange": "कोई बदलाव नहीं"
+    },
+    "feeCollections": {
+      "title": "शुल्क संग्रह अवलोकन",
+      "collected": "एकत्रित",
+      "pending": "लंबित"
+    },
+    "issueResolutionOverview": {
+      "title": "समस्या समाधान अवलोकन",
+      "resolved": "समाधान हुई",
+      "open": "लंबित",
+      "other": "अन्य"
+    },
+    "systemActivity": {
+      "title": "सिस्टम गतिविधि",
+      "logins": "लॉगिन",
+      "accessChanges": "पहुँच परिवर्तन",
+      "permissionsUpdated": "अनुमतियाँ अपडेट",
+      "loginsChartLabel": "पिछले 7 दिनों में लॉगिन"
+    },
+    "accessByRole": {
+      "title": "भूमिका अनुसार पहुँच",
+      "totalMembers": "कुल {{count}} सदस्य",
+      "total": "कुल",
+      "roles": {
+        "member": "सदस्य",
+        "guardian": "अभिभावक",
+        "manager": "प्रबंधक",
+        "librarian": "लाइब्रेरियन",
+        "it-head": "आईटी एडमिन",
+        "admin": "एडमिन"
+      }
+    },
+    "feeStatusSummary": {
+      "title": "शुल्क स्थिति सारांश",
+      "totalOutstanding": "कुल बकाया",
+      "currentOutstanding": "वर्तमान बकाया",
+      "lateFines": "विलंब जुर्माना",
+      "topOverdue": "सबसे अधिक बकायादार सदस्य",
+      "empty": "फ़िलहाल कोई सदस्य बकायादार नहीं है।"
+    },
+    "systemAlerts": {
+      "title": "सिस्टम अलर्ट"
     },
     "accessControl": {
       "title": "एक्सेस नियंत्रण",
@@ -516,7 +639,19 @@
       "grantedToast": "{{name}} का अनुरोध स्वीकृत किया गया",
       "deniedToast": "{{name}} का अनुरोध अस्वीकार किया गया",
       "deactivateToast": "{{name}} को निष्क्रिय किया गया",
-      "reactivateToast": "{{name}} को पुनः सक्रिय किया गया"
+      "reactivateToast": "{{name}} को पुनः सक्रिय किया गया",
+      "filters": {
+        "statusLabel": "स्थिति",
+        "all": "सभी",
+        "active": "सक्रिय",
+        "disabled": "अक्षम",
+        "roleLabel": "भूमिका"
+      },
+      "sort": {
+        "nameAsc": "नाम A–Z",
+        "nameDesc": "नाम Z–A",
+        "newestFirst": "सबसे नया पहले"
+      }
     },
     "issueResolution": {
       "title": "समस्या समाधान",
@@ -538,7 +673,16 @@
       "from": "{{name}} द्वारा रिपोर्ट किया गया",
       "resolve": "हल करें",
       "resolutionNoteLabel": "समाधान नोट",
-      "resolveToast": "{{name}} की समस्या हल कर दी गई"
+      "resolveToast": "{{name}} की समस्या हल कर दी गई",
+      "filters": {
+        "statusLabel": "स्थिति",
+        "all": "सभी"
+      },
+      "sort": {
+        "newestFirst": "सबसे नया पहले",
+        "oldestFirst": "सबसे पुराना पहले",
+        "category": "श्रेणी"
+      }
     },
     "bookRecords": {
       "title": "पुस्तक रिकॉर्ड",
@@ -547,7 +691,16 @@
         "donated": "दान की गई",
         "purchased": "खरीदी गई"
       },
-      "empty": "अभी तक कोई पुस्तक रिकॉर्ड परिवर्तन दर्ज नहीं किया गया है।"
+      "empty": "अभी तक कोई पुस्तक रिकॉर्ड परिवर्तन दर्ज नहीं किया गया है।",
+      "filters": {
+        "typeLabel": "प्रकार",
+        "all": "सभी"
+      },
+      "sort": {
+        "newestFirst": "सबसे नया पहले",
+        "oldestFirst": "सबसे पुराना पहले",
+        "title": "पुस्तक शीर्षक"
+      }
     },
     "feeStatus": {
       "title": "शुल्क स्थिति",
@@ -557,6 +710,16 @@
         "paid": "भुगतान हो गया",
         "due": "देय",
         "overdue": "अतिदेय"
+      },
+      "filters": {
+        "statusLabel": "स्थिति",
+        "all": "सभी",
+        "pending": "लंबित"
+      },
+      "sort": {
+        "amountLowToHigh": "राशि: कम से अधिक",
+        "amountHighToLow": "राशि: अधिक से कम",
+        "memberName": "सदस्य का नाम"
       }
     },
     "lateFines": {
@@ -572,7 +735,16 @@
       "sendReminder": "याद दिलाएं",
       "markPaid": "भुगतान हुआ चिह्नित करें",
       "reminderToast": "{{name}} को जुर्माने की याद दिलाई गई",
-      "markedPaidToast": "{{name}} का जुर्माना भुगतान हुआ चिह्नित किया गया"
+      "markedPaidToast": "{{name}} का जुर्माना भुगतान हुआ चिह्नित किया गया",
+      "filters": {
+        "statusLabel": "स्थिति",
+        "all": "सभी"
+      },
+      "sort": {
+        "amountLowToHigh": "राशि: कम से अधिक",
+        "amountHighToLow": "राशि: अधिक से कम",
+        "memberName": "सदस्य का नाम"
+      }
     },
     "quickActions": {
       "logBookChange": "पुस्तक रिकॉर्ड दर्ज करें",
@@ -691,6 +863,9 @@
       "noPlan": "आपके पास अभी तक कोई सक्रिय योजना नहीं है",
       "fineOwed": "बकाया जुर्माना: {{amount}}",
       "noFine": "कोई बकाया जुर्माना नहीं",
+      "outstandingFine": "बकाया जुर्माना",
+      "statusActive": "सक्रिय",
+      "statusInactive": "निष्क्रिय",
       "renew": "अपग्रेड करें",
       "viewPlans": "योजनाएँ देखें",
       "payFine": "जुर्माना भरें",
@@ -709,8 +884,12 @@
     },
     "stats": {
       "booksBorrowed": "उधार ली गई पुस्तकें",
+      "booksBorrowedSubtitle": "अभी चेक-आउट की गई",
       "booksReserved": "आरक्षित पुस्तकें",
+      "booksReservedSubtitle": "जब चाहें तैयार",
       "seatBookings": "सीट बुकिंग",
+      "seatBookingsSubtitle": "आगामी बुकिंग",
+      "readingStreakSubtitle": "इसे जारी रखें!",
       "readingPoints": "पठन अंक"
     },
     "statModal": {
@@ -780,6 +959,85 @@
       "newRegistrationsToday": "आज के नए पंजीकरण",
       "pendingTasks": "लंबित कार्य"
     },
+    "libraryActivity": {
+      "title": "लाइब्रेरी गतिविधि (पिछले 7 दिन)",
+      "issued": "जारी की गई पुस्तकें",
+      "returned": "वापस की गई पुस्तकें"
+    },
+    "mostBorrowedBooks": {
+      "title": "सबसे ज़्यादा उधार ली गई पुस्तकें",
+      "empty": "इस अवधि में अभी तक कोई पुस्तक उधार नहीं ली गई।",
+      "axisLabel": "उधार लिए जाने की संख्या",
+      "periodLabel": "समय अवधि",
+      "thisMonth": "इस महीने",
+      "last3Months": "पिछले 3 महीने",
+      "last6Months": "पिछले 6 महीने",
+      "seeMore": "और देखें"
+    },
+    "memberActivity": {
+      "title": "सदस्य गतिविधि (पिछले 6 महीने)",
+      "newMembers": "नए सदस्य",
+      "activeMembers": "सक्रिय सदस्य"
+    },
+    "seatUtilization": {
+      "title": "सीट उपयोग (आज)",
+      "peakTime": "व्यस्ततम समय",
+      "averageUtilization": "औसत उपयोग {{percent}}%"
+    },
+    "footfall": {
+      "title": "फुटफॉल एनालिटिक्स",
+      "periodLabel": "अवधि",
+      "last7Days": "पिछले 7 दिन",
+      "last30Days": "पिछले 30 दिन",
+      "last3Months": "पिछले 3 महीने",
+      "visitsByDay": "दैनिक विज़िट",
+      "peakHours": "व्यस्ततम समय",
+      "avgVisitDuration": "औसत विज़िट अवधि",
+      "avgVisitDurationValue": "{{minutes}} मिनट",
+      "noDuration": "अभी पर्याप्त डेटा नहीं है",
+      "busiestDay": "सबसे व्यस्त दिन",
+      "quietestDay": "सबसे शांत दिन",
+      "empty": "इस अवधि में कोई विज़िट दर्ज नहीं हुई।"
+    },
+    "revenue": {
+      "title": "राजस्व अवलोकन",
+      "total": "कुल राजस्व",
+      "thisMonth": "इस महीने",
+      "avgMonthly": "औसत मासिक"
+    },
+    "overdueFines": {
+      "title": "बकाया और जुर्माना अवलोकन",
+      "totalOverdue": "कुल बकाया पुस्तकें",
+      "finesGenerated": "उत्पन्न जुर्माना",
+      "finesCollected": "वसूला गया जुर्माना",
+      "collectionRate": "वसूली दर"
+    },
+    "aiInsights": {
+      "heading": "एआई अंतर्दृष्टि"
+    },
+    "demandForecast": {
+      "title": "मांग पूर्वानुमान",
+      "subtitle": "पिछले 30 दिनों में उधार और आरक्षण में बढ़ोतरी वाली पुस्तकें।",
+      "emptyTitle": "अभी कोई बढ़ती मांग नहीं",
+      "emptyDescription": "तुलना के लिए पर्याप्त हाल की गतिविधि होने पर यहाँ जानकारी दिखेगी।",
+      "level": {
+        "high": "उच्च मांग",
+        "medium": "बढ़ती मांग"
+      }
+    },
+    "lateReturnRisk": {
+      "title": "विलंबित वापसी जोखिम",
+      "subtitle": "उधार इतिहास के आधार पर देर से लौटने की सबसे अधिक संभावना वाले सक्रिय ऋण।",
+      "emptyTitle": "आकलन के लिए कोई सक्रिय ऋण नहीं",
+      "emptyDescription": "सक्रिय ऋण होने पर यहाँ जोखिम स्कोर दिखाई देंगे।",
+      "borrower": "{{name}}",
+      "dueDate": "देय {{date}}",
+      "level": {
+        "high": "उच्च जोखिम ({{score}}%)",
+        "medium": "मध्यम जोखिम ({{score}}%)",
+        "low": "कम जोखिम ({{score}}%)"
+      }
+    },
     "statModal": {
       "seatsBookedToday": {
         "description": "आज काउंटर पर बुक की गई वॉक-इन सीटें। यहाँ से किसी सदस्य के लिए एक और सीट बुक करें।"
@@ -823,7 +1081,11 @@
       "emptyTitle": "कोई लंबित नकद भुगतान नहीं",
       "emptyDescription": "काउंटर पर भुगतान करने वाले सदस्य यहाँ दिखाई देंगे।",
       "markPaid": "भुगतान प्राप्त चिह्नित करें",
-      "markPaidToast": "भुगतान प्राप्त के रूप में चिह्नित किया गया"
+      "markPaidToast": "भुगतान प्राप्त के रूप में चिह्नित किया गया",
+      "sort": {
+        "newestFirst": "सबसे नया पहले",
+        "oldestFirst": "सबसे पुराना पहले"
+      }
     },
     "quickActions": {
       "bookSeatForMember": "सदस्य के लिए सीट बुक करें",
@@ -855,7 +1117,19 @@
       "reminderToast": "{{name}} को रिमाइंडर भेजा गया",
       "returnedToast": "{{name}} की पुस्तक वापस चिह्नित की गई",
       "sendReminder": "रिमाइंडर भेजें",
-      "title": "उधार पर दी गई पुस्तकें"
+      "title": "उधार पर दी गई पुस्तकें",
+      "filters": {
+        "statusLabel": "स्थिति",
+        "all": "सभी",
+        "dueToday": "आज देय",
+        "overdue": "अतिदेय",
+        "activeLoans": "सक्रिय ऋण"
+      },
+      "sort": {
+        "dueDate": "नियत तारीख",
+        "memberName": "सदस्य का नाम",
+        "bookTitle": "पुस्तक शीर्षक"
+      }
     },
     "addGuardian": {
       "description": "अपने खातों को लिंक करने के लिए एक सक्रिय, पंजीकृत छात्र और अभिभावक खोजें।",
@@ -865,7 +1139,15 @@
       "studentEmailPlaceholder": "नाम या ईमेल से सक्रिय सदस्य खोजें",
       "submit": "अभिभावक जोड़ें",
       "successToast": "अभिभावक {{guardianEmail}} को {{studentEmail}} से लिंक किया गया",
-      "title": "अभिभावक जोड़ें"
+      "title": "अभिभावक जोड़ें",
+      "currentGuardian": "मौजूदा अभिभावक",
+      "noGuardianYet": "इस विद्यार्थी से अभी कोई अभिभावक नहीं जुड़ा है।",
+      "update": "अभिभावक बदलें",
+      "remove": "हटाएँ",
+      "updatedToast": "{{studentEmail}} का अभिभावक {{guardianEmail}} में बदला गया",
+      "removedToast": "{{studentEmail}} से जुड़ा अभिभावक हटाया गया",
+      "removeConfirmTitle": "अभिभावक हटाएँ?",
+      "removeConfirmDescription": "इससे {{guardianEmail}} का {{studentEmail}} से लिंक हट जाएगा। वे इस विद्यार्थी की लाइब्रेरी गतिविधि नहीं देख पाएँगे।"
     },
     "billingRequest": {
       "amountLabel": "राशि (₹)",
@@ -894,6 +1176,37 @@
       },
       "expectedBack": "{{date}} तक वापसी अपेक्षित",
       "expectedBackUnknown": "रिकॉर्ड में कोई वापसी तारीख़ नहीं",
+      "addModal": {
+        "openButton": "पुस्तक जोड़ें",
+        "title": "पुस्तक जोड़ें",
+        "titleLabel": "शीर्षक",
+        "authorLabel": "लेखक",
+        "categoryLabel": "श्रेणी",
+        "categoryPlaceholder": "श्रेणी चुनें",
+        "descriptionLabel": "विवरण",
+        "descriptionPlaceholder": "यह पुस्तक किस बारे में है?",
+        "suggestButton": "सुझाव दें",
+        "suggestHint": "शीर्षक और लेखक से AI द्वारा तैयार — सहेजने से पहले जांचें।",
+        "suggestFailed": "अभी सुझाव नहीं दिया जा सका।",
+        "isbnLabel": "ISBN (वैकल्पिक)",
+        "publisherLabel": "प्रकाशक (वैकल्पिक)",
+        "publishedYearLabel": "प्रकाशन वर्ष (वैकल्पिक)",
+        "languageLabel": "भाषा (वैकल्पिक)",
+        "totalCopiesLabel": "कुल प्रतियां",
+        "submit": "पुस्तक जोड़ें",
+        "identifyHeading": "कवर फोटो से पहचानें",
+        "identifyHint": "कवर की फोटो अपलोड करें या पेस्ट करें — हम नीचे दिए गए फ़ील्ड भरने की कोशिश करेंगे।",
+        "uploadImage": "छवि अपलोड करें",
+        "pasteImageHint": "या एक छवि पेस्ट करें (Ctrl+V)",
+        "identifying": "पुस्तक की पहचान हो रही है…",
+        "identifyVerified": "एक सत्यापित रिकॉर्ड से मिलान हुआ — सहेजने से पहले जांचें।",
+        "identifyUnverified": "केवल कवर फोटो से भरा गया — कृपया हर फ़ील्ड दोबारा जांचें।",
+        "identifyNoMatch": "इस पुस्तक की पहचान नहीं हो सकी — कृपया फ़ील्ड मैन्युअल रूप से भरें।",
+        "identifyFailed": "अभी वह छवि नहीं पढ़ी जा सकी। फिर कोशिश करें या मैन्युअल रूप से भरें।",
+        "identifyInvalidImage": "कृपया एक छवि फ़ाइल चुनें।",
+        "identifyImageTooLarge": "छवि 5 MB या उससे छोटी होनी चाहिए।",
+        "identifyRemoveImage": "छवि हटाएं"
+      },
       "pageDescription": "जाँचें कि अभी शेल्फ़ पर कौन-सी पुस्तकें हैं और चेक-आउट की गई प्रति कब वापस आनी है।",
       "pageTitle": "पुस्तकें",
       "searchPlaceholder": "शीर्षक या लेखक से खोजें",
@@ -966,7 +1279,18 @@
       "reject": "अस्वीकार करें",
       "rejectToast": "{{name}} का अनुरोध अस्वीकार किया गया",
       "requestedBy": "{{name}} द्वारा अनुरोधित",
-      "title": "लंबित उधार अनुरोध"
+      "title": "लंबित उधार अनुरोध",
+      "sort": {
+        "newestFirst": "सबसे नया पहले",
+        "oldestFirst": "सबसे पुराना पहले",
+        "bookTitle": "पुस्तक शीर्षक",
+        "memberName": "सदस्य का नाम"
+      }
+    },
+    "recentNotifications": {
+      "title": "हाल की सूचनाएं",
+      "empty": "अभी तक कोई हालिया सूचना नहीं है।",
+      "viewAll": "सभी सूचनाएं देखें"
     },
     "registerMember": {
       "emailLabel": "ईमेल",
@@ -990,12 +1314,28 @@
     }
   },
   "landing": {
+    "shareReviews": {
+      "heading": "किसी किताब से प्यार हो गया? सबको बताएं।",
+      "subheading": "आप जो पढ़ रहे हैं उस पर अपनी राय साझा करें — ज़रूर पढ़ें, छोड़ दें, या टाइमपास के लिए एकदम सही।",
+      "imgAlt": "पाठकों की प्रतिक्रिया बैज से घिरा एक किताब का कवर",
+      "reactions": {
+        "skipIt": "छोड़ दें",
+        "goForIt": "ज़रूर पढ़ें",
+        "timepass": "टाइमपास"
+      }
+    },
     "hero": {
       "wordmark": "श्श्श लाइब्रेरी",
       "badge": "कम्युनिटी रीडिंग क्लब एंड लाइब्रेरी प्लेटफ़ॉर्म",
       "title": "आपकी लाइब्रेरी, आपकी कम्युनिटी, सब एक ही जगह।",
       "titlePrefix": "बेहतर ",
-      "titleWords": ["पुस्तकालय", "समुदाय", "शिक्षा", "पढ़ने की आदतें", "जुड़ाव"],
+      "titleWords": [
+        "पुस्तकालय",
+        "समुदाय",
+        "शिक्षा",
+        "पढ़ने की आदतें",
+        "जुड़ाव"
+      ],
       "subtitle": "किताबें उधार लें, स्टडी सीट बुक करें, एक रीडिंग क्लब से जुड़ें, और बिना पेपर रजिस्टर और ग्रुप चैट के व्यक्तिगत सिफारिशें पाएँ।",
       "ctaJoin": "कम्युनिटी से जुड़ें",
       "ctaBrowse": "पुस्तकें ब्राउज़ करें",
@@ -1050,7 +1390,7 @@
       "headingHighlight": "आधुनिक",
       "headingPrefix": "हर वह चीज़ जो एक",
       "headingSuffix": "लाइब्रेरी को चाहिए",
-      "imgAlt": "डिजिटल लाइब्रेरी सर्च, क्यूआर कोड से उधार लेने, सीट बुकिंग, एआई सिफ़ारिशों और पठन चुनौतियों का उपयोग करते विद्यार्थियों का चित्रण"
+      "imgAlt": "डिजिटल लाइब्रेरी सर्च, किताब उधार लेने, सीट बुकिंग, एआई सिफ़ारिशों और पठन चुनौतियों का उपयोग करते विद्यार्थियों का चित्रण"
     },
     "howItWorks": {
       "badge": "प्रक्रिया",
@@ -1109,16 +1449,6 @@
         "studyMode": "फ़ोकस और सीखें"
       },
       "imgAlt": "अलग-अलग पठन मूड के लिए पुस्तक सिफ़ारिशों से घिरे एक विद्यार्थी का चित्रण"
-    },
-    "shareReviews": {
-      "heading": "अपनी समीक्षाएं साझा करें",
-      "subheading": "समुदाय के साथ रेटिंग दें, समीक्षा करें और अपने विचार साझा करें।",
-      "imgAlt": "एक पुस्तक कवर जिसके चारों ओर चंचल प्रतिक्रिया लेबल तैर रहे हैं",
-      "reactions": {
-        "skipIt": "स्किप करें",
-        "goForIt": "पढ़ें",
-        "timepass": "टाइमपास"
-      }
     },
     "seatAvailability": {
       "heading": "लाइव सीट उपलब्धता",
@@ -1497,6 +1827,17 @@
       "reserveSuccessToast": "\"{{title}}\" आरक्षित हो गई — फ्रंट डेस्क से लें",
       "relatedBooks": {
         "title": "जिन पाठकों ने यह पुस्तक ली, उन्होंने यह भी ली…"
+      },
+      "aiInsights": {
+        "heading": "एआई पुस्तक अंतर्दृष्टि",
+        "loading": "एआई अंतर्दृष्टि तैयार हो रही है…",
+        "unavailable": "एआई अंतर्दृष्टि अभी उपलब्ध नहीं है।",
+        "keyConcepts": "मुख्य अवधारणाएँ",
+        "themes": "विषयवस्तु",
+        "vocabulary": "शब्दावली जटिलता",
+        "technicalDifficulty": "तकनीकी कठिनाई",
+        "prerequisites": "पूर्वापेक्षाएँ",
+        "whyRead": "क्यों पढ़ें"
       }
     },
     "wishlist": {
@@ -1529,7 +1870,20 @@
       "finding": "आपके लिए सिफ़ारिशें खोजी जा रही हैं…",
       "submitError": "सिफ़ारिशें नहीं मिल सकीं। कृपया फिर से कोशिश करें।",
       "resultsTitle": "आपकी सिफ़ारिशें",
-      "done": "हो गया"
+      "done": "हो गया",
+      "describe": {
+        "heading": "या बस बताएं आपको क्या चाहिए",
+        "placeholder": "जैसे: कोई हल्की-फुल्की रहस्य कथा, पुरानी, ज़्यादा लंबी न हो",
+        "submit": "पुस्तकें खोजें"
+      }
+    },
+    "categories": {
+      "fiction": "फिक्शन",
+      "nonFiction": "नॉन-फिक्शन",
+      "science": "विज्ञान",
+      "technology": "तकनीक",
+      "biography": "जीवनी",
+      "selfHelp": "सेल्फ़-हेल्प"
     }
   },
   "events": {
@@ -1567,6 +1921,11 @@
     "details": {
       "defaultTitle": "आयोजन विवरण",
       "edit": "संपादित करें",
+      "delete": "हटाएँ",
+      "deleteConfirmTitle": "आयोजन हटाएँ?",
+      "deleteConfirmDescription": "क्या आप निश्चित रूप से “{{title}}” को हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।",
+      "deleteSuccessToast": "आयोजन “{{title}}” हटा दिया गया",
+      "deleteError": "आयोजन हटाने में विफल",
       "attending": "{{attendees}}/{{capacity}} उपस्थित",
       "registrationTitle": "पंजीकरण",
       "registered": "आप पंजीकृत हैं",
@@ -1621,6 +1980,20 @@
       "position": "क्रम में #{{position}}",
       "eta": "आपकी बारी आने में ~{{days}} दिन",
       "etaReady": "एक प्रति उपलब्ध है, प्रबंधक की मंज़ूरी बाकी है"
+    },
+    "filters": {
+      "statusLabel": "स्थिति",
+      "all": "सभी",
+      "pending": "लंबित",
+      "approved": "स्वीकृत",
+      "rejected": "अस्वीकृत",
+      "cancelled": "रद्द"
+    },
+    "sort": {
+      "newest": "नवीनतम",
+      "oldest": "पुराना",
+      "titleAsc": "शीर्षक A–Z",
+      "titleDesc": "शीर्षक Z–A"
     }
   },
   "seatBooking": {
@@ -1648,7 +2021,14 @@
       "slotDurationFixed": "हर बुकिंग 1 घंटे के लिए होती है — यह सीट {{endHour}} बजे फिर से उपलब्ध होगी।"
     },
     "today": "आज",
-    "dateSliderAriaLabel": "एक तारीख़ चुनें"
+    "dateSliderAriaLabel": "एक तारीख़ चुनें",
+    "occupancy": {
+      "rowLabel": "पंक्ति {{row}}",
+      "available": "उपलब्ध",
+      "partial": "भरती जा रही है",
+      "full": "पूरी तरह बुक",
+      "rowStatusAria": "पंक्ति {{row}}: {{status}}"
+    }
   },
   "readingProgress": {
     "pageTitle": "पठन प्रगति",
@@ -1680,6 +2060,10 @@
       "share": "साझा करें"
     },
     "lists": {
+      "borrowed": {
+        "title": "उधार ली गई पुस्तकें",
+        "emptyDescription": "आपकी उधार ली गई पुस्तकें यहाँ दिखाई देंगी।"
+      },
       "currentlyReading": {
         "title": "वर्तमान में पढ़ रहे हैं",
         "emptyDescription": "इसे यहाँ ट्रैक करने के लिए एक पुस्तक शुरू करें।"
@@ -1748,7 +2132,18 @@
       "streakBonus": "7-दिन स्ट्रिक (+50 अंक)",
       "lateReturn": "देर से वापसी दंड (-10 अंक)"
     },
-    "hoursSuffix": "{{hours}} घं."
+    "hoursSuffix": "{{hours}} घं.",
+    "show": {
+      "label": "दिखाएँ",
+      "top50": "टॉप 50",
+      "everyone": "सभी"
+    },
+    "sort": {
+      "highestScore": "उच्चतम स्कोर",
+      "lowestScore": "न्यूनतम स्कोर",
+      "nameAsc": "नाम A–Z",
+      "nameDesc": "नाम Z–A"
+    }
   },
   "community": {
     "pageTitle": "कम्युनिटी",
@@ -1760,7 +2155,8 @@
     "filters": {
       "all": "सभी पोस्ट",
       "saved": "सहेजी गई",
-      "reported": "रिपोर्ट की गई"
+      "reported": "रिपोर्ट की गई",
+      "groupLabel": "फ़िल्टर"
     },
     "empty": {
       "title": "अभी तक कोई पोस्ट नहीं",
@@ -1788,6 +2184,10 @@
       "removeComment": "हटाएँ",
       "report": "रिपोर्ट करें",
       "reportAria": "{{author}} की पोस्ट रिपोर्ट करें",
+      "translate": "अनुवाद करें",
+      "showOriginal": "मूल दिखाएं",
+      "translating": "अनुवाद हो रहा है…",
+      "translateFailed": "अभी अनुवाद नहीं हो सका",
       "reportedBadge": "रिपोर्ट की गई"
     },
     "createPostModal": {
@@ -1823,6 +2223,11 @@
       "status": "24 घंटे के लिए बैन",
       "title": "बैन किए गए उपयोगकर्ता",
       "unban": "अनबैन करें"
+    },
+    "sort": {
+      "newest": "नवीनतम",
+      "oldest": "पुराना",
+      "mostLiked": "सबसे पसंदीदा"
     }
   },
   "translateDemo": {
@@ -1884,7 +2289,9 @@
       "emailPlaceholder": "guardian@example.com",
       "invalidEmail": "एक मान्य ईमेल पता दर्ज करें।",
       "unlink": "अनलिंक",
-      "linked": "लिंक किया गया"
+      "linked": "लिंक किया गया",
+      "noneLinked": "आपके खाते से अभी कोई अभिभावक जुड़ा नहीं है।",
+      "managedByStaff": "अभिभावक लिंक लाइब्रेरी स्टाफ़ द्वारा सत्यापित और प्रबंधित किए जाते हैं। अभिभावक जोड़ने, बदलने या हटाने के लिए फ़्रंट डेस्क से संपर्क करें।"
     },
     "changePassword": {
       "title": "पासवर्ड बदलें",
@@ -1918,12 +2325,17 @@
     "writeReview": "समीक्षा लिखें",
     "viewReviews": "समीक्षाएं देखें",
     "commentsHeading": "टिप्पणियाँ",
+    "digest": {
+      "heading": "पाठक क्या कह रहे हैं"
+    },
     "libraryReviewCard": {
       "title": "अपने लाइब्रेरी अनुभव को रेट करें",
       "existingTitle": "आपकी लाइब्रेरी समीक्षा",
-      "description": "हमारे प्लेटफ़ॉर्म के बारे में अपने विचार साझा करें! आपकी समीक्षा हमारे होमपेज पर 'हमारे सदस्य क्या कहते हैं' में प्रदर्शित की जाएगी।",
+      "description": "हमारे प्लेटफ़ॉर्म के बारे में अपने विचार साझा करें! स्वीकृत समीक्षाएँ हमारे होमपेज पर 'हमारे सदस्य क्या कहते हैं' में प्रदर्शित की जाती हैं।",
       "button": "समीक्षा लिखें",
-      "editButton": "समीक्षा संपादित करें"
+      "editButton": "समीक्षा संपादित करें",
+      "pending": "एडमिन की स्वीकृति का इंतज़ार",
+      "rejectedNotShown": "होमपेज के लिए स्वीकृत नहीं"
     },
     "libraryReviewModal": {
       "title": "हमारी लाइब्रेरी को रेट और रिव्यू करें",
@@ -1933,7 +2345,7 @@
       "placeholder": "आपको हमारी लाइब्रेरी, संग्रह, सीट आरक्षण या माहौल के बारे में सबसे अच्छा क्या लगता है?",
       "submitButton": "समीक्षा जमा करें",
       "errorMinLength": "कृपया कम से कम 5 अक्षरों की समीक्षा लिखें।",
-      "successToast": "हमारी लाइब्रेरी की समीक्षा करने के लिए धन्यवाद! आपकी समीक्षा होमपेज पर दिखाई देगी।"
+      "successToast": "धन्यवाद! होमपेज पर दिखने से पहले आपकी समीक्षा एडमिन की स्वीकृति का इंतज़ार कर रही है।"
     },
     "member": {
       "ratedBooksHeading": "मेरी रेट की गई पुस्तकें",
@@ -1955,7 +2367,6 @@
         "ratingLow": "न्यूनतम रेटिंग"
       }
     },
-
     "summary": {
       "totalReviews_one": "{{count}} समीक्षा",
       "totalReviews_other": "{{count}} समीक्षाएँ",
@@ -2107,6 +2518,13 @@
       "submitResolution": "हल के रूप में चिह्नित करें",
       "emptyTitle": "यहाँ कोई टिकट नहीं",
       "emptyDescription": "अभी इस फ़िल्टर से कुछ मेल नहीं खाता।"
+    },
+    "filters": {
+      "statusLabel": "स्थिति"
+    },
+    "sort": {
+      "newest": "नवीनतम",
+      "oldest": "पुराना"
     }
   },
   "profile": {
@@ -2116,6 +2534,14 @@
       "booksRead": "पढ़ी गई पुस्तकें",
       "pagesRead": "पढ़े गए पृष्ठ",
       "hoursRead": "पढ़े गए घंटे"
+    },
+    "readingProfile": {
+      "heading": "एआई रीडिंग प्रोफ़ाइल",
+      "loading": "आपकी रीडिंग प्रोफ़ाइल तैयार की जा रही है…",
+      "unavailable": "आपकी एआई रीडिंग प्रोफ़ाइल अभी उपलब्ध नहीं है — शुरू करने के लिए कुछ किताबें उधार लें, समीक्षा करें, या आरक्षित करें।",
+      "interests": "मुख्य रुचियाँ",
+      "difficulty": "पसंदीदा कठिनाई",
+      "preference": "पठन प्राथमिकता"
     },
     "achievements": {
       "title": "उपलब्धियाँ",

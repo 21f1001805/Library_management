@@ -49,7 +49,7 @@ export function SortMenu({ label, value, onChange, options, className }: SortMen
         <div
           role="listbox"
           aria-label={label}
-          className="absolute right-0 z-20 mt-1.5 w-56 overflow-hidden rounded-lg border border-border bg-surface py-1.5 shadow-panel"
+          className="absolute left-0 z-20 mt-1.5 w-56 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-lg border border-border bg-surface py-1.5 shadow-panel"
         >
           {options.map((option) => (
             <button

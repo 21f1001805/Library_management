@@ -1,12 +1,18 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from prisma.models import User
 
 from app.api.deps import require_role
 from app.core.constants import Role
+from app.core.rate_limit import limiter
 from app.modules.recommendations import service
-from app.modules.recommendations.schemas import QuizAnswers, QuizResponse, RecommendationResponse
+from app.modules.recommendations.schemas import (
+    DescribeRequest,
+    QuizAnswers,
+    QuizResponse,
+    RecommendationResponse,
+)
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -24,3 +30,13 @@ async def submit_quiz(
     current_user: Annotated[User, Depends(member_only)],
 ) -> RecommendationResponse:
     return await service.submit_quiz(current_user.id, payload)
+
+
+@router.post("/describe", response_model=RecommendationResponse)
+@limiter.limit("10/minute")
+async def describe(
+    request: Request,
+    payload: DescribeRequest,
+    current_user: Annotated[User, Depends(member_only)],
+) -> RecommendationResponse:
+    return await service.describe_and_recommend(current_user.id, payload.description)

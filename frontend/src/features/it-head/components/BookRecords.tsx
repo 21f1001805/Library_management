@@ -42,42 +42,41 @@ export function BookRecords({ records }: { records: BookRecordEntry[] }) {
     }
   }, [records, sortValue, typeFilter]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredRecords, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredRecords, 4);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="flex h-full flex-col justify-between">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle>{t('itHead.bookRecords.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
         <TableToolbar
+          variant="icon-only"
           filters={[
             {
-              label: 'Type',
+              label: t('itHead.bookRecords.filters.typeLabel'),
               value: typeFilter,
               onChange: (value) => {
                 setTypeFilter(value);
                 setPage(1);
               },
               options: [
-                { value: 'all', label: 'All' },
-                { value: 'lost', label: 'Lost' },
-                { value: 'donated', label: 'Donated' },
-                { value: 'purchased', label: 'Purchased' },
+                { value: 'all', label: t('itHead.bookRecords.filters.all') },
+                { value: 'lost', label: t(typeLabelKey.lost) },
+                { value: 'donated', label: t(typeLabelKey.donated) },
+                { value: 'purchased', label: t(typeLabelKey.purchased) },
               ],
             },
           ]}
           sort={{
-            label: 'Sort',
+            label: t('common.actions.sort'),
             value: sortValue,
             onChange: (value) => {
               setSortValue(value);
               setPage(1);
             },
             options: [
-              { value: 'newest', label: 'Newest First' },
-              { value: 'oldest', label: 'Oldest First' },
-              { value: 'title', label: 'Book Title' },
+              { value: 'newest', label: t('itHead.bookRecords.sort.newestFirst') },
+              { value: 'oldest', label: t('itHead.bookRecords.sort.oldestFirst') },
+              { value: 'title', label: t('itHead.bookRecords.sort.title') },
             ],
           }}
           onReset={() => {
@@ -87,10 +86,12 @@ export function BookRecords({ records }: { records: BookRecordEntry[] }) {
           }}
           resetLabel={t('common.actions.reset')}
         />
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col justify-between gap-3">
         {filteredRecords.length === 0 ? (
           <NoResults title={t('itHead.bookRecords.empty')} />
         ) : (
-          <>
+          <div className="flex flex-col justify-between gap-3 h-full">
             <ul className="flex flex-col gap-3">
               {paginatedItems.map((record) => (
                 <li key={record.id} className="rounded-lg border border-border p-3 text-sm">
@@ -104,14 +105,16 @@ export function BookRecords({ records }: { records: BookRecordEntry[] }) {
                 </li>
               ))}
             </ul>
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              pageSize={5}
-              onPageChange={setPage}
-            />
-          </>
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={4}
+                onPageChange={setPage}
+              />
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

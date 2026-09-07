@@ -100,7 +100,7 @@ export function LogBookChangeModal({ open, onClose, onLogged }: LogBookChangeMod
                 <button
                   type="button"
                   onClick={() => setSelectedBook(null)}
-                  className="text-xs font-medium text-primary-gradient hover:underline"
+                  className="text-xs font-medium text-primary hover:underline"
                 >
                   {t('itHead.logBookChangeModal.changeBook')}
                 </button>

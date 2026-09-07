@@ -28,5 +28,6 @@ export const ROUTES = {
   ADMIN_MEMBERS: '/admin/members',
   ADMIN_PAYMENTS: '/admin/payments',
   IT_HEAD: '/it-head',
+  IT_HEAD_REPORTS: '/it-head/reports',
   GUARDIAN: '/guardian',
 } as const;

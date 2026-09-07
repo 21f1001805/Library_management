@@ -3,7 +3,9 @@ import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api';
 import type { BookReviews, Review, ReviewPayload } from './types';
 
 export async function getBookReviews(bookId: string, token: string | null): Promise<BookReviews> {
-  if (!token) return { items: [], average_rating: 0, total_reviews: 0, breakdown: [] };
+  if (!token) {
+    return { items: [], average_rating: 0, total_reviews: 0, breakdown: [], review_digest: null };
+  }
   return apiGet<BookReviews>(`/books/${bookId}/reviews`, token);
 }
 

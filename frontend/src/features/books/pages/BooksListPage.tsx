@@ -127,8 +127,8 @@ export function BooksListPage() {
           }
         />
       ) : (
-        <div
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          <div
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           aria-busy={isFetching || undefined}
         >
           {pageBooks.map((book) => (
@@ -138,7 +138,10 @@ export function BooksListPage() {
               title={book.title}
               author={book.author}
               category={book.category}
+              genre={book.genre}
               available={book.available}
+              shelfLocation={book.shelf_location}
+              coverImageUrl={book.cover_image_url || (book.isbn ? `/covers/${book.isbn}.jpeg` : null)}
               averageRating={book.average_rating}
               reviewCount={book.review_count}
               description={book.description}

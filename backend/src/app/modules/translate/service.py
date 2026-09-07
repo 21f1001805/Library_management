@@ -30,11 +30,34 @@ _BATCH_CACHE_MAX_ENTRIES = 64
 _batch_cache: dict[str, list[str]] = {}
 
 
+class _ProviderError(Exception):
+    """Google's endpoint answered 200 with its own HTML error page instead of a
+    translation — deep_translator has no way to tell that apart from a real result,
+    so it happily scrapes stray text out of the error page and returns it as if it
+    translated something."""
+
+
+# Google's stock copy for "something broke on our end", served with a 200 status
+# on translate.google.com's scrape endpoint (rate-limited/blocked requests, mostly).
+# deep_translator only raises on a non-200 status or a missing element — this page
+# has both a 200 and *some* element, so its text sails through as a "translation"
+# unless we catch it here.
+_PROVIDER_ERROR_MARKERS = (
+    "that's an error",
+    "that's all we know",
+    "error 500 (server error)",
+)
+
+
 def _translate_one(text: str, source_lang: str, target_lang: str) -> str:
     # A fresh instance per call: GoogleTranslator.translate() mutates a shared
     # _url_params dict on self, so reusing one instance across concurrent
     # threads can race and return a translation for the wrong text.
-    return GoogleTranslator(source=source_lang, target=target_lang).translate(text)
+    result = GoogleTranslator(source=source_lang, target=target_lang).translate(text)
+    lowered = result.lower()
+    if any(marker in lowered for marker in _PROVIDER_ERROR_MARKERS):
+        raise _ProviderError(result)
+    return result
 
 
 async def translate_text(payload: TranslateRequest) -> TranslateResponse:

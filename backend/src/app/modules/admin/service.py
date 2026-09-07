@@ -115,7 +115,6 @@ async def get_dashboard() -> AdminDashboardOut:
     revenue_last_month = cast(int, results[1])
     membership_fees = cast(int, results[2])
     fines_collected = cast(int, results[3])
-    expenses_mtd = cast(int, results[4])
     expenses_last_month = cast(int, results[5])
     total_members = cast(int, results[6])
     total_members_last_month = cast(int, results[7])
@@ -123,6 +122,7 @@ async def get_dashboard() -> AdminDashboardOut:
     spend_by_category = cast(dict[str, int], results[9])
     bookings_by_hour = cast(dict[int, int], results[10])
 
+    expenses_mtd = sum(spend_by_category.values())
     net_profit_mtd = revenue_mtd - expenses_mtd
     net_profit_last_month = revenue_last_month - expenses_last_month
 

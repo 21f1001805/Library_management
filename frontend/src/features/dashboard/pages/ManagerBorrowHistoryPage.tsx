@@ -116,7 +116,8 @@ export function ManagerBorrowHistoryPage() {
         description={t('managerDashboard.borrowHistory.pageDescription')}
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      {/* Styled Filter & Search Toolbar Container matching Admin Members page */}
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
         <SearchBar
           value={search}
           onChange={updateSearch}
@@ -164,7 +165,7 @@ export function ManagerBorrowHistoryPage() {
               <button
                 type="button"
                 onClick={resetFilters}
-                className="text-sm font-medium text-primary-gradient"
+                className="text-sm font-medium text-primary"
               >
                 {t('common.actions.reset')}
               </button>
@@ -173,36 +174,38 @@ export function ManagerBorrowHistoryPage() {
         />
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('managerDashboard.borrowHistory.table.book')}</TableHead>
-                <TableHead>{t('managerDashboard.borrowHistory.table.member')}</TableHead>
-                <TableHead>{t('managerDashboard.borrowHistory.table.borrowed')}</TableHead>
-                <TableHead>{t('managerDashboard.borrowHistory.table.due')}</TableHead>
-                <TableHead>{t('managerDashboard.borrowHistory.table.returned')}</TableHead>
-                <TableHead>{t('managerDashboard.borrowHistory.table.status')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedItems.map((loan) => (
-                <TableRow key={loan.id}>
-                  <TableCell>
-                    <p className="font-medium text-foreground">{loan.book_title}</p>
-                  </TableCell>
-                  <TableCell>{loan.member_name}</TableCell>
-                  <TableCell>{formatDate(loan.borrowed_at)}</TableCell>
-                  <TableCell>{formatDate(loan.due_date)}</TableCell>
-                  <TableCell>
-                    {formatDate(loan.returned_at) ?? t('managerDashboard.borrowHistory.notReturned')}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={loan.status} />
-                  </TableCell>
+          <div className="w-full overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
+            <Table className="min-w-full">
+              <TableHeader className="bg-secondary/20">
+                <TableRow>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.borrowHistory.table.book')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.borrowHistory.table.member')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.borrowHistory.table.borrowed')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.borrowHistory.table.due')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.borrowHistory.table.returned')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5 text-right">{t('managerDashboard.borrowHistory.table.status')}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {paginatedItems.map((loan) => (
+                  <TableRow key={loan.id} className="transition-colors hover:bg-secondary/40">
+                    <TableCell className="px-3.5 py-2.5">
+                      <p className="font-semibold text-foreground text-xs sm:text-sm">{loan.book_title}</p>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 font-medium text-foreground text-xs sm:text-sm">{loan.member_name}</TableCell>
+                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">{formatDate(loan.borrowed_at)}</TableCell>
+                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">{formatDate(loan.due_date)}</TableCell>
+                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">
+                      {formatDate(loan.returned_at) ?? t('managerDashboard.borrowHistory.notReturned')}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-right">
+                      <StatusBadge status={loan.status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
           <Pagination
             currentPage={page}

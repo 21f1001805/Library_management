@@ -59,6 +59,7 @@ export function BookingSummary({
   const { t } = useTranslation();
   const isAvailable = selectedSeat?.status === 'available';
   const isMine = selectedSeat?.status === 'booked_by_me';
+  const isBookedForChild = selectedSeat?.status === 'booked_for_child';
   const isTaken = selectedSeat?.status === 'reserved';
 
   return (
@@ -91,11 +92,19 @@ export function BookingSummary({
 
         {isMine && selectedSeat && (
           <div className="rounded-md bg-primary/10 p-3 text-sm font-medium text-primary">
-            {t('seatBooking.bookingSummary.bookedByYou', { seatId: selectedSeat.seat_label })}
+            {selectedSeat.booked_by_guardian_name
+              ? `Booked for you by your guardian (${selectedSeat.booked_by_guardian_name})`
+              : t('seatBooking.bookingSummary.bookedByYou', { seatId: selectedSeat.seat_label })}
           </div>
         )}
 
-        {(isTaken || isMine) && selectedSeat && (
+        {isBookedForChild && selectedSeat && (
+          <div className="rounded-md bg-primary/10 p-3 text-sm font-medium text-primary">
+            Booked for {selectedSeat.booked_for_child_name || 'Child'}
+          </div>
+        )}
+
+        {(isTaken || isMine || isBookedForChild) && selectedSeat && (
           <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
             <Clock3 className="mt-0.5 size-3.5 shrink-0" />
             {minutesUntilFree !== null
@@ -129,7 +138,7 @@ export function BookingSummary({
             </Button>
           ))}
 
-        {isMine ? (
+        {isMine || (isBookedForChild && selectedSeat?.booking_id) ? (
           <Button
             variant="outline"
             disabled={isBusy}

@@ -4,9 +4,13 @@ import { useTranslation } from 'react-i18next';
 
 import { PageTitle, ProgressBar } from '@/components/common';
 import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState } from '@/components/ui';
+import { useBooksByIds } from '@/features/books/hooks/useBooks';
+import { useWishlist } from '@/features/books/hooks/useWishlist';
+import type { Book } from '@/features/books/types';
 import {
   useAuth,
   type GuardianChild,
+  type LoanRecord,
   type ReadingGoal,
   type ReadingProgressEntry,
   type ReadingStreak,
@@ -21,6 +25,33 @@ function toProgressBooks(entries: ReadingProgressEntry[]) {
     id: entry.id,
     title: entry.book_title,
     percentComplete: entry.percent_complete,
+  }));
+}
+
+// Borrowed = a loan the member still holds. GET /loans/me returns their whole borrowing
+// history, so returned loans are filtered out here — the card answers "what do I have
+// out right now", which the Completed card next to it would otherwise duplicate.
+//
+// Progress is a separate record from the loan: a book can be borrowed with nothing
+// logged against it yet. Where the member has logged some, it's matched by book_id and
+// the bar reflects it; where they haven't, this stays at 0 and BookProgressList omits
+// the bar rather than inventing a position for it.
+function toBorrowedBooks(loans: LoanRecord[], progress: ReadingProgressEntry[]) {
+  const percentByBook = new Map(progress.map((entry) => [entry.book_id, entry.percent_complete]));
+  return loans
+    .filter((loan) => loan.status === 'active' || loan.status === 'overdue')
+    .map((loan) => ({
+      id: loan.id,
+      title: loan.book_title,
+      percentComplete: percentByBook.get(loan.book_id) ?? 0,
+    }));
+}
+
+function toWantToReadBooks(books: Book[]) {
+  return books.map((book) => ({
+    id: book.id,
+    title: book.title,
+    percentComplete: 0,
   }));
 }
 
@@ -69,12 +100,14 @@ function GuardianReadingProgress() {
   );
 }
 
-// ponytail: "Want to Read" has no backend status yet (ReadingProgress is
-// reading|completed only) — shows its real empty state rather than mock titles.
 function MemberReadingProgress() {
   const { t } = useTranslation();
-  const { fullName, getMyReadingProgress, getReadingGoal, getReadingStreak } = useAuth();
+  const { fullName, getMyLoans, getMyReadingProgress, getReadingGoal, getReadingStreak } =
+    useAuth();
+  const { wishlistIds } = useWishlist();
+  const wantToRead = useBooksByIds(wishlistIds);
   const [progress, setProgress] = useState<ReadingProgressEntry[]>([]);
+  const [loans, setLoans] = useState<LoanRecord[]>([]);
   const [goal, setGoal] = useState<ReadingGoal | null>(null);
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [certificate, setCertificate] = useState<'yearly' | 'monthly' | null>(null);
@@ -85,6 +118,7 @@ function MemberReadingProgress() {
 
   useEffect(() => {
     getMyReadingProgress().then(setProgress).catch(() => setProgress([]));
+    getMyLoans().then(setLoans).catch(() => setLoans([]));
     getReadingGoal().then(setGoal).catch(() => setGoal(null));
     getReadingStreak()
       .then(setStreak)
@@ -92,10 +126,7 @@ function MemberReadingProgress() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const currentlyReading = useMemo(
-    () => progress.filter((entry) => entry.status === 'reading'),
-    [progress],
-  );
+  const borrowed = useMemo(() => toBorrowedBooks(loans, progress), [loans, progress]);
   const completed = useMemo(
     () => progress.filter((entry) => entry.status === 'completed'),
     [progress],
@@ -215,9 +246,9 @@ function MemberReadingProgress() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <BookProgressList
-          title={t('readingProgress.lists.currentlyReading.title')}
-          books={toProgressBooks(currentlyReading)}
-          emptyDescription={t('readingProgress.lists.currentlyReading.emptyDescription')}
+          title={t('readingProgress.lists.borrowed.title')}
+          books={borrowed}
+          emptyDescription={t('readingProgress.lists.borrowed.emptyDescription')}
         />
         <BookProgressList
           title={t('readingProgress.lists.completed.title')}
@@ -226,7 +257,7 @@ function MemberReadingProgress() {
         />
         <BookProgressList
           title={t('readingProgress.lists.wantToRead.title')}
-          books={[]}
+          books={toWantToReadBooks(wantToRead)}
           emptyDescription={t('readingProgress.lists.wantToRead.emptyDescription')}
         />
       </div>

@@ -36,7 +36,7 @@ try:
             "--host",
             "127.0.0.1",
             "--port",
-            "8000",
+            os.environ.get("BACKEND_PORT", "8000"),
         ],
         check=True,
     )

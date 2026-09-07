@@ -7,6 +7,7 @@ import { Button } from '@/components/ui';
 import type { NavItem } from '@/constants/navigation';
 import { cn } from '@/lib/cn';
 import { useLocalStorageState } from '@/lib/useLocalStorageState';
+import { NotificationsPanelProvider } from '@/providers/NotificationsPanelProvider';
 import { PageHeadingProvider } from '@/providers/PageHeadingProvider';
 
 export interface AppShellLayoutProps {
@@ -24,6 +25,7 @@ export function AppShellLayout({ items }: AppShellLayoutProps) {
     // Wraps TopBar and the Outlet together: the TopBar registers the heading slot, and the
     // page rendered by the Outlet portals its PageHeader/PageTitle heading into it.
     <PageHeadingProvider>
+      <NotificationsPanelProvider>
       <div className="flex min-h-screen">
         <a
           href="#app-main-content"
@@ -58,7 +60,7 @@ export function AppShellLayout({ items }: AppShellLayoutProps) {
                 room for the toggle, which has to stay reachable to get the sidebar back. */}
             {!collapsed && (
               <span className="flex min-w-0 items-center gap-2 text-sm font-semibold tracking-tight text-foreground">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-gradient text-primary-foreground">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <BookOpen className="size-4" />
                 </span>
                 <span className="truncate">{t('common.brandShort')}</span>
@@ -93,6 +95,7 @@ export function AppShellLayout({ items }: AppShellLayoutProps) {
           <Footer minimal />
         </div>
       </div>
+      </NotificationsPanelProvider>
     </PageHeadingProvider>
   );
 }

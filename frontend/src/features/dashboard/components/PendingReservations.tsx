@@ -38,7 +38,7 @@ export function PendingReservations({ requests, onApprove, onReject }: PendingRe
     }
   }, [requests, sortValue]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredRequests, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredRequests, 3);
 
   function durationFor(id: string): LoanDurationDays {
     return durationByRequest[id] ?? 7;
@@ -74,23 +74,22 @@ export function PendingReservations({ requests, onApprove, onReject }: PendingRe
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle>{t('managerDashboard.pendingReservations.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
         <TableToolbar
+          variant="icon-only"
           sort={{
-            label: 'Sort',
+            label: t('common.actions.sort'),
             value: sortValue,
             onChange: (value) => {
               setSortValue(value);
               setPage(1);
             },
             options: [
-              { value: 'newest', label: 'Newest First' },
-              { value: 'oldest', label: 'Oldest First' },
-              { value: 'book', label: 'Book Title' },
-              { value: 'member', label: 'Member Name' },
+              { value: 'newest', label: t('managerDashboard.pendingReservations.sort.newestFirst') },
+              { value: 'oldest', label: t('managerDashboard.pendingReservations.sort.oldestFirst') },
+              { value: 'book', label: t('managerDashboard.pendingReservations.sort.bookTitle') },
+              { value: 'member', label: t('managerDashboard.pendingReservations.sort.memberName') },
             ],
           }}
           onReset={() => {
@@ -99,6 +98,8 @@ export function PendingReservations({ requests, onApprove, onReject }: PendingRe
           }}
           resetLabel={t('common.actions.reset')}
         />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
         {filteredRequests.length === 0 ? (
           <EmptyState
             title={t('managerDashboard.pendingReservations.emptyTitle')}
@@ -110,33 +111,34 @@ export function PendingReservations({ requests, onApprove, onReject }: PendingRe
               {paginatedItems.map((request) => (
                 <li
                   key={request.id}
-                  className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{request.book_title}</p>
-                    <p className="text-xs text-muted-foreground">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{request.book_title}</p>
+                    <p className="truncate text-xs text-muted-foreground">
                       {t('managerDashboard.pendingReservations.requestedBy', {
                         name: request.member_name,
-                      })}
+                      })} · {formatDate(request.requested_at)}
                     </p>
-                    <p className="text-xs text-muted-foreground">{formatDate(request.requested_at)}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
                     <Select
                       value={String(durationFor(request.id))}
-                      onChange={(event) =>
+                      aria-label={t('managerDashboard.pendingReservations.durationLabel', 'Loan duration')}
+                      onChange={(e) =>
                         setDurationByRequest((prev) => ({
                           ...prev,
-                          [request.id]: Number(event.target.value) as LoanDurationDays,
+                          [request.id]: Number(e.target.value) as LoanDurationDays,
                         }))
                       }
-                      options={DURATION_CHOICES.map((days) => ({
-                        value: String(days),
+                      options={DURATION_CHOICES.map((d) => ({
+                        value: String(d),
                         label: t('managerDashboard.pendingReservations.durationOption', {
-                          count: days,
+                          count: d,
+                          defaultValue: `${d} days`,
                         }),
                       }))}
-                      className="w-auto"
+                      className="h-8 w-28 text-xs py-0 pl-2.5 pr-7"
                     />
                     <Button
                       size="sm"
@@ -157,7 +159,7 @@ export function PendingReservations({ requests, onApprove, onReject }: PendingRe
               currentPage={page}
               totalPages={totalPages}
               totalItems={totalItems}
-              pageSize={5}
+              pageSize={3}
               onPageChange={setPage}
             />
           </>

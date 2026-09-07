@@ -142,7 +142,7 @@ export function ChatbotWidget() {
                           'rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm',
                           msg.from === 'bot'
                             ? 'rounded-bl-sm bg-secondary text-foreground'
-                            : 'rounded-br-sm bg-primary-gradient text-primary-foreground',
+                            : 'rounded-br-sm bg-primary text-primary-foreground',
                         )}
                       >
                         {msg.from === 'bot' ? (
@@ -151,9 +151,10 @@ export function ChatbotWidget() {
                               p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
                               ul: ({ children }) => <ul className="ml-4 list-disc space-y-0.5">{children}</ul>,
                               ol: ({ children }) => <ol className="ml-4 list-decimal space-y-0.5">{children}</ol>,
-                              li: ({ children }) => <li>{children}</li>,
+                              li: ({ children }) => <li className="leading-snug">{children}</li>,
                               strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                               code: ({ children }) => <code className="rounded bg-black/10 px-1 font-mono text-xs">{children}</code>,
+                              a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer" className="underline text-primary hover:opacity-80">{children}</a>,
                             }}
                           >
                             {msg.text}
@@ -255,7 +256,7 @@ export function ChatbotWidget() {
 
       {/* FAB */}
       <div className="pointer-events-auto relative">
-        {!open && <span className="absolute inset-0 animate-ping rounded-full bg-primary-gradient opacity-20" />}
+        {!open && <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-20" />}
         <Button
           id="chatbot-launcher"
           ref={launcherRef}

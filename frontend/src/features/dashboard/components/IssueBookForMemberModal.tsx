@@ -119,7 +119,7 @@ export function IssueBookForMemberModal({ open, onClose, onIssued }: IssueBookFo
                 <button
                   type="button"
                   onClick={() => setSelectedBook(null)}
-                  className="text-xs font-medium text-primary-gradient hover:underline"
+                  className="text-xs font-medium text-primary hover:underline"
                 >
                   {t('managerDashboard.billingRequest.changeMember')}
                 </button>

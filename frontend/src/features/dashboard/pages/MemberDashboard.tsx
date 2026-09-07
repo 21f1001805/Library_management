@@ -3,7 +3,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { PageHeader, QuickActionsCard, StatisticCard } from '@/components/common';
+import { Badge } from '@/components/ui';
+import { cn } from '@/lib/cn';
+import { PageHeader, QuickActionsCard } from '@/components/common';
 import { ROUTES } from '@/constants/routes';
 import { useMembershipQuery } from '@/features/payment/hooks/useMembershipQuery';
 import { LeaveLibraryReviewModal } from '@/features/reviews/components/LeaveLibraryReviewModal';
@@ -11,17 +13,21 @@ import { LibraryReviewCard } from '@/features/reviews/components/LibraryReviewCa
 import { apiGet, getErrorMessage } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { DueBook } from '@/mocks/dashboard';
+import { useReservationsQuery } from '@/features/reservations/hooks/useReservationsQuery';
+import { useReservationsStream } from '@/features/reservations/hooks/useReservationsStream';
+import { useVisitStatusQuery } from '@/features/visits/hooks/useVisitStatusQuery';
+import { useVisitStatusStream } from '@/features/visits/hooks/useVisitStatusStream';
 import {
   useAuth,
   type LoanRecord,
   type ReadingStreak,
-  type Reservation,
   type SeatBookingRecord,
 } from '@/providers/AuthProvider';
 
 import { useNotificationsQuery } from '../../notifications/hooks/useNotificationsQuery';
 import { BooksDueSoon } from '../components/BooksDueSoon';
 import { CurrentlyBorrowed } from '../components/CurrentlyBorrowed';
+import { MemberStatCard } from '../components/MemberStatCard';
 import { MemberStatModal, type MemberStatKey } from '../components/MemberStatModal';
 import { MemberSubscription } from '../components/MemberSubscription';
 import { RecentNotifications, UpcomingEvents } from '../components/RecentActivity';
@@ -51,7 +57,6 @@ export function MemberDashboard() {
     token,
     fullName,
     getMyLoans,
-    getMyReservations,
     getMySeatBookings,
     getReadingStreak,
   } = useAuth();
@@ -60,9 +65,17 @@ export function MemberDashboard() {
   // the bell already has cached.
   const { notifications } = useNotificationsQuery();
 
+  // Both of these change from outside this tab — staff check the member in or out at the
+  // desk, and a manager approves or rejects their reservation — so both are backed by a
+  // shared query and an SSE stream that pushes the change the moment it happens, rather
+  // than a fetch-once-on-mount that goes stale the instant it lands.
+  const { data: visitStatus } = useVisitStatusQuery();
+  useVisitStatusStream();
+  const { reservations } = useReservationsQuery();
+  useReservationsStream();
+
   const { membership } = useMembershipQuery();
   const [loans, setLoans] = useState<LoanRecord[]>([]);
-  const [reservations, setReservations] = useState<Reservation[]>([]);
   const [seatBookings, setSeatBookings] = useState<SeatBookingRecord[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
@@ -71,6 +84,7 @@ export function MemberDashboard() {
   const [streak, setStreak] = useState<ReadingStreak>(EMPTY_STREAK);
   const [activeStat, setActiveStat] = useState<MemberStatKey | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,11 +93,6 @@ export function MemberDashboard() {
       if (!cancelled) setLoans(data);
     }).catch(() => {
       if (!cancelled) setLoans([]);
-    });
-    getMyReservations().then((data) => {
-      if (!cancelled) setReservations(data);
-    }).catch(() => {
-      if (!cancelled) setReservations([]);
     });
     getMySeatBookings().then((data) => {
       if (!cancelled) setSeatBookings(data);
@@ -119,7 +128,8 @@ export function MemberDashboard() {
     } finally {
       if (requestId === eventsRequestId.current) setEventsLoading(false);
     }
-  }, [t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void loadEvents(), 0);
@@ -190,37 +200,80 @@ export function MemberDashboard() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title={t('dashboard.welcomeBack', { name: (fullName ?? '').split(' ')[0] || 'there' })}
+        title={
+          <span className="inline-flex flex-wrap items-center gap-2.5">
+            <span>{t('dashboard.welcomeBack', { name: (fullName ?? '').split(' ')[0] || 'there' })}</span>
+            <Badge
+              variant={visitStatus?.is_in_library ? 'success' : 'outline'}
+              className="gap-1.5 text-xs font-normal"
+              title={
+                visitStatus?.is_in_library && visitStatus.checked_in_at
+                  ? `Checked in at ${formatDate(visitStatus.checked_in_at)}`
+                  : visitStatus?.last_checked_out_at
+                  ? `Left at ${formatDate(visitStatus.last_checked_out_at)}`
+                  : undefined
+              }
+            >
+              <span
+                className={cn(
+                  'size-2 rounded-full',
+                  visitStatus?.is_in_library ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/50',
+                )}
+              />
+              {visitStatus?.is_in_library ? 'In Library' : 'Not in Library'}
+            </Badge>
+          </span>
+        }
         description={membership ? membership.plan_label : t('dashboard.subscription.noPlan')}
       />
 
       <h2 className="sr-only">{t('common.dashboardSectionsHeading')}</h2>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatisticCard
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-6">
+        <MemberSubscription
+          className="lg:col-span-2"
+          planLabel={membership ? membership.plan_label : 'No active plan'}
+          expiresOn={membership ? formatDate(membership.expires_at) : undefined}
+          purchasedAtIso={membership?.purchased_at}
+          expiresAtIso={membership?.expires_at}
+          isActive={membership?.is_active}
+          outstandingFine={formatCurrency(totalFine)}
+          fineReasonKey={unpaidFines.length > 0 ? 'lateReturn' : undefined}
+          fineBookTitle={unpaidFines[0]?.book_title}
+        />
+
+        <MemberStatCard
           icon={BookOpen}
+          tone="primary"
           label={t('dashboard.stats.booksBorrowed')}
+          subtitle={t('dashboard.stats.booksBorrowedSubtitle')}
           value={String(activeLoans.length)}
           onClick={() => setActiveStat('booksBorrowed')}
           selected={activeStat === 'booksBorrowed'}
         />
-        <StatisticCard
+        <MemberStatCard
           icon={BookMarked}
+          tone="info"
           label={t('dashboard.stats.booksReserved')}
+          subtitle={t('dashboard.stats.booksReservedSubtitle')}
           value={String(reservations.length)}
           onClick={() => setActiveStat('booksReserved')}
           selected={activeStat === 'booksReserved'}
         />
-        <StatisticCard
+        <MemberStatCard
           icon={CalendarCheck}
+          tone="success"
           label={t('dashboard.stats.seatBookings')}
+          subtitle={t('dashboard.stats.seatBookingsSubtitle')}
           value={String(seatBookings.length)}
           onClick={() => setActiveStat('seatBookings')}
           selected={activeStat === 'seatBookings'}
         />
-        <StatisticCard
+        <MemberStatCard
           icon={Flame}
+          tone="warning"
           label={t('readingProgress.readingStreak.title')}
+          subtitle={t('dashboard.stats.readingStreakSubtitle')}
           value={t('readingProgress.readingStreak.currentDays', {
             count: streak.current_streak_days,
           })}
@@ -228,14 +281,6 @@ export function MemberDashboard() {
           selected={activeStat === 'readingStreak'}
         />
       </div>
-
-      <MemberSubscription
-        planLabel={membership ? membership.plan_label : 'No active plan'}
-        expiresOn={membership ? formatDate(membership.expires_at) : undefined}
-        outstandingFine={formatCurrency(totalFine)}
-        fineReasonKey={unpaidFines.length > 0 ? 'lateReturn' : undefined}
-        fineBookTitle={unpaidFines[0]?.book_title}
-      />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <BooksDueSoon books={booksDueSoon} />
@@ -252,7 +297,7 @@ export function MemberDashboard() {
         />
       </div>
 
-      <LibraryReviewCard onOpenModal={() => setIsReviewModalOpen(true)} />
+      <LibraryReviewCard onOpenModal={() => setIsReviewModalOpen(true)} refreshKey={reviewRefreshKey} />
 
       <QuickActionsCard
         title={t('dashboard.quickActions.title')}
@@ -283,6 +328,7 @@ export function MemberDashboard() {
       <LeaveLibraryReviewModal
         open={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
+        onSubmitted={() => setReviewRefreshKey((key) => key + 1)}
       />
 
       <MemberStatModal

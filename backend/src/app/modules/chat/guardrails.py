@@ -85,6 +85,15 @@ class GuardrailBlock(Exception):
         self.reply = reply
 
 
+def contains_harmful_content(text: str) -> bool:
+    """Public wrapper around the same pattern chat input is already screened against —
+    reused by community moderation to auto-flag a new post/comment for the moderator
+    queue instead of blocking it outright (unlike a chat message, a member's own post
+    can't just be silently refused, so it gets a human review instead of a hard stop).
+    """
+    return bool(_HARMFUL.search(text))
+
+
 def check_input(message: str) -> str:
     """
     Validate and sanitise the user message.

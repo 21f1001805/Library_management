@@ -6,6 +6,8 @@ export interface DateSliderOption {
   value: string;
   label: string;
   subLabel: string;
+  badge?: string;
+  badgeTone?: 'success' | 'warning' | 'danger' | 'info';
 }
 
 export interface DateSliderProps {
@@ -43,19 +45,39 @@ export function DateSlider({ options, active, ariaLabel, onChange }: DateSliderP
             {isActive && (
               <motion.span
                 layoutId="seat-booking-date-pill"
-                className="absolute inset-0 rounded-md bg-primary-gradient"
+                className="absolute inset-0 rounded-md bg-primary"
                 transition={{ type: 'spring', stiffness: 400, damping: 32 }}
               />
             )}
-            <span className="relative">{option.label}</span>
-            <span
-              className={cn(
-                'relative text-xs font-normal',
-                isActive ? 'text-primary-foreground' : 'text-muted-foreground',
+            <div className="relative flex items-center gap-1.5">
+              <span>{option.label}</span>
+              {option.badge && (
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-none uppercase tracking-wide',
+                    isActive
+                      ? 'bg-primary-foreground text-primary font-bold'
+                      : option.badgeTone === 'danger'
+                        ? 'bg-danger/10 text-danger'
+                        : option.badgeTone === 'success'
+                          ? 'bg-success/10 text-success'
+                          : 'bg-primary/10 text-primary',
+                  )}
+                >
+                  {option.badge}
+                </span>
               )}
-            >
-              {option.subLabel}
-            </span>
+            </div>
+            {option.subLabel && option.subLabel !== option.label && (
+              <span
+                className={cn(
+                  'relative text-xs font-normal',
+                  isActive ? 'text-primary-foreground/90' : 'text-muted-foreground',
+                )}
+              >
+                {option.subLabel}
+              </span>
+            )}
           </button>
         );
       })}

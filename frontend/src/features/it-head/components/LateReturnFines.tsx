@@ -1,10 +1,11 @@
+import { BookOpen, Calendar, CheckCircle2, Clock, Mail } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Pagination, TableToolbar } from '@/components/common';
 import { NoResults } from '@/components/feedback';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { usePagination } from '@/hooks';
 import { getErrorMessage } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/format';
@@ -39,7 +40,7 @@ export function LateReturnFines({ entries, onChanged }: { entries: LoanRecord[];
     }
   }, [entries, sortValue, statusFilter]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(unpaid, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(unpaid, 3);
 
   async function handleRemind(entry: LoanRecord) {
     try {
@@ -62,36 +63,35 @@ export function LateReturnFines({ entries, onChanged }: { entries: LoanRecord[];
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle>{t('itHead.lateFines.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
         <TableToolbar
+          variant="icon-only"
           filters={[
             {
-              label: 'Status',
+              label: t('itHead.lateFines.filters.statusLabel'),
               value: statusFilter,
               onChange: (value) => {
                 setStatusFilter(value);
                 setPage(1);
               },
               options: [
-                { value: 'all', label: 'All' },
-                { value: 'unpaid', label: 'Unpaid' },
+                { value: 'all', label: t('itHead.lateFines.filters.all') },
+                { value: 'unpaid', label: t('itHead.lateFines.status.unpaid') },
               ],
             },
           ]}
           sort={{
-            label: 'Sort',
+            label: t('common.actions.sort'),
             value: sortValue,
             onChange: (value) => {
               setSortValue(value);
               setPage(1);
             },
             options: [
-              { value: 'amount', label: 'Amount Low to High' },
-              { value: 'amount-desc', label: 'Amount High to Low' },
-              { value: 'member', label: 'Member Name' },
+              { value: 'amount', label: t('itHead.lateFines.sort.amountLowToHigh') },
+              { value: 'amount-desc', label: t('itHead.lateFines.sort.amountHighToLow') },
+              { value: 'member', label: t('itHead.lateFines.sort.memberName') },
             ],
           }}
           onReset={() => {
@@ -101,6 +101,8 @@ export function LateReturnFines({ entries, onChanged }: { entries: LoanRecord[];
           }}
           resetLabel={t('common.actions.reset')}
         />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
         {unpaid.length === 0 ? (
           <NoResults title={t('itHead.lateFines.empty')} />
         ) : (
@@ -108,37 +110,69 @@ export function LateReturnFines({ entries, onChanged }: { entries: LoanRecord[];
             {paginatedItems.map((entry) => (
               <div
                 key={entry.id}
-                className="flex flex-col gap-2 rounded-lg border border-border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5 shadow-xs transition-colors hover:border-border/80"
               >
-                <div>
-                  <p className="font-medium text-foreground">{entry.book_title}</p>
-                  <p className="text-muted-foreground">
-                    {t('itHead.lateFines.borrowedBy', { name: entry.member_name })}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t('itHead.lateFines.dueDate', { date: formatDate(entry.due_date) })}
-                  </p>
+                {/* Top Row: Book & Borrower Info + Overdue Days & Fine Amount */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="size-4 shrink-0 text-primary" />
+                      <h4 className="truncate font-semibold text-foreground">{entry.book_title}</h4>
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {t('itHead.lateFines.borrowedBy', { name: entry.member_name })}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">
+                      <Clock className="size-3" />
+                      {t('itHead.lateFines.daysLate', { count: entry.days_late })}
+                    </span>
+                    <span className="text-sm font-bold text-foreground">
+                      {formatCurrency(entry.fine_amount)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="danger">{t('itHead.lateFines.daysLate', { count: entry.days_late })}</Badge>
-                  <span className="font-medium text-foreground">{formatCurrency(entry.fine_amount)}</span>
-                  <Badge variant="warning">{t('itHead.lateFines.status.unpaid')}</Badge>
-                  <Button size="sm" variant="outline" onClick={() => handleRemind(entry)}>
-                    {t('itHead.lateFines.sendReminder')}
-                  </Button>
-                  <Button size="sm" onClick={() => handleMarkPaid(entry)}>
-                    {t('itHead.lateFines.markPaid')}
-                  </Button>
+
+                {/* Bottom Row: Due Date + Action Buttons */}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-2.5">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Calendar className="size-3.5 shrink-0 text-muted-foreground/70" />
+                    <span>{t('itHead.lateFines.dueDate', { date: formatDate(entry.due_date) })}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1.5 whitespace-nowrap text-xs"
+                      onClick={() => handleRemind(entry)}
+                    >
+                      <Mail className="size-3.5" />
+                      {t('itHead.lateFines.sendReminder')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-8 gap-1.5 whitespace-nowrap text-xs"
+                      onClick={() => handleMarkPaid(entry)}
+                    >
+                      <CheckCircle2 className="size-3.5" />
+                      {t('itHead.lateFines.markPaid')}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              pageSize={5}
-              onPageChange={setPage}
-            />
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={3}
+                onPageChange={setPage}
+              />
+            )}
           </>
         )}
       </CardContent>

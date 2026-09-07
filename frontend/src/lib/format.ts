@@ -9,6 +9,11 @@ export function formatMonth(monthKey: string): string {
   });
 }
 
+/** "2026-08-19" -> "Wed" */
+export function formatWeekday(dateKey: string): string {
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString('en-US', { weekday: 'short' });
+}
+
 export function formatDate(iso: string): string;
 export function formatDate(iso: string | null): string | null;
 export function formatDate(iso: string | null): string | null {

@@ -34,14 +34,15 @@ class SeatNotifyCreate(BaseModel):
 
 class SeatSlotOut(BaseModel):
     seat_label: str
-    status: str  # available | reserved | booked_by_me
+    status: str  # available | reserved | booked_by_me | booked_for_child
     booking_id: str | None = None
-    # Set for both "reserved" and "booked_by_me" — lets the seat grid show who has it
-    # (someone else, or the current member themself) rather than a plain color swatch.
-    # Deliberately just the avatar, not the member's name: the seat grid is visible to
-    # every member, so this stays a lightweight visual cue rather than exposing another
-    # member's identity outright.
+    # Set for "reserved", "booked_by_me", and "booked_for_child" — lets the seat grid show
+    # who has it (someone else, the current member, or their linked child) rather than plain color.
     booked_by_avatar_url: str | None = None
+    booked_for_child_id: str | None = None
+    booked_for_child_name: str | None = None
+    booked_by_guardian_id: str | None = None
+    booked_by_guardian_name: str | None = None
 
 
 class ScheduleOut(BaseModel):

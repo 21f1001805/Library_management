@@ -1,4 +1,6 @@
+import logging
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,6 +19,12 @@ class Settings(BaseSettings):
     # replicas booting at once is safe. Set AUTO_MIGRATE=false if your deployment applies
     # migrations as its own step and the app should never touch the schema.
     auto_migrate: bool = Field(default=True, validation_alias="AUTO_MIGRATE")
+    # Runs scripts/seed_books.py + scripts/seed_demo_data.py on startup in development
+    # only, so a fresh clone has books and ~5 months of demo activity without anyone
+    # remembering to run the seed scripts by hand. Both are idempotent, so repeat boots
+    # (including --reload restarts) just skip after the first. Set AUTO_SEED_DEMO=false
+    # to opt out.
+    auto_seed_demo: bool = Field(default=True, validation_alias="AUTO_SEED_DEMO")
     database_url: str = Field(
         default="postgresql://app:app@localhost:5432/app",
         validation_alias="DATABASE_URL",
@@ -35,11 +43,19 @@ class Settings(BaseSettings):
     chat_history_max_turns: int = Field(default=5, validation_alias="CHAT_HISTORY_MAX_TURNS")
     openai_api_key: str = Field(default="", validation_alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4o-mini", validation_alias="OPENAI_MODEL")
+    openai_embedding_model: str = Field(
+        default="text-embedding-3-small", validation_alias="OPENAI_EMBEDDING_MODEL"
+    )
     # LLM backend: "openai" | "bedrock" | "ollama"
     # Defaults to ollama to match .env.example: a missing LLM_MODE then falls back to the
     # free local model rather than silently reaching for a paid API, which is what happened
     # when this defaulted to "openai" while the template said otherwise.
     llm_mode: str = Field(default="ollama", validation_alias="LLM_MODE")
+    # Logs every model turn and tool call (prompt/reply previews, latency, token usage)
+    # via core/llm.py's debug callback. Off by default because it puts user prompts and
+    # model replies in the log verbatim; turn it on while diagnosing a backend, not in
+    # production. Provider *failures* are always logged regardless of this flag.
+    llm_debug: bool = Field(default=False, validation_alias="LLM_DEBUG")
     # AWS Bedrock
     aws_region: str = Field(default="us-east-1", validation_alias="AWS_REGION")
     aws_access_key_id: str = Field(default="", validation_alias="AWS_ACCESS_KEY_ID")
@@ -47,11 +63,21 @@ class Settings(BaseSettings):
     bedrock_model_id: str = Field(
         default="amazon.nova-lite-v1:0", validation_alias="BEDROCK_MODEL_ID"
     )
+    bedrock_embedding_model_id: str = Field(
+        default="amazon.titan-embed-text-v2:0", validation_alias="BEDROCK_EMBEDDING_MODEL_ID"
+    )
     # Ollama
     ollama_base_url: str = Field(
         default="http://localhost:11434", validation_alias="OLLAMA_BASE_URL"
     )
     ollama_model: str = Field(default="llama3.2:3b", validation_alias="OLLAMA_MODEL")
+    # Separate embedding model, since a chat model like llama3.2 isn't tuned for it —
+    # nomic-embed-text is a small, widely-available Ollama embedding model. Pull it with
+    # `ollama pull nomic-embed-text`; ensure_embedding() logs and skips per-book if it's
+    # not present rather than failing the request.
+    ollama_embedding_model: str = Field(
+        default="nomic-embed-text", validation_alias="OLLAMA_EMBEDDING_MODEL"
+    )
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
     reset_token_expire_minutes: int = 30
@@ -85,4 +111,32 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    _log_env_provenance(settings)
+    return settings
+
+
+def _log_env_provenance(settings: Settings) -> None:
+    """Logs which .env files were actually found, and the resolved LLM backend, once.
+
+    model_config's env_file paths are relative to the *process working directory*, not to
+    this file. Started from backend/ they mean <repo>/.env then backend/.env (the later
+    file winning); started from the repo root they mean <parent-of-repo>/.env — usually
+    absent — and then the root .env, which carries the Postgres vars but no LLM_MODE. So
+    the same checkout answers "which model backend am I using?" differently depending on
+    where uvicorn was launched, silently falling back to the llm_mode default above. That
+    is invisible without this line, and it looks exactly like "bedrock is broken".
+    """
+    logger = logging.getLogger(__name__)
+    cwd = Path.cwd()
+    # env_file is typed as a single path or a sequence of them; normalise before walking.
+    configured = settings.model_config.get("env_file") or ()
+    paths = [configured] if isinstance(configured, str | Path) else list(configured)
+    found = [f"{p}{'' if (cwd / p).is_file() else ' (missing)'}" for p in paths]
+    logger.info(
+        "settings: cwd=%s env_files=[%s] llm_mode=%s llm_debug=%s",
+        cwd,
+        ", ".join(found),
+        settings.llm_mode,
+        settings.llm_debug,
+    )

@@ -9,7 +9,7 @@ from app.modules.books import repository as books_repository
 from app.modules.loans import repository as loans_repository
 from app.modules.loans.constants import REMINDER_WINDOW_DAYS
 from app.modules.notifications import service as notifications_service
-from app.modules.reservations import repository
+from app.modules.reservations import events, repository
 from app.modules.reservations.schemas import ReservationCreate, ReservationOut
 
 
@@ -109,6 +109,9 @@ async def create_reservation(member_id: str, payload: ReservationCreate) -> Rese
     # has to stay in agreement with it — this is just the one-reservation case.
     queue_info = await _queue_info_for_books([reservation])
     position, eta_days = queue_info.get(reservation.id, (None, None))
+    # The tab that made this request already has the result, but a member signed in on a
+    # second device does not — same reason the manager's decisions publish.
+    await events.publish_reservations_changed(member_id)
     return ReservationOut.from_prisma(reservation, queue_position=position, eta_days=eta_days)
 
 
@@ -118,3 +121,4 @@ async def cancel_reservation(member_id: str, reservation_id: str) -> None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
 
     await repository.cancel_reservation(reservation_id)
+    await events.publish_reservations_changed(member_id)

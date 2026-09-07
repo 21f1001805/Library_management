@@ -1,8 +1,8 @@
 import { apiGet } from '@/lib/api';
 
-import type { Book, BookListParams, BookListResponse } from './types';
+import type { Book, BookInsights, BookListParams, BookListResponse } from './types';
 
-export const PAGE_SIZE = 15;
+export const PAGE_SIZE = 16;
 
 export function fetchBooks(params: BookListParams): Promise<BookListResponse> {
   const query = new URLSearchParams({
@@ -21,4 +21,8 @@ export function fetchBookById(bookId: string): Promise<Book> {
 
 export function fetchRelatedBooks(bookId: string): Promise<Book[]> {
   return apiGet<Book[]>(`/books/${bookId}/related`);
+}
+
+export function fetchBookInsights(bookId: string): Promise<BookInsights | null> {
+  return apiGet<BookInsights | null>(`/books/${bookId}/insights`);
 }

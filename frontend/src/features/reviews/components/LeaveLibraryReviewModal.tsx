@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Button, Modal } from '@/components/ui';
-import { getUserLibraryReview, saveLibraryReview } from '@/lib/libraryReviews';
 import { useAuth } from '@/providers/AuthProvider';
 
 export interface LeaveLibraryReviewModalProps {
@@ -19,7 +18,7 @@ export function LeaveLibraryReviewModal({
   onSubmitted,
 }: LeaveLibraryReviewModalProps) {
   const { t } = useTranslation();
-  const { fullName, email, role } = useAuth();
+  const { getMyLibraryReview, submitLibraryReview } = useAuth();
 
   const [prevOpen, setPrevOpen] = useState(false);
   const [rating, setRating] = useState<number>(5);
@@ -30,23 +29,24 @@ export function LeaveLibraryReviewModal({
 
   if (open && !prevOpen) {
     setPrevOpen(true);
-    const existing = getUserLibraryReview(email);
-    setRating(existing?.rating ?? 5);
-    setQuote(existing?.quote ?? '');
+    setRating(5);
+    setQuote('');
     setError(null);
+    // ponytail: pre-fill from the member's latest submission (any status) so re-opening
+    // the modal after a pending/rejected review doesn't start from a blank slate.
+    getMyLibraryReview()
+      .then((existing) => {
+        if (existing) {
+          setRating(existing.rating);
+          setQuote(existing.comment);
+        }
+      })
+      .catch(() => {});
   } else if (!open && prevOpen) {
     setPrevOpen(false);
   }
 
-
   const displayRating = hoverRating ?? rating;
-
-  const roleLabel =
-    role === 'guardian'
-      ? t('auth.login.roles.guardian', 'Guardian')
-      : role === 'member'
-        ? t('auth.login.roles.member', 'Library Member')
-        : (role ?? 'Member');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,18 +58,12 @@ export function LeaveLibraryReviewModal({
     setIsSubmitting(true);
 
     try {
-      saveLibraryReview({
-        name: fullName || 'Library Member',
-        role: String(roleLabel),
-        rating,
-        quote: quote.trim(),
-        userEmail: email ?? undefined,
-      });
+      await submitLibraryReview({ rating, comment: quote.trim() });
 
       toast.success(
         t(
           'reviews.libraryReviewModal.successToast',
-          'Thank you for reviewing our library! Your review will appear on the homepage.',
+          "Thank you! Your review is awaiting admin approval before it appears on the homepage.",
         ),
       );
       onSubmitted?.();

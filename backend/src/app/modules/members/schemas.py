@@ -120,3 +120,10 @@ class ReadingGoalOut(BaseModel):
 class ReadingStreakOut(BaseModel):
     current_streak_days: int
     longest_streak_days: int
+
+
+class ReadingProfileOut(BaseModel):
+    interests: list[str]
+    difficulty: str
+    preference: str
+    insight: str

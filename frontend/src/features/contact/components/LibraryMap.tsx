@@ -29,10 +29,10 @@ export function LibraryMap() {
         href={DIRECTIONS_HREF}
         target="_blank"
         rel="noreferrer"
-        className="flex w-fit items-center gap-1.5 text-sm font-medium hover:underline"
+        className="flex w-fit items-center gap-1.5 text-sm font-medium text-primary hover:underline"
       >
-        <Navigation className="size-4 text-primary" />
-        <span className="text-primary-gradient">{t('contactUs.map.getDirections')}</span>
+        <Navigation className="size-4" />
+        {t('contactUs.map.getDirections')}
       </a>
     </div>
   );

@@ -1,9 +1,13 @@
+import logging
 from collections import Counter, defaultdict
 
+from langchain_core.messages import HumanMessage, SystemMessage
 from prisma.models import Book
 
+from app.core.llm import build_chat_llm, extract_json_object, log_llm_failure
 from app.modules.books import repository as books_repository
 from app.modules.books.schemas import BookOut
+from app.modules.members import repository as members_repository
 from app.modules.recommendations import repository, scoring
 from app.modules.recommendations.schemas import (
     NO_PREFERENCE,
@@ -14,6 +18,8 @@ from app.modules.recommendations.schemas import (
     RecommendationItem,
     RecommendationResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 # Thresholds for whether a dimension is worth asking about at all. Deliberately low —
 # these gate "does this attribute meaningfully differentiate the catalog", not "is this a
@@ -121,12 +127,20 @@ async def _normalize_answers(raw: QuizAnswers) -> QuizAnswers:
     valid_authors = set(await _valid_authors())
     valid_eras = set(await _valid_eras())
 
-    def clean(value: str | None, valid: set[str] | None = None) -> str | None:
-        if not value or value == NO_PREFERENCE:
+    def clean(
+        value: str | list[str] | None, valid: set[str] | None = None
+    ) -> str | list[str] | None:
+        if not value:
             return None
-        if valid is not None and value not in valid:
+        items = [value] if isinstance(value, str) else value
+        cleaned = [
+            item
+            for item in items
+            if item and item != NO_PREFERENCE and (valid is None or item in valid)
+        ]
+        if not cleaned:
             return None
-        return value
+        return cleaned[0] if len(cleaned) == 1 else cleaned
 
     return QuizAnswers(
         author=clean(raw.author, valid_authors),
@@ -147,7 +161,7 @@ async def _fetch_candidates(
     Already-borrowed books never appear — recommending something the member has already
     read isn't a matter of taste, it's a miss, at every relaxation stage alike.
     """
-    levels: list[dict[str, str]] = []
+    levels: list[dict[str, str | list[str]]] = []
     if answers.author and answers.era:
         levels.append({"author": answers.author, "era": answers.era})
     if answers.author:
@@ -182,9 +196,19 @@ async def _member_loan_context(member_id: str) -> tuple[set[str], Counter[str]]:
     return borrowed_ids, author_counts
 
 
+async def _profile_interests(member_id: str) -> frozenset[str]:
+    """Reads whatever AI reading profile (members/reading_profile.py) is already
+    cached — never triggers a fresh generation from inside the quiz flow, so submitting
+    the quiz never causes an extra Ollama call. Empty if the member has no profile yet."""
+    user = await members_repository.find_by_id(member_id)
+    interests = user.readingProfile.get("interests") if user and user.readingProfile else None
+    return frozenset(interests) if isinstance(interests, list) else frozenset()
+
+
 async def submit_quiz(member_id: str, raw_answers: QuizAnswers) -> RecommendationResponse:
     answers = await _normalize_answers(raw_answers)
     borrowed_ids, history_authors = await _member_loan_context(member_id)
+    profile_interests = await _profile_interests(member_id)
     candidates, relaxed = await _fetch_candidates(answers, exclude_ids=borrowed_ids)
 
     if not candidates:
@@ -205,6 +229,7 @@ async def submit_quiz(member_id: str, raw_answers: QuizAnswers) -> Recommendatio
         ratings=ratings,
         loan_counts=loan_counts,
         history_authors=history_authors,
+        profile_interests=profile_interests,
     )
 
     # Defensive: the query shape here can't currently produce duplicate rows, but a
@@ -240,3 +265,81 @@ async def submit_quiz(member_id: str, raw_answers: QuizAnswers) -> Recommendatio
         message = "Here's what we found based on your preferences."
 
     return RecommendationResponse(items=items, relaxed=relaxed, message=message)
+
+
+# ── "Describe it, don't quiz it" ─────────────────────────────────────────────
+# The LLM's only job below is mapping free text onto the same QuizAnswers shape the
+# quiz UI already produces — it never sees or ranks a single book. submit_quiz() (the
+# untouched, deterministic scoring engine above) does the actual work either way, so a
+# parsing failure here degrades to "no preference" answers, never an error.
+
+
+def _describe_prompt(
+    authors: list[str],
+    eras: list[tuple[str, str]],
+    story_types: list[tuple[str, str]],
+    popularity: list[tuple[str, str]],
+) -> str:
+    author_line = ", ".join(authors) if authors else "(none available)"
+    era_lines = "\n".join(f"  {key} = {label}" for key, label in eras) or "  (none available)"
+    story_lines = "\n".join(f"  {key} = {label}" for key, label in story_types)
+    popularity_lines = "\n".join(f"  {key} = {label}" for key, label in popularity)
+    return f"""You turn a library member's free-text book request into structured filters for a
+recommendation engine. Output ONLY a JSON object with exactly these keys: author, era,
+story_type, popularity. Each value must be one of the listed valid ids for that field
+(copy the id itself, not its meaning) — or null if the description doesn't clearly
+indicate a preference for that field. Never invent a value that isn't listed below.
+Output nothing but the JSON object: no explanation, no markdown formatting.
+
+Valid authors: {author_line}
+
+Valid eras (id = meaning):
+{era_lines}
+
+Valid story types (id = meaning):
+{story_lines}
+
+Valid popularity (id = meaning):
+{popularity_lines}"""
+
+
+async def _parse_description(description: str) -> QuizAnswers:
+    authors = await _valid_authors()
+    eras = [(key, ERA_LABELS[key]) for key in await _valid_eras()]
+    story_types = [(key, label) for key, label, _ in scoring.STORY_TYPES]
+    popularity = list(POPULARITY_OPTIONS.items())
+
+    parsed: dict | None = None
+    try:
+        llm = build_chat_llm()
+        result = await llm.ainvoke(
+            [
+                SystemMessage(content=_describe_prompt(authors, eras, story_types, popularity)),
+                HumanMessage(content=description),
+            ]
+        )
+        parsed = extract_json_object(str(result.content))
+    except Exception as exc:
+        log_llm_failure("describe_to_quiz", exc, description=description[:120])
+
+    if parsed is None:
+        return QuizAnswers()
+
+    def _get(key: str) -> str | None:
+        value = parsed.get(key)
+        return value if isinstance(value, str) else None
+
+    return QuizAnswers(
+        author=_get("author"),
+        era=_get("era"),
+        story_type=_get("story_type"),
+        popularity=_get("popularity"),
+    )
+
+
+async def describe_and_recommend(member_id: str, description: str) -> RecommendationResponse:
+    # _normalize_answers (inside submit_quiz) re-validates every field against a fresh
+    # valid-value set regardless — the LLM's output is never trusted further than the
+    # quiz UI's own answers are.
+    answers = await _parse_description(description)
+    return await submit_quiz(member_id, answers)

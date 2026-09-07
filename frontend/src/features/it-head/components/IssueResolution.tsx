@@ -45,42 +45,41 @@ export function IssueResolution({ tickets, onResolveClick }: IssueResolutionProp
     }
   }, [sortValue, statusFilter, tickets]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredTickets, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredTickets, 4);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="flex h-full flex-col justify-between">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle>{t('itHead.issueResolution.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
         <TableToolbar
+          variant="icon-only"
           filters={[
             {
-              label: 'Status',
+              label: t('itHead.issueResolution.filters.statusLabel'),
               value: statusFilter,
               onChange: (value) => {
                 setStatusFilter(value);
                 setPage(1);
               },
               options: [
-                { value: 'all', label: 'All' },
-                { value: 'open', label: 'Open' },
-                { value: 'resolved', label: 'Resolved' },
-                { value: 'closed', label: 'Closed' },
+                { value: 'all', label: t('itHead.issueResolution.filters.all') },
+                { value: 'open', label: t('itHead.issueResolution.status.open') },
+                { value: 'resolved', label: t('itHead.issueResolution.status.resolved') },
+                { value: 'closed', label: t('itHead.issueResolution.status.closed') },
               ],
             },
           ]}
           sort={{
-            label: 'Sort',
+            label: t('common.actions.sort'),
             value: sortValue,
             onChange: (value) => {
               setSortValue(value);
               setPage(1);
             },
             options: [
-              { value: 'newest', label: 'Newest First' },
-              { value: 'oldest', label: 'Oldest First' },
-              { value: 'category', label: 'Category' },
+              { value: 'newest', label: t('itHead.issueResolution.sort.newestFirst') },
+              { value: 'oldest', label: t('itHead.issueResolution.sort.oldestFirst') },
+              { value: 'category', label: t('itHead.issueResolution.sort.category') },
             ],
           }}
           onReset={() => {
@@ -90,40 +89,46 @@ export function IssueResolution({ tickets, onResolveClick }: IssueResolutionProp
           }}
           resetLabel={t('common.actions.reset')}
         />
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col justify-between gap-3">
         {filteredTickets.length === 0 ? (
           <NoResults title={t('itHead.issueResolution.empty')} />
         ) : (
-          <>
-            {paginatedItems.map((ticket) => (
-              <div key={ticket.id} className="rounded-lg border border-border p-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{t(categoryLabelKey[ticket.category])}</Badge>
-                  <Badge variant={ticket.status === 'open' ? 'warning' : 'success'}>
-                    {t(`itHead.issueResolution.status.${ticket.status}`)}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">{formatRelativeTime(ticket.created_at)}</span>
+          <div className="flex flex-col justify-between gap-3 h-full">
+            <div className="flex flex-col gap-3">
+              {paginatedItems.map((ticket) => (
+                <div key={ticket.id} className="rounded-lg border border-border p-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{t(categoryLabelKey[ticket.category])}</Badge>
+                    <Badge variant={ticket.status === 'open' ? 'warning' : 'success'}>
+                      {t(`itHead.issueResolution.status.${ticket.status}`)}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{formatRelativeTime(ticket.created_at)}</span>
+                  </div>
+                  <p className="mt-1 text-foreground">{ticket.description}</p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {t('itHead.issueResolution.from', { name: ticket.raised_by_name })}
+                    </p>
+                    {ticket.status === 'open' && (
+                      <Button size="sm" onClick={() => onResolveClick(ticket)}>
+                        {t('itHead.issueResolution.resolve')}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <p className="mt-1 text-foreground">{ticket.description}</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    {t('itHead.issueResolution.from', { name: ticket.raised_by_name })}
-                  </p>
-                  {ticket.status === 'open' && (
-                    <Button size="sm" onClick={() => onResolveClick(ticket)}>
-                      {t('itHead.issueResolution.resolve')}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              pageSize={5}
-              onPageChange={setPage}
-            />
-          </>
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={4}
+                onPageChange={setPage}
+              />
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

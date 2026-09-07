@@ -2,7 +2,7 @@ import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query';
 
 import { useDebouncedValue } from '@/lib/useDebouncedValue';
 
-import { fetchBookById, fetchBooks, fetchRelatedBooks, PAGE_SIZE } from '../api';
+import { fetchBookById, fetchBookInsights, fetchBooks, fetchRelatedBooks, PAGE_SIZE } from '../api';
 import { bookKeys } from '../queryKeys';
 import type { Book, BookSort } from '../types';
 
@@ -83,5 +83,18 @@ export function useRelatedBooksQuery(bookId: string | undefined) {
     queryFn: () => fetchRelatedBooks(bookId as string),
     enabled: Boolean(bookId),
     staleTime: 60_000,
+  });
+}
+
+// Backend caches the AI analysis itself (Book.aiInsights), so the result is stable once
+// generated — a long staleTime plus no retry avoids hammering a slow/unavailable Ollama
+// with repeated requests on every re-render or transient failure.
+export function useBookInsightsQuery(bookId: string | undefined) {
+  return useQuery({
+    queryKey: bookKeys.insights(bookId ?? ''),
+    queryFn: () => fetchBookInsights(bookId as string),
+    enabled: Boolean(bookId),
+    staleTime: 10 * 60_000,
+    retry: false,
   });
 }

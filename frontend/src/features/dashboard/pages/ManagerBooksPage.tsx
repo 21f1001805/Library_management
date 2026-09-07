@@ -1,4 +1,4 @@
-import { BookX } from 'lucide-react';
+import { BookX, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -6,6 +6,7 @@ import { PageHeader, Pagination, TableToolbar } from '@/components/common';
 import { NoResults } from '@/components/feedback';
 import {
   Badge,
+  Button,
   SearchBar,
   Table,
   TableBody,
@@ -14,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui';
+import { AddBookModal, type BookDraft } from '@/features/dashboard/components/AddBookModal';
 import { formatDate } from '@/lib/format';
 import { useDebouncedFetch } from '@/lib/useDebouncedFetch';
 import { useAuth, type ManagerBookAvailability } from '@/providers/AuthProvider';
@@ -33,6 +35,16 @@ const CATEGORIES = [
   'Biography',
   'Self-Help',
 ] as const;
+
+// Translation key for each non-"all" category — see books.categories in en.json.
+const CATEGORY_KEYS: Partial<Record<(typeof CATEGORIES)[number], string>> = {
+  Fiction: 'fiction',
+  'Non-Fiction': 'nonFiction',
+  Science: 'science',
+  Technology: 'technology',
+  Biography: 'biography',
+  'Self-Help': 'selfHelp',
+};
 
 // "Unavailable" splits into two operationally different cases: a copy out on a loan
 // with a known due date, versus one with no return date on file at all (e.g. zero
@@ -66,19 +78,43 @@ function StatusCell({ book }: { book: ManagerBookAvailability }) {
 // copies tied up by an online reservation, so that case shows "unknown").
 export function ManagerBooksPage() {
   const { t } = useTranslation();
-  const { getManagerBooks } = useAuth();
+  const { role, getManagerBooks, createBook } = useAuth();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>(CATEGORIES[0]);
   const [status, setStatus] = useState<string>(STATUSES[0]);
   const [sort, setSort] = useState<string>(SORTS[0]);
   const [page, setPage] = useState(1);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Mirrors the backend's manage_books role gate (ADMIN, LIBRARIAN, MANAGER) — the
+  // API enforces this either way, but there's no point showing the button to a role
+  // that can only ever get a 403 back from it.
+  const canAddBooks = role === 'admin' || role === 'librarian' || role === 'manager';
 
   const { data } = useDebouncedFetch(
     () => getManagerBooks({ search, category, status, sort, page, page_size: PAGE_SIZE }),
-    [search, category, status, sort, page, getManagerBooks],
+    [search, category, status, sort, page, refreshKey, getManagerBooks],
     EMPTY_BOOK_LIST,
   );
   const { items, total } = data;
+
+  async function handleAddBook(draft: BookDraft) {
+    await createBook({
+      title: draft.title.trim(),
+      author: draft.author.trim(),
+      category: draft.category,
+      description: draft.description.trim() || undefined,
+      isbn: draft.isbn.trim() || undefined,
+      publisher: draft.publisher.trim() || undefined,
+      published_year: draft.publishedYear ? Number(draft.publishedYear) : undefined,
+      language: draft.language.trim() || undefined,
+      cover_image_url: draft.coverImageUrl || undefined,
+      total_copies: draft.totalCopies ? Number(draft.totalCopies) : 0,
+    });
+    setIsAddOpen(false);
+    setRefreshKey((key) => key + 1);
+  }
 
   function updateSearch(value: string) {
     setSearch(value);
@@ -115,9 +151,27 @@ export function ManagerBooksPage() {
       <PageHeader
         title={t('managerDashboard.books.pageTitle')}
         description={t('managerDashboard.books.pageDescription')}
+        actions={
+          canAddBooks && (
+            <Button size="sm" onClick={() => setIsAddOpen(true)}>
+              <Plus className="size-4" />
+              {t('managerDashboard.books.addModal.openButton')}
+            </Button>
+          )
+        }
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      {canAddBooks && (
+        <AddBookModal
+          open={isAddOpen}
+          onClose={() => setIsAddOpen(false)}
+          onSubmit={handleAddBook}
+          categories={CATEGORIES.filter((value) => value !== 'all')}
+        />
+      )}
+
+      {/* Styled Filter & Search Toolbar Container matching Admin Members page */}
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
         <SearchBar
           value={search}
           onChange={updateSearch}
@@ -134,7 +188,9 @@ export function ManagerBooksPage() {
               options: CATEGORIES.map((value) => ({
                 value,
                 label:
-                  value === 'all' ? t('managerDashboard.books.filters.allCategories') : value,
+                  value === 'all'
+                    ? t('managerDashboard.books.filters.allCategories')
+                    : t(`books.categories.${CATEGORY_KEYS[value]}`, value),
               })),
             },
             {
@@ -169,36 +225,38 @@ export function ManagerBooksPage() {
         />
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('managerDashboard.books.table.title')}</TableHead>
-                <TableHead>{t('managerDashboard.books.table.category')}</TableHead>
-                <TableHead>{t('managerDashboard.books.table.copies')}</TableHead>
-                <TableHead>{t('managerDashboard.books.table.status')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((book) => (
-                <TableRow key={book.id}>
-                  <TableCell>
-                    <p className="font-medium text-foreground">{book.title}</p>
-                    <p className="text-xs text-muted-foreground">{book.author}</p>
-                  </TableCell>
-                  <TableCell>{book.category}</TableCell>
-                  <TableCell>
-                    {t('managerDashboard.books.copiesAvailable', {
-                      available: book.available_copies,
-                      total: book.total_copies,
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    <StatusCell book={book} />
-                  </TableCell>
+          <div className="w-full overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
+            <Table className="min-w-full">
+              <TableHeader className="bg-secondary/20">
+                <TableRow>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.books.table.title')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.books.table.category')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.books.table.copies')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5 text-right">{t('managerDashboard.books.table.status')}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {items.map((book) => (
+                  <TableRow key={book.id} className="transition-colors hover:bg-secondary/40">
+                    <TableCell className="px-3.5 py-2.5">
+                      <p className="font-semibold text-foreground text-xs sm:text-sm">{book.title}</p>
+                      <p className="text-xs text-muted-foreground">{book.author}</p>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-foreground font-medium">{book.category}</TableCell>
+                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs font-semibold text-foreground">
+                      {t('managerDashboard.books.copiesAvailable', {
+                        available: book.available_copies,
+                        total: book.total_copies,
+                      })}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-right">
+                      <StatusCell book={book} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
           <Pagination
             currentPage={page}

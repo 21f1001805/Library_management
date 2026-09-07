@@ -3,10 +3,15 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from prisma.models import User
 
-from app.api.deps import require_role
+from app.api.deps import get_current_user, require_role
 from app.core.constants import Role
 from app.modules.guardian import service
-from app.modules.guardian.schemas import GuardianChildOut, GuardianLinkCreate
+from app.modules.guardian.schemas import (
+    GuardianChildOut,
+    GuardianContactOut,
+    GuardianLinkCreate,
+    SelfGuardianLinkCreate,
+)
 from app.modules.payments.schemas import PaymentOut
 from app.modules.seat_booking.schemas import SeatBookingCreate, SeatBookingOut, SeatNotifyCreate
 
@@ -22,6 +27,30 @@ async def create_link(
     _: Annotated[User, Depends(manage_links)],
 ) -> None:
     await service.link_child(payload)
+
+
+# Any signed-in user asking about their own link — not gated on the guardian role, since
+# the caller here is the student. Scoped to user.id, so it can only ever return their own.
+@router.get("/my-guardian", response_model=GuardianContactOut | None)
+async def get_my_guardian(
+    user: Annotated[User, Depends(get_current_user)],
+) -> GuardianContactOut | None:
+    return await service.get_my_guardian(user.id)
+
+
+@router.post("/my-guardian", response_model=GuardianContactOut)
+async def link_my_guardian(
+    payload: SelfGuardianLinkCreate,
+    user: Annotated[User, Depends(get_current_user)],
+) -> GuardianContactOut:
+    return await service.link_my_guardian(user.id, payload.guardian_email)
+
+
+@router.delete("/my-guardian", status_code=status.HTTP_204_NO_CONTENT)
+async def unlink_my_guardian(
+    user: Annotated[User, Depends(get_current_user)],
+) -> None:
+    await service.unlink_my_guardian(user.id)
 
 
 @router.get("/children", response_model=list[GuardianChildOut])

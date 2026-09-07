@@ -21,14 +21,12 @@ from contextvars import ContextVar
 from typing import Any
 
 from fastapi import HTTPException
-from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
-from pydantic import SecretStr
 
-from app.core.config import get_settings
 from app.core.constants import Role
+from app.core.llm import build_chat_llm, log_llm_failure
 from app.modules.books import service as books_service
 from app.modules.books.schemas import BookSort
 from app.modules.chat.guardrails import GuardrailBlock, check_input, check_output
@@ -67,34 +65,6 @@ STAFF_ROLES = {
     Role.IT_HEAD.value,
 }
 LOAN_MANAGER_ROLES = STAFF_ROLES
-
-
-# ── LLM factory ───────────────────────────────────────────────────────────────
-def _build_llm() -> BaseChatModel:
-    s = get_settings()
-    mode = s.llm_mode.lower()
-
-    if mode == "bedrock":
-        from langchain_aws import ChatBedrockConverse
-
-        kwargs: dict[str, Any] = {"model_id": s.bedrock_model_id, "region_name": s.aws_region}
-        if s.aws_access_key_id and s.aws_secret_access_key:
-            kwargs["aws_access_key_id"] = s.aws_access_key_id
-            kwargs["aws_secret_access_key"] = s.aws_secret_access_key
-        return ChatBedrockConverse(**kwargs)
-
-    if mode == "ollama":
-        from langchain_ollama import ChatOllama
-
-        return ChatOllama(model=s.ollama_model, base_url=s.ollama_base_url)
-
-    from langchain_openai import ChatOpenAI
-
-    return ChatOpenAI(
-        model=s.openai_model,
-        api_key=SecretStr(s.openai_api_key),
-        temperature=0.3,
-    )
 
 
 # ── Context helpers ───────────────────────────────────────────────────────────
@@ -136,7 +106,10 @@ def _tool_error(action: str, exc: Exception) -> str:
 @tool
 async def get_upcoming_events(query: str = "") -> str:
     """Fetch upcoming library events. Always call with query=""."""
+    from datetime import timedelta, timezone
+    IST = timezone(timedelta(hours=5, minutes=30))
     result = await events_service.list_events(
+
         page=1, page_size=10, member_id=_member_id(), timeframe="upcoming"
     )
     if not result.items:
@@ -146,7 +119,7 @@ async def get_upcoming_events(query: str = "") -> str:
             {
                 "id": e.id,
                 "title": e.title,
-                "date": e.date.strftime("%d %b %Y, %I:%M %p"),
+                "date": e.date.astimezone(IST).strftime("%d %b %Y, %I:%M %p"),
                 "location": e.location,
                 "capacity": e.capacity,
                 "attendees": e.attendees,
@@ -159,17 +132,39 @@ async def get_upcoming_events(query: str = "") -> str:
 
 @tool
 async def get_books(query: str = "", sort: str = "newest") -> str:
-    """List/search books. query="" for all books. sort='recommended' for personalised picks, 'rating' for top rated, 'newest' for latest. ALWAYS call this for any book recommendation request."""
+    """List/search books. query="" for a sample of books. sort='recommended' for personalised picks, 'rating' for top rated, 'newest' for latest. ALWAYS call this for any book recommendation request. The query is matched against title, author, and description — pass the most meaningful single keyword (e.g. 'comic' not 'cnic', 'funny' not 'fummy'). If the user's phrasing is misspelled or informal, correct it to the closest real English word before passing. NOTE: this tool returns up to 10 books as a sample — it does NOT return the full catalog. Always present results as 'here are some books' or 'here are a few books', never 'here are all the books'."""
     sort_value: BookSort = sort if sort in {"newest", "rating", "recommended"} else "newest"  # type: ignore[assignment]
-    result = await books_service.list_books(
-        search=query or None,
-        category=None,
-        sort=sort_value,
-        page=1,
-        page_size=10,
-    )
-    if not result.items:
-        return "No books found matching that query."
+
+    seen: dict[str, Any] = {}
+    # Try the full query first, then fall back to individual keywords so that
+    # multi-word or misspelled queries still surface partial matches.
+    terms = [query] if query else []
+    if query and " " in query:
+        terms += [w for w in query.split() if len(w) > 2]
+
+    for term in terms:
+        result = await books_service.list_books(
+            search=term or None,
+            category=None,
+            sort=sort_value,
+            page=1,
+            page_size=10,
+        )
+        for b in result.items:
+            if b.id not in seen:
+                seen[b.id] = b
+        if seen:
+            break  # full-query hit — no need to try individual keywords
+
+    if not seen:
+        # Last resort: return all books so the LLM can reason over them
+        result = await books_service.list_books(
+            search=None, category=None, sort=sort_value, page=1, page_size=10
+        )
+        for b in result.items:
+            seen[b.id] = b
+
+    books = list(seen.values())[:10]
     return json.dumps(
         [
             {
@@ -182,7 +177,7 @@ async def get_books(query: str = "", sort: str = "newest") -> str:
                 "average_rating": b.average_rating,
                 "review_count": b.review_count,
             }
-            for b in result.items
+            for b in books
         ]
     )
 
@@ -265,7 +260,7 @@ async def get_my_seat_bookings(query: str = "") -> str:
         return "empty_seat_bookings"
     return json.dumps(
         [
-            {"id": b.id, "seat": b.seat_label, "date": b.date.isoformat(), "hour": b.hour}
+            {"booking_id": b.id, "seat": b.seat_label, "date": b.date.isoformat(), "hour": b.hour}
             for b in items
         ]
     )
@@ -559,23 +554,26 @@ async def raise_support_ticket(category: str, description: str) -> str:
 
 @tool
 async def get_members(query: str = "") -> str:
-    """STAFF ONLY. Search members by name/email (query="" for all). Role must be admin/librarian/manager/it_head."""
+    """STAFF ONLY. Search members by name/email (query="" for all). Role must be admin/librarian/manager/it_head. NOTE: returns a sample of up to 10 members plus the real total count. Never say the total is 10 — always report the actual total_count field."""
     if _role() not in STAFF_ROLES:
         return "You don't have permission to view member data."
     result = await members_service.list_members(search=query or None, page=1, page_size=10)
     if not result.items:
         return "No members found."
     return json.dumps(
-        [
-            {
-                "name": m.full_name,
-                "email": m.email,
-                "role": m.role.name,
-                "active": m.is_active,
-                "last_login": m.last_login_at.strftime("%d %b %Y") if m.last_login_at else "Never",
-            }
-            for m in result.items
-        ]
+        {
+            "total_count": result.total,
+            "members": [
+                {
+                    "name": m.full_name,
+                    "email": m.email,
+                    "role": m.role.name,
+                    "active": m.is_active,
+                    "last_login": m.last_login_at.strftime("%d %b %Y") if m.last_login_at else "Never",
+                }
+                for m in result.items
+            ],
+        }
     )
 
 
@@ -655,6 +653,14 @@ async def return_loan(loan_id: str) -> str:
     """STAFF ONLY. Mark a loan as returned. loan_id must come from get_active_loans tool output."""
     if _role() not in LOAN_MANAGER_ROLES:
         return "You don't have permission to return loans."
+    import re
+    if not re.match(r"^[0-9a-f-]{36}$", loan_id, re.IGNORECASE):
+        items = await loans_service.list_active_loans()
+        overdue = [loan for loan in items if loan.status == "overdue"]
+        target = overdue[0] if overdue else (items[0] if items else None)
+        if not target:
+            return "No active loans found to return."
+        loan_id = target.id
     try:
         result = await loans_service.return_loan(loan_id)
         return f"Loan for '{result.book_title}' marked as returned."
@@ -667,6 +673,13 @@ async def send_loan_reminder(loan_id: str) -> str:
     """STAFF ONLY. Send overdue reminder to a member. loan_id must come from get_active_loans tool output."""
     if _role() not in LOAN_MANAGER_ROLES:
         return "You don't have permission to send reminders."
+    import re
+    if not re.match(r"^[0-9a-f-]{36}$", loan_id, re.IGNORECASE):
+        items = await loans_service.list_active_loans()
+        overdue = [loan for loan in items if loan.status == "overdue"]
+        if not overdue:
+            return "No overdue loans found to send a reminder for."
+        loan_id = overdue[0].id
     try:
         await loans_service.send_reminder(loan_id)
         return "Reminder sent successfully."
@@ -714,8 +727,10 @@ Current user: {user_name} | Role: {role} | ID: {member_id}
 
 Your job:
 - Use the available tools to answer questions about books, loans, reservations, seat bookings, events, reading progress, notifications, support tickets, and membership plans.
-- For staff roles (admin, librarian, manager, it_head): also use member search, loan management, and fine tools.
+- For staff roles (admin, librarian, manager, it_head): also use member search, loan management, and fine tools. Do NOT suggest or offer actions like registering for events, reserving books, or booking seats to staff users — those are member-only actions. Never ask a staff user "Would you like to register" for an event.
 - ALWAYS call a tool to get live data. Never answer data questions from memory.
+- The get_books tool returns a sample of up to 10 books — the library has hundreds. Never say 'here are all the books'. Always say 'here are some books' or 'here are a few books from our collection'.
+- When a tool response includes a total_count field, always report that number as the actual total — never count the items in the sample and report that as the total.
 - Resolve pronouns ("which one", "those", "it") from prior conversation turns before calling a tool.
 - Only answer library-related questions. For anything else say: "I can only help with library-related topics."
 - When the user asks to book a seat, ALWAYS call get_seat_availability first to get available seat labels and today's date, then call book_seat with a real seat label from that response.
@@ -729,8 +744,12 @@ Your job:
 - Be warm and conversational. When data is empty (no loans, no reservations, etc.), acknowledge it naturally and offer ONE relevant next step only (e.g. if no loans → suggest reserving a book; if no reservations → suggest browsing books; if no seat bookings → suggest booking a seat).
 - Never suggest actions that contradict the data (e.g. do NOT suggest returning a loan if the user has no loans).
 - Never render an empty bullet point. If there is no list data, just write a sentence.
-- Use markdown lists (each item on its own line starting with `- `) for any list of results.
-- Use **bold** for titles and key values. Keep responses concise."""
+- When showing seat bookings, NEVER display the booking_id to the user — use it internally only when calling cancel_seat_booking.
+- When showing seat bookings, do NOT proactively offer to cancel them. Only attempt cancellation if the user explicitly asks.
+- Use markdown lists (each item on its own line starting with `- `) for any list of results. Each list item must be on its own line — never put multiple items on the same line separated by bullets or commas.
+- Always put a blank line between an intro sentence and a list.
+- Use **bold** for titles and key values. Keep responses concise.
+- Never mix list styles — use only `- ` prefixed items, never `•` or `*` or numbered inline."""
 
 
 # ── Orchestrator ──────────────────────────────────────────────────────────────
@@ -755,9 +774,9 @@ async def run_chat(
     _ctx.set({"member_id": member_id, "role": role, "user_name": user_name})
 
     try:
-        llm = _build_llm()
-    except Exception:
-        logger.exception("LLM backend could not be initialised")
+        llm = build_chat_llm()
+    except Exception as exc:
+        log_llm_failure("run_chat(build_chat_llm)", exc, member_id=member_id)
         return ChatResponse(
             reply="The assistant is unavailable right now. Please try again shortly.",
             source="error",
@@ -808,13 +827,17 @@ async def run_chat(
         # Normalise inline bullet characters to markdown list items.
         # Some smaller models (llama3.2, nova-lite) ignore the system prompt
         # formatting rules and emit "• item • item" in one paragraph.
-        if "•" in final and "\n-" not in final:
+        if "•" in final:
             parts = [p.strip() for p in final.split("•") if p.strip()]
             if len(parts) > 1:
                 # First part may be an intro sentence, rest are list items
                 intro = parts[0] if not parts[0].startswith(("-", "*")) else ""
                 items = parts[1:] if intro else parts
                 final = (intro + "\n\n" if intro else "") + "\n".join(f"- {i}" for i in items)
+        # Normalise numbered lists without newlines: "1. foo 2. bar" → proper markdown
+        import re as _re
+        if _re.search(r"\d+\.\s.+\d+\.\s", final):
+            final = _re.sub(r"(?<=[^\n])(\d+\.\s)", r"\n\1", final).strip()
         tag_keywords = [
             "event",
             "book",
@@ -841,8 +864,8 @@ async def run_chat(
         ]
         is_tag = any(kw in message.lower() for kw in tag_keywords)
         return ChatResponse(reply=final, source="tag" if is_tag else "llm")
-    except Exception:
-        logger.exception("chat agent invocation failed")
+    except Exception as exc:
+        log_llm_failure("run_chat(agent.ainvoke)", exc, member_id=member_id, message=message[:120])
         return ChatResponse(
             reply="Something went wrong handling that. Please try again.", source="error"
         )

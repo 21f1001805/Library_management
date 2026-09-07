@@ -32,8 +32,10 @@ from app.modules.contact.router import router as contact_router
 from app.modules.coupons.router import router as coupons_router
 from app.modules.events.router import router as events_router
 from app.modules.guardian.router import router as guardian_router
+from app.modules.guardian.service import send_monthly_reading_digests
 from app.modules.it_head.router import router as it_head_router
 from app.modules.leaderboard.router import router as leaderboard_router
+from app.modules.library_reviews.router import router as library_reviews_router
 from app.modules.loans.router import router as loans_router
 from app.modules.loans.service import send_due_soon_reminders
 from app.modules.manager.router import router as manager_router
@@ -48,14 +50,18 @@ from app.modules.reviews.router import router as reviews_router
 from app.modules.seat_booking.router import router as seat_booking_router
 from app.modules.support_tickets.router import router as support_tickets_router
 from app.modules.translate.router import router as translate_router
+from app.modules.visits.router import router as visits_router
+from app.modules.wishlist.router import router as wishlist_router
 
 # Windows' console defaults to a legacy codepage (cp1252 here) that can't encode the
 # box-drawing characters in the startup banner below, crashing print() with
 # UnicodeEncodeError before the app ever serves a request. Force UTF-8 on stdout/stderr
 # so that and any other non-ASCII output (e.g. the ₹ sign in log messages) is safe
 # regardless of the host console's codepage. A no-op on platforms already UTF-8.
-sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -78,7 +84,38 @@ async def _due_soon_reminder_loop() -> None:
         await asyncio.sleep(REMINDER_LOOP_INTERVAL_SECONDS)
 
 
+# Same shape as _due_soon_reminder_loop: runs daily, but send_monthly_reading_digests()
+# itself is what decides whether a given guardian-child link is actually due this
+# calendar month (GuardianLink.lastDigestSentAt) — the loop's own interval only bounds
+# how quickly a newly-due link gets picked up, not how often digests actually go out.
+async def _guardian_digest_loop() -> None:
+    while True:
+        try:
+            await send_monthly_reading_digests()
+        except Exception:
+            logger.exception("send_monthly_reading_digests failed")
+        await asyncio.sleep(REMINDER_LOOP_INTERVAL_SECONDS)
+
+
 SCHEMA_PATH = Path(__file__).resolve().parent.parent.parent / "prisma" / "schema.prisma"
+BACKEND_DIR = SCHEMA_PATH.parent.parent
+DEMO_SEED_SCRIPTS = [
+    BACKEND_DIR / "scripts" / "seed_dev_accounts.py",
+    BACKEND_DIR / "scripts" / "seed_books.py",
+    BACKEND_DIR / "scripts" / "seed_demo_data.py",
+    # Unlike the two above, this one is never "already seeded" — it re-checks a few
+    # time-relative facts (this month's reading progress, today's seat occupancy,
+    # whether any event is still upcoming) on every boot and only tops up what's
+    # short, so demo data keeps looking current without anyone re-seeding by hand.
+    BACKEND_DIR / "scripts" / "seed_daily_refresh.py",
+    # Seeds active + historical library visit records so the Check-In/Check-Out card
+    # shows real data on a fresh clone. Idempotent — skips if active visits exist.
+    BACKEND_DIR / "scripts" / "seed_visits.py",
+    # Not required for correctness (get_related_books computes embeddings lazily), but
+    # runs the ~400 embed calls once up front here instead of on whichever member's
+    # request happens to hit an un-embedded book first.
+    BACKEND_DIR / "scripts" / "backfill_book_embeddings.py",
+]
 
 
 def _run_migrate_deploy(database_url: str) -> subprocess.CompletedProcess[str]:
@@ -123,16 +160,50 @@ async def _apply_pending_migrations(database_url: str) -> None:
         logger.info("applied pending database migrations")
 
 
+def _run_seed_script(script: Path, database_url: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(script)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        cwd=BACKEND_DIR,
+        env={**os.environ, "DATABASE_URL": database_url, "PYTHONPATH": str(BACKEND_DIR / "src")},
+    )
+
+
+async def _seed_dev_demo_data(database_url: str) -> None:
+    """Dev-only convenience: book catalog + ~5 months of synthetic activity, so a
+    fresh clone has something to look at without anyone running the seed scripts by
+    hand. Both scripts are idempotent (seed_books upserts on ISBN, seed_demo_data
+    skips once it finds its own seeded users), so this is a quick no-op on every boot
+    after the first — including --reload restarts. Failures here are logged, not
+    fatal: missing demo data doesn't stop the app from serving real traffic.
+    """
+    for script in DEMO_SEED_SCRIPTS:
+        result = await asyncio.to_thread(_run_seed_script, script, database_url)
+        output = result.stdout.strip()
+        if result.returncode != 0:
+            logger.warning("%s failed, skipping demo seed:\n%s", script.name, output)
+            return
+        logger.info("%s: %s", script.name, output.splitlines()[-1] if output else "done")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     reminder_task: asyncio.Task | None = None
+    guardian_digest_task: asyncio.Task | None = None
     if settings.app_env != "test":
         os.environ.setdefault("DATABASE_URL", settings.database_url)
         if settings.auto_migrate:
             await _apply_pending_migrations(settings.database_url)
         await prisma.connect()
+        # development only — excludes "e2e" (Playwright seeds its own fixed fixtures,
+        # see playwright.config.ts) and "test" (whole block skipped above).
+        if settings.app_env == "development" and settings.auto_seed_demo:
+            await _seed_dev_demo_data(settings.database_url)
         reminder_task = asyncio.create_task(_due_soon_reminder_loop())
+        guardian_digest_task = asyncio.create_task(_guardian_digest_loop())
 
     # ── Startup config summary ────────────────────────────────────────────
     llm_detail = {
@@ -151,10 +222,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 ╚══════════════════════════════════════════════════════╝
 """)
     yield
-    if reminder_task is not None:
-        reminder_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await reminder_task
+    for task in (reminder_task, guardian_digest_task):
+        if task is not None:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
     if settings.app_env != "test":
         await prisma.disconnect()
 
@@ -236,6 +308,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(loans_router, prefix=settings.api_prefix)
     app.include_router(it_head_router, prefix=settings.api_prefix)
     app.include_router(leaderboard_router, prefix=settings.api_prefix)
+    app.include_router(visits_router, prefix=settings.api_prefix)
+    app.include_router(library_reviews_router, prefix=settings.api_prefix)
+    app.include_router(wishlist_router, prefix=settings.api_prefix)
     return app
 
 

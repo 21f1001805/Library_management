@@ -78,6 +78,46 @@ export const aiRecommendedBooks: AIRecommendedBook[] = [
   { id: 'ikigai', title: 'Ikigai', available: true },
 ];
 
+export interface MoodRecommendation {
+  id: string;
+  emoji: string;
+  tone: IconBadgeTone;
+  books: string[];
+}
+
+export const moodRecommendations: MoodRecommendation[] = [
+  {
+    id: 'happy',
+    emoji: '\u{1F60A}',
+    tone: 'primary-tint',
+    books: ['The House in the Cerulean Sea', 'Anne of Green Gables'],
+  },
+  {
+    id: 'relaxed',
+    emoji: '\u{1F60C}',
+    tone: 'warning',
+    books: ['Norwegian Wood', 'The Overstory'],
+  },
+  {
+    id: 'curious',
+    emoji: '\u{1F92F}',
+    tone: 'success',
+    books: ['Sapiens', 'A Short History of Nearly Everything'],
+  },
+  {
+    id: 'motivated',
+    emoji: '\u{1F60E}',
+    tone: 'danger',
+    books: ['Atomic Habits', 'Can’t Hurt Me'],
+  },
+  {
+    id: 'studyMode',
+    emoji: '\u{1F4DA}',
+    tone: 'info',
+    books: ['Deep Work', 'How to Read a Book'],
+  },
+];
+
 export interface Achievement {
   id: string;
   icon: LucideIcon;
@@ -89,7 +129,7 @@ export const achievements: Achievement[] = [
   { id: 'firstBook', icon: BookOpen, colorClass: 'bg-success/10 text-success' },
   { id: 'bookWorm', icon: BookMarked, colorClass: 'bg-warning/10 text-warning' },
   { id: 'topReader', icon: Star, colorClass: 'bg-info/10 text-info' },
-  { id: 'monthlyChampion', icon: Trophy, colorClass: 'bg-primary/10 text-primary' },
+  { id: 'monthlyChampion', icon: Trophy, colorClass: 'bg-primary/15 text-foreground' },
 ];
 
 export interface ReadingChallengeStep {

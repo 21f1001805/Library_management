@@ -45,6 +45,8 @@ export interface RegisterPayload {
   password: string;
   full_name: string;
   phone?: string;
+  role?: Role;
+  avatar_url?: string;
 }
 
 export interface CompleteProfilePayload {
@@ -208,15 +210,19 @@ export interface BannedAuthor {
   full_name: string;
 }
 
-export type SeatSlotStatus = 'available' | 'reserved' | 'booked_by_me';
+export type SeatSlotStatus = 'available' | 'reserved' | 'booked_by_me' | 'booked_for_child';
 
 export interface SeatSlot {
   seat_label: string;
   status: SeatSlotStatus;
   booking_id: string | null;
-  // Populated when status === 'reserved' or 'booked_by_me' — the avatar of whoever
-  // holds that seat (someone else, or you), shown in place of a plain color swatch.
+  // Populated when status === 'reserved', 'booked_by_me', or 'booked_for_child' — the avatar of whoever
+  // holds that seat (someone else, you, or your child), shown in place of a plain color swatch.
   booked_by_avatar_url: string | null;
+  booked_for_child_id?: string | null;
+  booked_for_child_name?: string | null;
+  booked_by_guardian_id?: string | null;
+  booked_by_guardian_name?: string | null;
 }
 
 export interface SeatSchedule {
@@ -245,6 +251,35 @@ export interface AppNotificationRecord {
   message: string;
   read: boolean;
   created_at: string;
+}
+
+export interface LibraryVisitRecord {
+  id: string;
+  member_id: string;
+  member_name: string;
+  member_email: string;
+  checked_in_at: string;
+  checked_out_at: string | null;
+  recorded_by_id: string;
+  recorded_by_name: string | null;
+  is_currently_inside: boolean;
+}
+
+export interface MemberVisitStatus {
+  member_id: string;
+  is_in_library: boolean;
+  checked_in_at: string | null;
+  last_checked_out_at: string | null;
+  latest_visit_id: string | null;
+}
+
+export interface ChildVisitStatus {
+  child_id: string;
+  child_name: string;
+  child_email: string;
+  is_in_library: boolean;
+  checked_in_at: string | null;
+  last_checked_out_at: string | null;
 }
 
 export type ExpenseCategory = 'staffSalaries' | 'bookProcurement' | 'utilities' | 'marketing';
@@ -445,7 +480,7 @@ export interface RecommendationQuiz {
 
 // Partial — a question the member skipped (or that wasn't offered) simply isn't a key
 // here; the backend treats a missing answer the same as an explicit "no preference".
-export type RecommendationAnswers = Partial<Record<RecommendationQuestionId, string>>;
+export type RecommendationAnswers = Partial<Record<RecommendationQuestionId, string | string[]>>;
 
 export interface RecommendationItem {
   book: Book;
@@ -535,10 +570,15 @@ export interface LoanRecord {
 
 export interface ITHeadStats {
   active_members: number;
+  active_members_trend: AdminTrend;
   open_issues: number;
+  open_issues_delta: number;
   pending_permissions: number;
+  pending_permissions_delta: number;
   fees_outstanding: number;
+  fees_outstanding_trend: AdminTrend;
   late_fines_outstanding: number;
+  late_fines_outstanding_trend: AdminTrend;
 }
 
 export interface FeeStatusEntryRecord {
@@ -549,9 +589,57 @@ export interface FeeStatusEntryRecord {
   due_date: string | null;
 }
 
+export interface FeeCollectionMonth {
+  month: string;
+  collected: number;
+  pending: number;
+}
+
+export interface IssueResolutionMonth {
+  month: string;
+  resolved: number;
+  open: number;
+  other: number;
+}
+
+export interface SystemActivityDay {
+  date: string;
+  logins: number;
+  access_changes: number;
+  permissions_updated: number;
+}
+
+export interface SystemActivitySummary {
+  logins_total: number;
+  logins_trend: AdminTrend;
+  access_changes_total: number;
+  access_changes_trend: AdminTrend;
+  permissions_updated_total: number;
+  permissions_updated_trend: AdminTrend;
+}
+
+export interface RoleBreakdownEntry {
+  role: string;
+  count: number;
+  percent: number;
+}
+
+export interface ITHeadAlert {
+  id: string;
+  severity: 'critical' | 'warning' | 'info' | 'success';
+  title: string;
+  description: string;
+}
+
 export interface ITHeadDashboard {
   stats: ITHeadStats;
   fee_status: FeeStatusEntryRecord[];
+  fee_collections: FeeCollectionMonth[];
+  issue_resolution: IssueResolutionMonth[];
+  system_activity: SystemActivityDay[];
+  system_activity_summary: SystemActivitySummary;
+  access_by_role: RoleBreakdownEntry[];
+  alerts: ITHeadAlert[];
 }
 
 export interface ExpensePayload {
@@ -688,6 +776,22 @@ export interface BillingRequestRecord {
   decided_at: string | null;
 }
 
+export interface LibraryReviewPayload {
+  rating: number;
+  comment: string;
+}
+
+export interface LibraryReviewRecord {
+  id: string;
+  rating: number;
+  comment: string;
+  status: 'pending' | 'approved' | 'rejected';
+  member_id: string;
+  member_name: string;
+  member_role: string;
+  created_at: string;
+}
+
 export interface MemberSummary {
   id: string;
   full_name: string;
@@ -701,11 +805,124 @@ export interface MemberSearchOptions {
   activeOnly?: boolean;
 }
 
+export interface DailyLibraryActivity {
+  date: string;
+  issued: number;
+  returned: number;
+}
+
+export interface MostBorrowedBook {
+  book_id: string;
+  title: string;
+  count: number;
+}
+
+export interface MostBorrowedBooksByPeriod {
+  this_month: MostBorrowedBook[];
+  last_3_months: MostBorrowedBook[];
+  last_6_months: MostBorrowedBook[];
+}
+
+export interface MemberActivityMonth {
+  month: string;
+  new_members: number;
+  active_members: number;
+}
+
+export interface SeatUtilizationHour {
+  hour: number;
+  percent: number;
+}
+
+export type FootfallRange = '7d' | '30d' | '3m';
+
+export interface DailyFootfall {
+  date: string;
+  visits: number;
+}
+
+export interface HourlyFootfall {
+  hour: number;
+  visits: number;
+}
+
+export interface DayOfWeekFootfall {
+  /** Monday=0 .. Sunday=6 */
+  day_of_week: number;
+  visits: number;
+}
+
+export interface FootfallAnalytics {
+  range: FootfallRange;
+  daily: DailyFootfall[];
+  peak_hours: HourlyFootfall[];
+  average_visit_minutes: number | null;
+  busiest_day: DayOfWeekFootfall | null;
+  quietest_day: DayOfWeekFootfall | null;
+}
+
+export interface OverdueFinesMonth {
+  month: string;
+  overdue_books: number;
+  fines_generated: number;
+  fines_collected: number;
+}
+
+export interface RevenueMonth {
+  month: string;
+  total: number;
+}
+
 export interface ManagerDashboardStats {
   seats_booked_today: number;
   books_issued_today: number;
   new_registrations_today: number;
   pending_tasks: number;
+  /** Last 7 calendar days including today, oldest first. */
+  library_activity: DailyLibraryActivity[];
+  most_borrowed_books: MostBorrowedBooksByPeriod;
+  /** Last 6 months, oldest first. */
+  member_activity: MemberActivityMonth[];
+  /** Today, one entry per open hour. */
+  seat_utilization: SeatUtilizationHour[];
+  /** Last 3 months, oldest first. */
+  overdue_fines: OverdueFinesMonth[];
+  /** Last 6 months, oldest first. */
+  revenue: RevenueMonth[];
+}
+
+export interface ReadingProfile {
+  interests: string[];
+  difficulty: string;
+  preference: string;
+  insight: string;
+}
+
+export interface DemandForecastItem {
+  book_id: string;
+  title: string;
+  author: string;
+  category: string;
+  total_copies: number;
+  recent_activity: number;
+  prior_activity: number;
+  change_pct: number | null;
+  pending_reservations: number;
+  demand_level: 'high' | 'medium';
+  reason: string;
+}
+
+export interface LateReturnRiskItem {
+  loan_id: string;
+  book_title: string;
+  member_id: string;
+  member_name: string;
+  due_date: string;
+  is_overdue: boolean;
+  days_overdue: number;
+  risk_score: number;
+  risk_level: 'low' | 'medium' | 'high';
+  reason: string;
 }
 
 export interface ManagerSeatBookingPayload {
@@ -726,6 +943,14 @@ export interface ManagerLoanPayload {
 export interface ManagerGuardianLinkPayload {
   student_email: string;
   guardian_email: string;
+}
+
+/** The guardian a member is linked to. A member has at most one. */
+export interface GuardianContact {
+  id: string;
+  full_name: string;
+  email: string;
+  linked_at: string;
 }
 
 export interface PendingReservationRequest {
@@ -767,6 +992,37 @@ export interface ManagerBookQuery {
   sort?: string;
   page?: number;
   page_size?: number;
+}
+
+export interface BookDraftPayload {
+  title: string;
+  author: string;
+  category: string;
+  description?: string;
+  isbn?: string;
+  publisher?: string;
+  published_year?: number;
+  language?: string;
+  cover_image_url?: string;
+  total_copies?: number;
+}
+
+export interface SuggestBookDescriptionPayload {
+  title: string;
+  author: string;
+  category?: string;
+}
+
+export interface IdentifiedBookFields {
+  title: string | null;
+  author: string | null;
+  isbn: string | null;
+  category: string | null;
+  description: string | null;
+  publisher: string | null;
+  published_year: number | null;
+  language: string | null;
+  verified: boolean;
 }
 
 interface AuthState {
@@ -815,6 +1071,7 @@ interface AuthContextValue extends AuthState {
   getReadingGoal: () => Promise<ReadingGoal | null>;
   setReadingGoal: (payload: ReadingGoalPayload) => Promise<ReadingGoal>;
   getReadingStreak: () => Promise<ReadingStreak>;
+  getReadingProfile: () => Promise<ReadingProfile | null>;
   getLeaderboard: () => Promise<LeaderboardEntry[]>;
   getMyReservations: () => Promise<Reservation[]>;
   reserveBook: (bookId: string) => Promise<Reservation>;
@@ -837,6 +1094,9 @@ interface AuthContextValue extends AuthState {
   getMySeatBookings: () => Promise<SeatBookingRecord[]>;
   cancelSeatBooking: (bookingId: string) => Promise<void>;
   requestSeatNotify: (payload: SeatSlotPayload) => Promise<void>;
+  getWishlist: () => Promise<string[]>;
+  addToWishlist: (bookId: string) => Promise<void>;
+  removeFromWishlist: (bookId: string) => Promise<void>;
   getMyNotifications: () => Promise<AppNotificationRecord[]>;
   markNotificationRead: (notificationId: string) => Promise<AppNotificationRecord>;
   markAllNotificationsRead: () => Promise<AppNotificationRecord[]>;
@@ -858,6 +1118,7 @@ interface AuthContextValue extends AuthState {
   getAdminPayments: (query?: AdminPaymentQuery) => Promise<AdminPaymentListResponse>;
   getRecommendationQuiz: () => Promise<RecommendationQuiz>;
   submitRecommendationQuiz: (answers: RecommendationAnswers) => Promise<RecommendationResult>;
+  describeRecommendation: (description: string) => Promise<RecommendationResult>;
   createSupportTicket: (payload: SupportTicketPayload) => Promise<SupportTicketRecord>;
   getMySupportTickets: () => Promise<SupportTicketRecord[]>;
   getStaffSupportTickets: (status?: SupportTicketStatus) => Promise<SupportTicketRecord[]>;
@@ -869,11 +1130,28 @@ interface AuthContextValue extends AuthState {
   reopenSupportTicket: (ticketId: string) => Promise<SupportTicketRecord>;
   searchMembers: (query: string, options?: MemberSearchOptions) => Promise<MemberSummary[]>;
   getManagerDashboard: () => Promise<ManagerDashboardStats>;
+  getDemandForecast: () => Promise<DemandForecastItem[]>;
+  getLateReturnRisk: () => Promise<LateReturnRiskItem[]>;
+  getFootfallAnalytics: (range: FootfallRange) => Promise<FootfallAnalytics>;
   bookSeatForMember: (payload: ManagerSeatBookingPayload) => Promise<SeatBookingRecord>;
   issueLoanForMember: (payload: ManagerLoanPayload) => Promise<LoanRecord>;
   linkGuardian: (payload: ManagerGuardianLinkPayload) => Promise<void>;
+  setGuardian: (payload: ManagerGuardianLinkPayload) => Promise<void>;
+  unlinkGuardian: (studentId: string) => Promise<void>;
+  getStudentGuardian: (studentId: string) => Promise<GuardianContact | null>;
+  getMyGuardian: () => Promise<GuardianContact | null>;
+  linkMyGuardian: (guardianEmail: string) => Promise<GuardianContact>;
+  unlinkMyGuardian: () => Promise<void>;
   getManagerBooks: (query?: ManagerBookQuery) => Promise<ManagerBookListResponse>;
+  createBook: (payload: BookDraftPayload) => Promise<void>;
+  suggestBookDescription: (payload: SuggestBookDescriptionPayload) => Promise<string>;
+  identifyBookFromCover: (image: string) => Promise<IdentifiedBookFields>;
   getPendingReservations: () => Promise<PendingReservationRequest[]>;
+  checkInMember: (memberId: string) => Promise<LibraryVisitRecord>;
+  checkOutMember: (memberId: string) => Promise<LibraryVisitRecord>;
+  getCurrentlyInLibrary: () => Promise<LibraryVisitRecord[]>;
+  getMyVisitStatus: () => Promise<MemberVisitStatus>;
+  getChildrenVisitStatus: () => Promise<ChildVisitStatus[]>;
   approveReservation: (id: string, durationDays: LoanDurationDays) => Promise<Reservation>;
   rejectReservation: (id: string) => Promise<Reservation>;
   getActiveLoans: () => Promise<LoanRecord[]>;
@@ -884,6 +1162,12 @@ interface AuthContextValue extends AuthState {
   approveBillingRequest: (requestId: string) => Promise<BillingRequestRecord>;
   rejectBillingRequest: (requestId: string) => Promise<BillingRequestRecord>;
   waiveFine: (payload: WaiveFinePayload) => Promise<BillingRequestRecord>;
+  getApprovedLibraryReviews: () => Promise<LibraryReviewRecord[]>;
+  getMyLibraryReview: () => Promise<LibraryReviewRecord | null>;
+  submitLibraryReview: (payload: LibraryReviewPayload) => Promise<LibraryReviewRecord>;
+  getPendingLibraryReviews: () => Promise<LibraryReviewRecord[]>;
+  approveLibraryReview: (reviewId: string) => Promise<LibraryReviewRecord>;
+  rejectLibraryReview: (reviewId: string) => Promise<LibraryReviewRecord>;
   getPricingPlans: () => Promise<PricingPlan[]>;
   updatePricingPlan: (id: string, payload: PricingPlanUpdatePayload) => Promise<PricingPlan>;
   createMember: (payload: CreateMemberPayload) => Promise<CreatedMember>;
@@ -1111,6 +1395,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return apiGet<ReadingStreak>('/members/me/reading-streak', stateRef.current.token);
   }
 
+  async function getReadingProfile(): Promise<ReadingProfile | null> {
+    if (!stateRef.current.token) return null;
+    return apiGet<ReadingProfile | null>('/members/me/reading-profile', stateRef.current.token);
+  }
+
   async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     if (!stateRef.current.token) return [];
     return apiGet<LeaderboardEntry[]>('/leaderboard', stateRef.current.token);
@@ -1223,6 +1512,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function cancelSeatBooking(bookingId: string): Promise<void> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
     await apiDelete(`/seat-booking/${bookingId}`, stateRef.current.token);
+  }
+
+  async function getWishlist(): Promise<string[]> {
+    if (!stateRef.current.token) return [];
+    return apiGet<string[]>('/wishlist', stateRef.current.token);
+  }
+
+  async function addToWishlist(bookId: string): Promise<void> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    await apiPost(`/wishlist/${bookId}`, undefined, stateRef.current.token);
+  }
+
+  async function removeFromWishlist(bookId: string): Promise<void> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    await apiDelete(`/wishlist/${bookId}`, stateRef.current.token);
   }
 
   async function requestSeatNotify(payload: SeatSlotPayload): Promise<void> {
@@ -1353,6 +1657,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  async function describeRecommendation(description: string): Promise<RecommendationResult> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiPost<RecommendationResult>(
+      '/recommendations/describe',
+      { description },
+      stateRef.current.token,
+    );
+  }
+
   async function createSupportTicket(payload: SupportTicketPayload): Promise<SupportTicketRecord> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
     return apiPost<SupportTicketRecord>('/support-tickets', payload, stateRef.current.token);
@@ -1414,6 +1727,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return apiGet<ManagerDashboardStats>('/manager/dashboard', stateRef.current.token);
   }
 
+  async function getDemandForecast(): Promise<DemandForecastItem[]> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiGet<DemandForecastItem[]>('/manager/demand-forecast', stateRef.current.token);
+  }
+
+  async function getLateReturnRisk(): Promise<LateReturnRiskItem[]> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiGet<LateReturnRiskItem[]>('/manager/late-return-risk', stateRef.current.token);
+  }
+
+  async function getFootfallAnalytics(range: FootfallRange): Promise<FootfallAnalytics> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiGet<FootfallAnalytics>(
+      `/manager/footfall?range=${range}`,
+      stateRef.current.token,
+    );
+  }
+
   async function bookSeatForMember(payload: ManagerSeatBookingPayload): Promise<SeatBookingRecord> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
     return apiPost<SeatBookingRecord>('/manager/seat-bookings', payload, stateRef.current.token);
@@ -1427,6 +1758,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function linkGuardian(payload: ManagerGuardianLinkPayload): Promise<void> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
     await apiPost<undefined>('/manager/guardian-links', payload, stateRef.current.token);
+  }
+
+  // PUT, not POST — repoints an existing link instead of 409ing on one.
+  async function setGuardian(payload: ManagerGuardianLinkPayload): Promise<void> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    await apiPut<undefined>('/manager/guardian-links', payload, stateRef.current.token);
+  }
+
+  async function unlinkGuardian(studentId: string): Promise<void> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    await apiDelete(`/manager/guardian-links/${studentId}`, stateRef.current.token);
+  }
+
+  async function getStudentGuardian(studentId: string): Promise<GuardianContact | null> {
+    if (!stateRef.current.token) return null;
+    return apiGet<GuardianContact | null>(
+      `/manager/guardian-links/${studentId}`,
+      stateRef.current.token,
+    );
+  }
+
+  /** The signed-in member's own guardian, for their settings page. */
+  async function getMyGuardian(): Promise<GuardianContact | null> {
+    if (!stateRef.current.token) return null;
+    return apiGet<GuardianContact | null>('/guardian/my-guardian', stateRef.current.token);
+  }
+
+  async function linkMyGuardian(guardianEmail: string): Promise<GuardianContact> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiPost<GuardianContact>(
+      '/guardian/my-guardian',
+      { guardian_email: guardianEmail },
+      stateRef.current.token,
+    );
+  }
+
+  async function unlinkMyGuardian(): Promise<void> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiDelete('/guardian/my-guardian', stateRef.current.token);
   }
 
   async function getPendingReservations(): Promise<PendingReservationRequest[]> {
@@ -1511,6 +1881,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function waiveFine(payload: WaiveFinePayload): Promise<BillingRequestRecord> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
     return apiPost<BillingRequestRecord>('/billing-requests/waive-fine', payload, stateRef.current.token);
+  }
+
+  // Public — the homepage's "What Our Members Say" reads this without needing a session.
+  async function getApprovedLibraryReviews(): Promise<LibraryReviewRecord[]> {
+    return apiGet<LibraryReviewRecord[]>(
+      '/library-reviews/approved',
+      stateRef.current.token ?? undefined,
+    );
+  }
+
+  async function getMyLibraryReview(): Promise<LibraryReviewRecord | null> {
+    if (!stateRef.current.token) return null;
+    return apiGet<LibraryReviewRecord | null>('/library-reviews/me', stateRef.current.token);
+  }
+
+  async function submitLibraryReview(payload: LibraryReviewPayload): Promise<LibraryReviewRecord> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiPost<LibraryReviewRecord>('/library-reviews', payload, stateRef.current.token);
+  }
+
+  async function getPendingLibraryReviews(): Promise<LibraryReviewRecord[]> {
+    if (!stateRef.current.token) return [];
+    return apiGet<LibraryReviewRecord[]>('/library-reviews', stateRef.current.token);
+  }
+
+  async function approveLibraryReview(reviewId: string): Promise<LibraryReviewRecord> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiPost<LibraryReviewRecord>(
+      `/library-reviews/${reviewId}/approve`,
+      undefined,
+      stateRef.current.token,
+    );
+  }
+
+  async function rejectLibraryReview(reviewId: string): Promise<LibraryReviewRecord> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiPost<LibraryReviewRecord>(
+      `/library-reviews/${reviewId}/reject`,
+      undefined,
+      stateRef.current.token,
+    );
   }
 
   // Public — the Pricing page and Payment page read prices here without needing a session.
@@ -1620,6 +2031,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return apiPost<BookRecordEntry>('/book-records', payload, stateRef.current.token);
   }
 
+  async function createBook(payload: BookDraftPayload): Promise<void> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    await apiPost('/books', payload, stateRef.current.token);
+  }
+
+  async function suggestBookDescription(payload: SuggestBookDescriptionPayload): Promise<string> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    const data = await apiPost<{ description: string }>(
+      '/books/suggest-description',
+      payload,
+      stateRef.current.token,
+    );
+    return data.description;
+  }
+
+  async function identifyBookFromCover(image: string): Promise<IdentifiedBookFields> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiPost<IdentifiedBookFields>(
+      '/books/identify-cover',
+      { image },
+      stateRef.current.token,
+    );
+  }
+
   async function getITHeadDashboard(): Promise<ITHeadDashboard> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
     return apiGet<ITHeadDashboard>('/it-head/dashboard', stateRef.current.token);
@@ -1637,6 +2072,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState(SIGNED_OUT);
       return null;
     }
+  }
+
+  async function checkInMember(memberId: string): Promise<LibraryVisitRecord> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiPost<LibraryVisitRecord>('/visits/check-in', { member_id: memberId }, stateRef.current.token);
+  }
+
+  async function checkOutMember(memberId: string): Promise<LibraryVisitRecord> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiPost<LibraryVisitRecord>('/visits/check-out', { member_id: memberId }, stateRef.current.token);
+  }
+
+  async function getCurrentlyInLibrary(): Promise<LibraryVisitRecord[]> {
+    if (!stateRef.current.token) return [];
+    return apiGet<LibraryVisitRecord[]>('/visits/active', stateRef.current.token);
+  }
+
+  async function getMyVisitStatus(): Promise<MemberVisitStatus> {
+    if (!stateRef.current.token) throw new Error('Not authenticated');
+    return apiGet<MemberVisitStatus>('/visits/my-status', stateRef.current.token);
+  }
+
+  async function getChildrenVisitStatus(): Promise<ChildVisitStatus[]> {
+    if (!stateRef.current.token) return [];
+    return apiGet<ChildVisitStatus[]>('/visits/children-status', stateRef.current.token);
   }
 
   // Registered once — refreshAccessToken reads stateRef.current (like every function
@@ -1689,6 +2149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       getReadingGoal,
       setReadingGoal,
       getReadingStreak,
+      getReadingProfile,
       getLeaderboard,
       getMyReservations,
       reserveBook,
@@ -1711,6 +2172,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       getMySeatBookings,
       cancelSeatBooking,
       requestSeatNotify,
+      getWishlist,
+      addToWishlist,
+      removeFromWishlist,
       getMyNotifications,
       markNotificationRead,
       markAllNotificationsRead,
@@ -1732,6 +2196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       getAdminPayments,
       getRecommendationQuiz,
       submitRecommendationQuiz,
+      describeRecommendation,
       createSupportTicket,
       getMySupportTickets,
       getStaffSupportTickets,
@@ -1740,6 +2205,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       reopenSupportTicket,
       searchMembers,
       getManagerDashboard,
+      getDemandForecast,
+      getLateReturnRisk,
+      getFootfallAnalytics,
       bookSeatForMember,
       issueLoanForMember,
       getPendingReservations,
@@ -1749,12 +2217,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       getLoanHistory,
       getMyLoans,
       linkGuardian,
+      setGuardian,
+      unlinkGuardian,
+      getStudentGuardian,
+      getMyGuardian,
+      linkMyGuardian,
+      unlinkMyGuardian,
       getManagerBooks,
       getBillingRequests,
       createBillingRequest,
       approveBillingRequest,
       rejectBillingRequest,
       waiveFine,
+      getApprovedLibraryReviews,
+      getMyLibraryReview,
+      submitLibraryReview,
+      getPendingLibraryReviews,
+      approveLibraryReview,
+      rejectLibraryReview,
       getPricingPlans,
       updatePricingPlan,
       createMember,
@@ -1775,6 +2255,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       getITHeadDashboard,
       getBookRecords,
       createBookRecord,
+      createBook,
+      suggestBookDescription,
+      identifyBookFromCover,
+      checkInMember,
+      checkOutMember,
+      getCurrentlyInLibrary,
+      getMyVisitStatus,
+      getChildrenVisitStatus,
       clearPostAuthRedirect,
       logout,
     }),

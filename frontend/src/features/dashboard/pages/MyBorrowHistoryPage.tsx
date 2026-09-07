@@ -116,40 +116,41 @@ export function MyBorrowHistoryPage() {
         />
       ) : (
         <>
-          <TableToolbar
-            filters={[
-              {
-                label: t('myLoans.filters.statusLabel'),
-                value: statusFilter,
+          <div className="rounded-xl border border-border bg-card p-3.5 shadow-xs">
+            <TableToolbar
+              filters={[
+                {
+                  label: t('myLoans.filters.statusLabel'),
+                  value: statusFilter,
+                  onChange: (value) => {
+                    setStatusFilter(value as LoanStatusFilter);
+                    setPage(1);
+                  },
+                  options: [
+                    { value: 'all', label: t('myLoans.filters.all') },
+                    { value: 'active', label: t('myLoans.filters.active') },
+                    { value: 'overdue', label: t('myLoans.filters.overdue') },
+                    { value: 'returned', label: t('myLoans.filters.returned') },
+                  ],
+                },
+              ]}
+              sort={{
+                label: t('myLoans.sort.label'),
+                value: sort,
                 onChange: (value) => {
-                  setStatusFilter(value as LoanStatusFilter);
+                  setSort(value as LoanSort);
                   setPage(1);
                 },
                 options: [
-                  { value: 'all', label: t('myLoans.filters.all') },
-                  { value: 'active', label: t('myLoans.filters.active') },
-                  { value: 'overdue', label: t('myLoans.filters.overdue') },
-                  { value: 'returned', label: t('myLoans.filters.returned') },
+                  { value: 'newest', label: t('myLoans.sort.newest') },
+                  { value: 'oldest', label: t('myLoans.sort.oldest') },
+                  { value: 'dueSoonest', label: t('myLoans.sort.dueSoonest') },
+                  { value: 'dueLatest', label: t('myLoans.sort.dueLatest') },
                 ],
-              },
-            ]}
-            sort={{
-              label: t('myLoans.sort.label'),
-              value: sort,
-              onChange: (value) => {
-                setSort(value as LoanSort);
-                setPage(1);
-              },
-              options: [
-                { value: 'newest', label: t('myLoans.sort.newest') },
-                { value: 'oldest', label: t('myLoans.sort.oldest') },
-                { value: 'dueSoonest', label: t('myLoans.sort.dueSoonest') },
-                { value: 'dueLatest', label: t('myLoans.sort.dueLatest') },
-              ],
-            }}
-            onReset={resetFilters}
-            resetLabel="Reset"
-          />
+              }}
+              onReset={resetFilters}
+            />
+          </div>
 
           {filteredLoans.length === 0 ? (
             <NoResults
@@ -160,7 +161,7 @@ export function MyBorrowHistoryPage() {
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="text-sm font-medium text-primary-gradient"
+                  className="text-sm font-medium text-primary"
                 >
                   Reset
                 </button>
@@ -168,34 +169,36 @@ export function MyBorrowHistoryPage() {
             />
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('myLoans.table.book')}</TableHead>
-                    <TableHead>{t('myLoans.table.borrowed')}</TableHead>
-                    <TableHead>{t('myLoans.table.due')}</TableHead>
-                    <TableHead>{t('myLoans.table.returned')}</TableHead>
-                    <TableHead>{t('myLoans.table.status')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedItems.map((loan) => (
-                    <TableRow key={loan.id}>
-                      <TableCell>
-                        <p className="font-medium text-foreground">{loan.book_title}</p>
-                      </TableCell>
-                      <TableCell>{formatDate(loan.borrowed_at)}</TableCell>
-                      <TableCell>{formatDate(loan.due_date)}</TableCell>
-                      <TableCell>
-                        {formatDate(loan.returned_at) ?? t('myLoans.notReturned')}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={loan.status} />
-                      </TableCell>
+              <div className="w-full overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
+                <Table className="min-w-full">
+                  <TableHeader className="bg-secondary/20">
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('myLoans.table.book')}</TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('myLoans.table.borrowed')}</TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('myLoans.table.due')}</TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('myLoans.table.returned')}</TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5 text-right">{t('myLoans.table.status')}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedItems.map((loan) => (
+                      <TableRow key={loan.id} className="transition-colors hover:bg-secondary/40">
+                        <TableCell className="px-3.5 py-2.5">
+                          <p className="font-semibold text-foreground text-xs sm:text-sm">{loan.book_title}</p>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">{formatDate(loan.borrowed_at)}</TableCell>
+                        <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">{formatDate(loan.due_date)}</TableCell>
+                        <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">
+                          {formatDate(loan.returned_at) ?? t('myLoans.notReturned')}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-right">
+                          <StatusBadge status={loan.status} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
               <Pagination
                 currentPage={page}

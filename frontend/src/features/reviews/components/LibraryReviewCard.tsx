@@ -3,27 +3,24 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Card, CardContent } from '@/components/ui';
-import { getUserLibraryReview, type LibraryReview } from '@/lib/libraryReviews';
-import { useAuth } from '@/providers/AuthProvider';
+import { useAuth, type LibraryReviewRecord } from '@/providers/AuthProvider';
 
 export interface LibraryReviewCardProps {
   onOpenModal: () => void;
+  /** Bumped by the parent after a successful submit, to refetch "your review". */
+  refreshKey?: number;
 }
 
-export function LibraryReviewCard({ onOpenModal }: LibraryReviewCardProps) {
+export function LibraryReviewCard({ onOpenModal, refreshKey }: LibraryReviewCardProps) {
   const { t } = useTranslation();
-  const { email } = useAuth();
-  const [existingReview, setExistingReview] = useState<LibraryReview | undefined>(() =>
-    getUserLibraryReview(email),
-  );
+  const { getMyLibraryReview } = useAuth();
+  const [existingReview, setExistingReview] = useState<LibraryReviewRecord | null>(null);
 
   useEffect(() => {
-    function handleUpdate() {
-      setExistingReview(getUserLibraryReview(email));
-    }
-    window.addEventListener('library_reviews_updated', handleUpdate);
-    return () => window.removeEventListener('library_reviews_updated', handleUpdate);
-  }, [email]);
+    getMyLibraryReview()
+      .then(setExistingReview)
+      .catch(() => setExistingReview(null));
+  }, [getMyLibraryReview, refreshKey]);
 
   return (
     <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-surface to-surface">
@@ -56,8 +53,15 @@ export function LibraryReviewCard({ onOpenModal }: LibraryReviewCardProps) {
                   </span>
                 </div>
                 <p className="mt-1 line-clamp-2 text-xs italic text-muted-foreground">
-                  &ldquo;{existingReview.quote}&rdquo;
+                  &ldquo;{existingReview.comment}&rdquo;
                 </p>
+                {existingReview.status !== 'approved' && (
+                  <p className="mt-1 text-[11px] font-medium text-warning">
+                    {existingReview.status === 'pending'
+                      ? t('reviews.libraryReviewCard.pending', 'Awaiting admin approval')
+                      : t('reviews.libraryReviewCard.rejectedNotShown', 'Not approved for the homepage')}
+                  </p>
+                )}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground sm:text-sm">

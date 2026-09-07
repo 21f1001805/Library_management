@@ -2,13 +2,14 @@ from datetime import UTC, date, datetime, timedelta
 
 from fastapi import HTTPException, status
 from prisma.errors import ForeignKeyViolationError, UniqueViolationError
+from prisma.models import User
 
 from app.core.constants import Role
 from app.core.security import hash_password
 from app.db.prisma import prisma
 from app.modules.audit_log import service as audit_log_service
 from app.modules.audit_log.constants import AuditAction
-from app.modules.members import repository
+from app.modules.members import reading_profile, repository
 from app.modules.members.schemas import (
     MemberCreate,
     MemberListResponse,
@@ -16,6 +17,7 @@ from app.modules.members.schemas import (
     MemberUpdate,
     ReadingGoalOut,
     ReadingGoalUpsert,
+    ReadingProfileOut,
     ReadingProgressOut,
     ReadingProgressUpsert,
     ReadingStreakOut,
@@ -203,6 +205,11 @@ async def get_reading_streak(member_id: str) -> ReadingStreakOut:
     login_dates = {row.date.date() for row in rows}
     current, longest = compute_streaks(login_dates)
     return ReadingStreakOut(current_streak_days=current, longest_streak_days=longest)
+
+
+async def get_reading_profile(user: User) -> ReadingProfileOut | None:
+    data = await reading_profile.ensure_reading_profile(user)
+    return ReadingProfileOut(**data) if data else None
 
 
 def compute_streaks(login_dates: set[date]) -> tuple[int, int]:

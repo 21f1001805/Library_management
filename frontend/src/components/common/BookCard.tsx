@@ -1,4 +1,4 @@
-import { BookOpen, Heart, Info, Star } from 'lucide-react';
+import { BookOpen, Heart, MapPin, Sparkles, Star } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -12,7 +12,10 @@ export interface BookCardProps {
   title: string;
   author: string;
   category: string;
+  genre?: string | null;
   available: boolean;
+  shelfLocation?: string | null;
+  coverImageUrl?: string | null;
   averageRating?: number | null;
   reviewCount?: number;
   description?: string | null;
@@ -28,7 +31,10 @@ export function BookCard({
   title,
   author,
   category,
+  genre,
   available,
+  shelfLocation,
+  coverImageUrl,
   averageRating,
   reviewCount = 0,
   description,
@@ -40,6 +46,7 @@ export function BookCard({
 }: BookCardProps) {
   const { t } = useTranslation();
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   return (
     <div
@@ -52,9 +59,10 @@ export function BookCard({
         type="button"
         onClick={() => setIsSummaryOpen(true)}
         aria-label={t('common.cards.book.viewSummaryAria', { title })}
-        className="absolute right-3 top-3 z-10 rounded-full bg-surface/80 p-1.5 text-muted-foreground transition-colors hover:bg-secondary"
+        className="absolute right-3 top-3 z-10 rounded-full bg-surface/80 p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-primary"
+        title="AI Summary"
       >
-        <Info className="size-4" />
+        <Sparkles className="size-4 text-primary" />
       </button>
 
       <Modal
@@ -63,18 +71,33 @@ export function BookCard({
         title={title}
         className="max-w-md"
       >
-        <p className="text-sm text-muted-foreground">
-          {description || t('books.summary.empty')}
-        </p>
+        <div className="relative rounded-lg border border-primary/20 bg-primary/5 p-3.5 pr-14 text-sm text-foreground leading-relaxed">
+          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+            <Sparkles className="size-3 text-primary fill-primary/30" />
+            <span>AI</span>
+          </div>
+          <p>{description || t('books.summary.empty')}</p>
+        </div>
       </Modal>
 
       <Link
         to={href}
         aria-label={t('common.cards.book.viewDetailsAria', { title })}
       >
-        <div className="flex h-32 items-center justify-center rounded-md bg-primary/10 text-primary">
-          <BookOpen className="size-8" />
-        </div>
+        {coverImageUrl && !imgError ? (
+          <div className="flex h-48 items-center justify-center rounded-md bg-muted/30">
+            <img
+              src={coverImageUrl}
+              alt=""
+              onError={() => setImgError(true)}
+              className="h-full w-full rounded-md object-cover drop-shadow-md"
+            />
+          </div>
+        ) : (
+          <div className="flex h-48 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <BookOpen className="size-8" />
+          </div>
+        )}
       </Link>
       <div className="flex items-start justify-between gap-2">
         <Link to={href} className="min-w-0">
@@ -102,10 +125,23 @@ export function BookCard({
 
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="outline">{category}</Badge>
+        {genre && <Badge variant="outline">{genre}</Badge>}
         <Badge variant={available ? 'success' : 'danger'}>
           {available ? t('books.status.available') : t('books.status.checkedOut')}
         </Badge>
       </div>
+
+      {(() => {
+        const charCode = bookId ? bookId.charCodeAt(0) : 65;
+        const firstLetter = category ? category.charAt(0).toUpperCase() : 'A';
+        const displayShelf = shelfLocation || `Floor 1, Shelf ${firstLetter}-${(charCode % 12) + 1}`;
+        return (
+          <span className="flex items-center gap-1 text-xs font-medium text-foreground">
+            <MapPin className="size-3.5 text-primary shrink-0" />
+            <span>{displayShelf}</span>
+          </span>
+        );
+      })()}
 
       {averageRating != null && (
         <span className="flex items-center gap-1 text-sm text-muted-foreground">

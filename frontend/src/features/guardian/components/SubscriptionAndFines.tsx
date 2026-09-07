@@ -77,7 +77,7 @@ export function SubscriptionAndFines({ children, onChanged }: SubscriptionAndFin
                   <button
                     type="button"
                     onClick={() => setHistoryChildId(child.id)}
-                    className="text-sm font-medium text-primary-gradient hover:underline"
+                    className="text-sm font-medium text-primary hover:underline"
                   >
                     {t('guardian.subscription.viewPaymentHistory')}
                   </button>
@@ -85,7 +85,7 @@ export function SubscriptionAndFines({ children, onChanged }: SubscriptionAndFin
                     <button
                       type="button"
                       onClick={() => setFineDetailsChildId(child.id)}
-                      className="text-sm font-medium text-primary-gradient hover:underline"
+                      className="text-sm font-medium text-primary hover:underline"
                     >
                       {t('guardian.subscription.viewFineDetails')}
                     </button>

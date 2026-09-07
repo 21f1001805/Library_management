@@ -36,6 +36,7 @@ def _row_to_book_data(row: dict) -> dict:
         "title": row["title"].strip(),
         "author": row["author"].strip(),
         "category": "Fiction",
+        "genre": row["genre"].strip() or None,
         "isbn": _clean_isbn(row["isbn"]),
         "description": row["summary"].strip(),
         "publishedYear": int(row["publication_year"]),

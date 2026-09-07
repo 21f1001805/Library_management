@@ -1,7 +1,12 @@
+import logging
+
 from fastapi import HTTPException, status
+from langchain_core.messages import HumanMessage, SystemMessage
 from prisma.errors import ForeignKeyViolationError, UniqueViolationError
 
 from app.core.constants import Role
+from app.core.llm import build_chat_llm, log_llm_failure
+from app.modules.books import repository as books_repository
 from app.modules.reviews import repository
 from app.modules.reviews.schemas import (
     BookReviewsOut,
@@ -11,7 +16,66 @@ from app.modules.reviews.schemas import (
     ReviewUpdate,
 )
 
+logger = logging.getLogger(__name__)
+
 MODERATOR_ROLES = {Role.ADMIN.value, Role.IT_HEAD.value}
+
+_DIGEST_SYSTEM_PROMPT = """You summarize real reader reviews for a library catalog page.
+
+Given a book's title and a list of its reviews (rating + comment), write a 2-3 sentence
+summary of what reviewers actually said — the real throughline of praise and criticism
+across them. Rules:
+- Base this ONLY on the review text given. Never invent an opinion, a plot detail, or a
+  fact that isn't actually present in the reviews.
+- No spoilers.
+- Plain prose only: no headings, no bullet points, no quotation marks around the whole
+  thing, and don't just restate the star rating as a number.
+- Output only the summary text, nothing else."""
+
+# Bounds prompt size for books with a lot of reviews — the most recent N is a reasonable
+# proxy for "current sentiment" without needing every review ever written.
+_MAX_REVIEWS_IN_DIGEST = 20
+
+
+async def _generate_digest(book_title: str, reviews: list) -> str | None:
+    """Best-effort — a stale or missing digest degrades the page, not the endpoint.
+
+    Unlike suggest_description (its own dedicated staff action), this is supplementary
+    data riding along with the review list, so a failure here must not turn a normal
+    GET /books/{id}/reviews into an error.
+    """
+    sample = reviews[:_MAX_REVIEWS_IN_DIGEST]
+    review_lines = "\n".join(f"- {review.rating}/5: {review.comment}" for review in sample)
+    human = f"Book: {book_title}\n\nReviews:\n{review_lines}"
+
+    try:
+        llm = build_chat_llm()
+        result = await llm.ainvoke(
+            [SystemMessage(content=_DIGEST_SYSTEM_PROMPT), HumanMessage(content=human)]
+        )
+    except Exception as exc:
+        log_llm_failure("review_digest", exc, book=book_title, reviews=len(sample))
+        return None
+
+    digest = str(result.content).strip()
+    return digest or None
+
+
+async def _review_digest(book_id: str, reviews: list, total: int) -> str | None:
+    if total == 0:
+        return None
+    book = await books_repository.find_by_id(book_id)
+    if book is None:
+        return None
+    # A cache hit is "the digest already covers exactly this many reviews" — any change
+    # to the review count (new review, edit doesn't change count, delete) invalidates it.
+    if book.reviewDigest is not None and book.reviewDigestReviewCount == total:
+        return book.reviewDigest
+
+    digest = await _generate_digest(book.title, reviews)
+    if digest is not None:
+        await books_repository.save_review_digest(book_id, digest=digest, review_count=total)
+    return digest
 
 
 async def get_book_reviews(book_id: str, *, viewer_id: str) -> BookReviewsOut:
@@ -23,6 +87,7 @@ async def get_book_reviews(book_id: str, *, viewer_id: str) -> BookReviewsOut:
         average_rating=average,
         total_reviews=total,
         breakdown=_build_breakdown(reviews),
+        review_digest=await _review_digest(book_id, reviews, total),
     )
 
 

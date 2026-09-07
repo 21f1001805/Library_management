@@ -110,7 +110,7 @@ function OpenIssuesBody({
 }) {
   const { t } = useTranslation();
   const openList = (tickets || []).filter((t) => t?.status === 'open');
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(openList, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(openList, 3);
 
   if (openList.length === 0) {
     return (
@@ -156,7 +156,7 @@ function OpenIssuesBody({
           currentPage={page}
           totalPages={totalPages}
           totalItems={totalItems}
-          pageSize={5}
+          pageSize={3}
           onPageChange={setPage}
         />
       )}
