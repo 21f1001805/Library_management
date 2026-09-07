@@ -1,7 +1,9 @@
+'use client';
+
 import { BookOpen, Heart, MapPin, Sparkles, Star } from 'lucide-react';
 import { useState } from 'react';
+import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 
 import { Badge, Button, buttonVariants, Modal } from '@/components/ui';
 import { ROUTES } from '@/constants/routes';
@@ -80,10 +82,7 @@ export function BookCard({
         </div>
       </Modal>
 
-      <Link
-        to={href}
-        aria-label={t('common.cards.book.viewDetailsAria', { title })}
-      >
+      <Link href={href} aria-label={t('common.cards.book.viewDetailsAria', { title })}>
         {coverImageUrl && !imgError ? (
           <div className="flex h-48 items-center justify-center rounded-md bg-muted/30">
             <img
@@ -100,7 +99,7 @@ export function BookCard({
         )}
       </Link>
       <div className="flex items-start justify-between gap-2">
-        <Link to={href} className="min-w-0">
+        <Link href={href} className="min-w-0">
           <p className="line-clamp-2 font-semibold text-foreground">{title}</p>
           <p className="text-sm text-muted-foreground">{author}</p>
         </Link>
@@ -109,10 +108,9 @@ export function BookCard({
             type="button"
             onClick={onToggleWishlist}
             aria-pressed={isWishlisted}
-            aria-label={t(
-              isWishlisted ? 'books.wishlist.removeAria' : 'books.wishlist.addAria',
-              { title },
-            )}
+            aria-label={t(isWishlisted ? 'books.wishlist.removeAria' : 'books.wishlist.addAria', {
+              title,
+            })}
             className={cn(
               'shrink-0 rounded-full p-1.5 transition-colors hover:bg-secondary',
               isWishlisted ? 'text-danger' : 'text-muted-foreground',
@@ -134,7 +132,8 @@ export function BookCard({
       {(() => {
         const charCode = bookId ? bookId.charCodeAt(0) : 65;
         const firstLetter = category ? category.charAt(0).toUpperCase() : 'A';
-        const displayShelf = shelfLocation || `Floor 1, Shelf ${firstLetter}-${(charCode % 12) + 1}`;
+        const displayShelf =
+          shelfLocation || `Floor 1, Shelf ${firstLetter}-${(charCode % 12) + 1}`;
         return (
           <span className="flex items-center gap-1 text-xs font-medium text-foreground">
             <MapPin className="size-3.5 text-primary shrink-0" />
@@ -155,7 +154,7 @@ export function BookCard({
 
       <div className="flex items-center gap-2">
         <Link
-          to={`${ROUTES.REVIEWS}/${bookId}`}
+          href={`${ROUTES.REVIEWS}/${bookId}`}
           className={buttonVariants({ variant: 'outline', size: 'sm', className: 'flex-1' })}
         >
           {t('reviews.viewReviews')}

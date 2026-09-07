@@ -1,6 +1,8 @@
+'use client';
+
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 import { Avatar, Badge, Button, Drawer } from '@/components/ui';
 import { ROUTES } from '@/constants/routes';
@@ -10,11 +12,11 @@ export function UserMenu() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { role, fullName, avatarUrl, logout } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   function goTo(path: string) {
     setOpen(false);
-    navigate(path);
+    router.push(path);
   }
 
   return (

@@ -24,7 +24,8 @@ export const DEFAULT_LIBRARY_REVIEWS: LibraryReview[] = [
     name: 'Rahul Nair',
     role: 'Premium Member',
     rating: 5,
-    quote: 'Reserving seats in advance and borrowing books digitally is seamless. Highly recommended!',
+    quote:
+      'Reserving seats in advance and borrowing books digitally is seamless. Highly recommended!',
     createdAt: '2026-02-10T00:00:00Z',
   },
   {
@@ -32,7 +33,8 @@ export const DEFAULT_LIBRARY_REVIEWS: LibraryReview[] = [
     name: 'Ananya Iyer',
     role: 'Guardian',
     rating: 5,
-    quote: 'My children love the reading streak feature. It keeps them engaged and eager to read daily.',
+    quote:
+      'My children love the reading streak feature. It keeps them engaged and eager to read daily.',
     createdAt: '2026-03-05T00:00:00Z',
   },
   {

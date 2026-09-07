@@ -45,4 +45,3 @@ export interface ChildBorrowedBook {
   status: BorrowedBookStatus;
   fineAccrued?: string;
 }
-

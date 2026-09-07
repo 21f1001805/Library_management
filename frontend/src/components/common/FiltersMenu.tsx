@@ -1,3 +1,5 @@
+'use client';
+
 import { RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -60,8 +62,9 @@ export function FiltersMenu({
 
   // A filter counts as "active" once it's moved off its first (default) option.
   const activeCount =
-    filters.filter((filter) => filter.options.length > 0 && filter.value !== filter.options[0].value)
-      .length + (sort && sort.options.length > 0 && sort.value !== sort.options[0].value ? 1 : 0);
+    filters.filter(
+      (filter) => filter.options.length > 0 && filter.value !== filter.options[0].value,
+    ).length + (sort && sort.options.length > 0 && sort.value !== sort.options[0].value ? 1 : 0);
 
   return (
     <div ref={rootRef} className={cn('relative', className)}>

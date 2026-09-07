@@ -3,14 +3,47 @@ import { cn } from '@/lib/cn';
 const COLUMN_COUNT = 6;
 const ROWS_PER_COLUMN = 5;
 
-// Real cover art the user dropped into src/assets/books — no captions needed, the covers
-// already carry their own titles.
-const coverModules = import.meta.glob<{ default: string }>('../../../assets/books/*', {
-  eager: true,
-});
+// Real cover art the user dropped into public/books — served by plain URL rather than a
+// bundler-specific glob import (Vite's import.meta.glob has no Next.js equivalent), so this
+// list is generated once from the directory contents rather than discovered at build time.
 // Exported so other decorative poster layouts (e.g. the Login page's scrolling columns)
-// reuse this same cover art instead of duplicating the glob.
-export const covers = Object.values(coverModules).map((mod) => mod.default);
+// reuse this same cover art instead of duplicating the list.
+const COVER_FILES = [
+  '1.jpg',
+  '4.jpeg',
+  '5.jpeg',
+  '6.jpeg',
+  '7.jpeg',
+  '8.jpeg',
+  '10.jpeg',
+  '13.jpeg',
+  '14.jpeg',
+  '15.jpeg',
+  '16.jpeg',
+  '17.jpeg',
+  '18.jpeg',
+  '19.jpeg',
+  '20.jpeg',
+  '24.jpeg',
+  '25.jpeg',
+  '26.jpeg',
+  '27.jpeg',
+  '28.jpeg',
+  '29.jpeg',
+  '30.jpeg',
+  '31.jpeg',
+  '32.jpeg',
+  '33.jpeg',
+  '34.jpeg',
+  '35.jpeg',
+  '36.jpeg',
+  '37.jpeg',
+  '38.jpeg',
+  '39.jpeg',
+  '40.jpeg',
+  '41.jpeg',
+];
+export const covers = COVER_FILES.map((file) => `/books/${file}`);
 
 function buildColumns(images: string[]): string[][] {
   const columns: string[][] = Array.from({ length: COLUMN_COUNT }, () => []);

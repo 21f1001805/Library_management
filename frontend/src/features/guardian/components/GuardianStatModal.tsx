@@ -1,3 +1,5 @@
+'use client';
+
 import { BookOpen, IndianRupee, UserCheck, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,10 +11,7 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import type { GuardianChild, ReadingProgressEntry } from '@/providers/AuthProvider';
 
 export type GuardianStatKey =
-  | 'linkedChildren'
-  | 'currentlyInLibrary'
-  | 'booksBorrowed'
-  | 'totalDues';
+  'linkedChildren' | 'currentlyInLibrary' | 'booksBorrowed' | 'totalDues';
 
 export interface GuardianStatModalProps {
   statKey: GuardianStatKey | null;
@@ -88,7 +87,9 @@ function LinkedChildrenBody({ childrenList = [] }: { childrenList?: GuardianChil
 function CurrentlyInLibraryBody({ childrenList = [] }: { childrenList?: GuardianChild[] }) {
   const { t } = useTranslation();
   // Server-side presence for children is 0 currently; lists empty state or present list
-  const list = (childrenList || []).filter((c) => (c as unknown as { in_library?: boolean }).in_library);
+  const list = (childrenList || []).filter(
+    (c) => (c as unknown as { in_library?: boolean }).in_library,
+  );
   const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(list, 5);
 
   if (list.length === 0) {
@@ -150,10 +151,7 @@ function BooksBorrowedBody({ childrenList = [] }: { childrenList?: GuardianChild
     })),
   );
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
-    borrowedBooks,
-    5,
-  );
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(borrowedBooks, 5);
 
   if (borrowedBooks.length === 0) {
     return (

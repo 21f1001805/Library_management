@@ -1,3 +1,5 @@
+'use client';
+
 import { useTranslation } from 'react-i18next';
 
 import { Badge, Card, CardContent, CardHeader, CardTitle, EmptyState } from '@/components/ui';
@@ -24,13 +26,14 @@ export function ChildrenPresence({ children }: { children: ChildVisitStatus[] })
               const statusText = child.is_in_library
                 ? 'In library'
                 : child.last_checked_out_at
-                ? 'Left'
-                : 'Not in library';
-              const subtitle = child.is_in_library && child.checked_in_at
-                ? `Checked in at ${formatDate(child.checked_in_at)}`
-                : child.last_checked_out_at
-                ? `Left at ${formatDate(child.last_checked_out_at)}`
-                : 'Not in library';
+                  ? 'Left'
+                  : 'Not in library';
+              const subtitle =
+                child.is_in_library && child.checked_in_at
+                  ? `Checked in at ${formatDate(child.checked_in_at)}`
+                  : child.last_checked_out_at
+                    ? `Left at ${formatDate(child.last_checked_out_at)}`
+                    : 'Not in library';
 
               return (
                 <li
@@ -41,9 +44,7 @@ export function ChildrenPresence({ children }: { children: ChildVisitStatus[] })
                     <p className="font-medium text-foreground">{child.child_name}</p>
                     <p className="text-xs text-muted-foreground">{subtitle}</p>
                   </div>
-                  <Badge variant={child.is_in_library ? 'success' : 'outline'}>
-                    {statusText}
-                  </Badge>
+                  <Badge variant={child.is_in_library ? 'success' : 'outline'}>{statusText}</Badge>
                 </li>
               );
             })}

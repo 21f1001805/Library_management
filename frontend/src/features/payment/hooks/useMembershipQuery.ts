@@ -1,3 +1,5 @@
+'use client';
+
 import { useQuery } from '@tanstack/react-query';
 
 import { useAuth, type Membership, type PaymentRecord } from '@/providers/AuthProvider';

@@ -1,3 +1,5 @@
+'use client';
+
 import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query';
 
 import { useDebouncedValue } from '@/lib/useDebouncedValue';

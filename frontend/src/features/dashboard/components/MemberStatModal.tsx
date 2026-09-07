@@ -1,9 +1,16 @@
+'use client';
+
 import { BookMarked, BookOpen, CalendarCheck, Flame } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge, Button, EmptyState, Modal, type BadgeVariant } from '@/components/ui';
 import { formatDate } from '@/lib/format';
-import type { LoanRecord, ReadingStreak, Reservation, SeatBookingRecord } from '@/providers/AuthProvider';
+import type {
+  LoanRecord,
+  ReadingStreak,
+  Reservation,
+  SeatBookingRecord,
+} from '@/providers/AuthProvider';
 
 export type MemberStatKey = 'booksBorrowed' | 'booksReserved' | 'seatBookings' | 'readingStreak';
 
@@ -94,7 +101,9 @@ function BooksBorrowedBody({
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium text-foreground">{loan.book_title}</p>
             {loan.status === 'overdue' && (
-              <Badge variant="danger">{t('managerDashboard.activeLoans.daysLate', { count: loan.days_late })}</Badge>
+              <Badge variant="danger">
+                {t('managerDashboard.activeLoans.daysLate', { count: loan.days_late })}
+              </Badge>
             )}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -120,7 +129,11 @@ function BooksReservedBody({
       <EmptyState
         title={t('dashboard.statModal.booksReserved.emptyTitle')}
         description={t('dashboard.statModal.booksReserved.emptyDescription')}
-        action={<Button onClick={onViewReservations}>{t('dashboard.quickActions.viewReservations')}</Button>}
+        action={
+          <Button onClick={onViewReservations}>
+            {t('dashboard.quickActions.viewReservations')}
+          </Button>
+        }
       />
     );
   }
@@ -129,7 +142,10 @@ function BooksReservedBody({
     <div className="flex flex-col gap-3">
       <ul className="flex flex-col gap-3">
         {reservations.map((reservation) => (
-          <li key={reservation.id} className="flex flex-col gap-1 rounded-lg border border-border p-3">
+          <li
+            key={reservation.id}
+            className="flex flex-col gap-1 rounded-lg border border-border p-3"
+          >
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-medium text-foreground">{reservation.book_title}</p>
               <Badge variant={RESERVATION_BADGE_VARIANT[reservation.status]}>
@@ -149,9 +165,7 @@ function BooksReservedBody({
           </li>
         ))}
       </ul>
-      <Button onClick={onViewReservations}>
-        {t('dashboard.quickActions.viewReservations')}
-      </Button>
+      <Button onClick={onViewReservations}>{t('dashboard.quickActions.viewReservations')}</Button>
     </div>
   );
 }
@@ -172,13 +186,17 @@ function SeatBookingsBody({
       <EmptyState
         title={t('dashboard.statModal.seatBookings.emptyTitle')}
         description={t('dashboard.statModal.seatBookings.emptyDescription')}
-        action={<Button onClick={onManageSeatBookings}>{t('dashboard.quickActions.bookASeat')}</Button>}
+        action={
+          <Button onClick={onManageSeatBookings}>{t('dashboard.quickActions.bookASeat')}</Button>
+        }
       />
     );
   }
 
   const sorted = [...upcoming].sort(
-    (a, b) => new Date(`${a.date}T00:00:00`).getTime() - new Date(`${b.date}T00:00:00`).getTime() || a.hour - b.hour,
+    (a, b) =>
+      new Date(`${a.date}T00:00:00`).getTime() - new Date(`${b.date}T00:00:00`).getTime() ||
+      a.hour - b.hour,
   );
   const pastCount = bookings.length - upcoming.length;
 
@@ -204,9 +222,7 @@ function SeatBookingsBody({
           {t('dashboard.statModal.seatBookings.pastNote', { count: pastCount })}
         </p>
       )}
-      <Button onClick={onManageSeatBookings}>
-        {t('dashboard.quickActions.bookASeat')}
-      </Button>
+      <Button onClick={onManageSeatBookings}>{t('dashboard.quickActions.bookASeat')}</Button>
     </div>
   );
 }
@@ -231,7 +247,9 @@ function ReadingStreakBody({
       <p className="text-sm text-muted-foreground">
         {t('dashboard.statModal.readingStreak.longest', { count: streak.longest_streak_days })}
       </p>
-      <Button onClick={onViewReadingProgress}>{t('dashboard.statModal.readingStreak.viewProgress')}</Button>
+      <Button onClick={onViewReadingProgress}>
+        {t('dashboard.statModal.readingStreak.viewProgress')}
+      </Button>
     </div>
   );
 }

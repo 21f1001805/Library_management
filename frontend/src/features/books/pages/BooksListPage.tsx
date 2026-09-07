@@ -1,3 +1,5 @@
+'use client';
+
 import { Heart, SearchX, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -127,7 +129,7 @@ export function BooksListPage() {
           }
         />
       ) : (
-          <div
+        <div
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           aria-busy={isFetching || undefined}
         >
@@ -141,7 +143,9 @@ export function BooksListPage() {
               genre={book.genre}
               available={book.available}
               shelfLocation={book.shelf_location}
-              coverImageUrl={book.cover_image_url || (book.isbn ? `/covers/${book.isbn}.jpeg` : null)}
+              coverImageUrl={
+                book.cover_image_url || (book.isbn ? `/covers/${book.isbn}.jpeg` : null)
+              }
               averageRating={book.average_rating}
               reviewCount={book.review_count}
               description={book.description}

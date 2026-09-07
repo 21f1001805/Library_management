@@ -1,3 +1,5 @@
+'use client';
+
 import { RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

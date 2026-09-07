@@ -1,3 +1,5 @@
+'use client';
+
 import { ArrowRight, BellRing } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -29,7 +31,11 @@ function NotificationRow({ notification }: { notification: AppNotificationRecord
 
 // Manager-side counterpart to admin's RecentActivities: same compact icon-list card,
 // sourced from the manager's own notification feed instead of the audit log.
-export function RecentNotificationsPanel({ notifications }: { notifications: AppNotificationRecord[] }) {
+export function RecentNotificationsPanel({
+  notifications,
+}: {
+  notifications: AppNotificationRecord[];
+}) {
   const { t } = useTranslation();
   const notificationsPanel = useNotificationsPanel();
   const preview = notifications.slice(0, PREVIEW_COUNT);

@@ -1,3 +1,5 @@
+'use client';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -7,7 +9,11 @@ import { ErrorState, LoadingState } from '@/components/feedback';
 import { Button, Select } from '@/components/ui';
 import { usePagination, useSortedItems } from '@/hooks';
 import { getErrorMessage } from '@/lib/api';
-import { useAuth, type SupportTicketRecord, type SupportTicketStatus } from '@/providers/AuthProvider';
+import {
+  useAuth,
+  type SupportTicketRecord,
+  type SupportTicketStatus,
+} from '@/providers/AuthProvider';
 
 import { GUARDIAN_CATEGORIES, MEMBER_CATEGORIES } from '../constants';
 import { MyTicketsList } from '../components/MyTicketsList';
@@ -44,9 +50,7 @@ function RaiserView({ role }: { role: 'member' | 'guardian' }) {
 
   const filteredTickets = useMemo(
     () =>
-      statusFilter === 'all'
-        ? tickets
-        : tickets.filter((ticket) => ticket.status === statusFilter),
+      statusFilter === 'all' ? tickets : tickets.filter((ticket) => ticket.status === statusFilter),
     [statusFilter, tickets],
   );
 
@@ -139,7 +143,11 @@ function RaiserView({ role }: { role: 'member' | 'guardian' }) {
           <div className="text-sm text-muted-foreground">No matching tickets found.</div>
         ) : (
           <>
-            <MyTicketsList tickets={paginatedItems} onConfirm={handleConfirm} onReopen={handleReopen} />
+            <MyTicketsList
+              tickets={paginatedItems}
+              onConfirm={handleConfirm}
+              onReopen={handleReopen}
+            />
             <Pagination
               currentPage={page}
               totalPages={totalPages}
@@ -194,10 +202,13 @@ function StaffView() {
     },
   });
 
-  const { page, setPage, totalPages, paginatedItems: pagedTickets, totalItems } = usePagination(
-    sortedTickets,
-    TICKETS_PAGE_SIZE,
-  );
+  const {
+    page,
+    setPage,
+    totalPages,
+    paginatedItems: pagedTickets,
+    totalItems,
+  } = usePagination(sortedTickets, TICKETS_PAGE_SIZE);
 
   async function handleResolve(ticketId: string, resolutionNote: string) {
     try {

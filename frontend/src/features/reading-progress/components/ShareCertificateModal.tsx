@@ -1,3 +1,5 @@
+'use client';
+
 import { Download, Share2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +12,7 @@ const FILE_NAME = 'reading-certificate.png';
 
 const canShareFile = Boolean(
   typeof navigator !== 'undefined' &&
-    navigator.canShare?.({ files: [new File([], FILE_NAME, { type: 'image/png' })] }),
+  navigator.canShare?.({ files: [new File([], FILE_NAME, { type: 'image/png' })] }),
 );
 
 export interface ShareCertificateModalProps {
@@ -128,7 +130,11 @@ export function ShareCertificateModal(props: ShareCertificateModalProps) {
             {t('common.actions.cancel')}
           </Button>
           {canShareFile && (
-            <Button variant="outline" leadingIcon={<Share2 className="size-4" />} onClick={handleShare}>
+            <Button
+              variant="outline"
+              leadingIcon={<Share2 className="size-4" />}
+              onClick={handleShare}
+            >
               {t('readingProgress.certificate.share')}
             </Button>
           )}

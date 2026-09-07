@@ -1,6 +1,9 @@
+'use client';
+
 import { ArrowLeft, BookOpen, Heart, MapPin, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { BookCard, DifficultyBadge } from '@/components/common';
@@ -14,10 +17,9 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useBookInsightsQuery, useBookQuery, useRelatedBooksQuery } from '../hooks/useBooks';
 import { useWishlist } from '../hooks/useWishlist';
 
-export function BookDetailsPage() {
+export function BookDetailsPage({ bookId }: { bookId: string }) {
   const { t } = useTranslation();
-  const { bookId } = useParams<{ bookId: string }>();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { reserveBook } = useAuth();
   const { data: book, isLoading, error, refetch } = useBookQuery(bookId);
   const { data: relatedBooks = [] } = useRelatedBooksQuery(bookId);
@@ -57,7 +59,7 @@ export function BookDetailsPage() {
         title={t('books.details.notFound.title')}
         description={t('books.details.notFound.description')}
         action={
-          <Button variant="outline" onClick={() => navigate(ROUTES.BOOKS)}>
+          <Button variant="outline" onClick={() => router.push(ROUTES.BOOKS)}>
             {t('books.details.backToBooks')}
           </Button>
         }
@@ -70,7 +72,7 @@ export function BookDetailsPage() {
   return (
     <div className="flex flex-col gap-6">
       <Link
-        to={ROUTES.BOOKS}
+        href={ROUTES.BOOKS}
         className="flex w-fit items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" /> {t('books.details.backToBooks')}
@@ -137,7 +139,9 @@ export function BookDetailsPage() {
               <Button
                 variant="outline"
                 leadingIcon={
-                  <Heart className={cn('size-4', isWishlisted(book.id) && 'fill-danger text-danger')} />
+                  <Heart
+                    className={cn('size-4', isWishlisted(book.id) && 'fill-danger text-danger')}
+                  />
                 }
                 onClick={() => toggleWishlist(book.id)}
               >

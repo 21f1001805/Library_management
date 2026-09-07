@@ -1,3 +1,5 @@
+'use client';
+
 import { Clock, Flame, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -44,7 +46,11 @@ function slotKey(seatLabel: string, date: string, hour: number): string {
   return `${seatLabel}|${date}|${hour}`;
 }
 
-const dayFormatter = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+const dayFormatter = new Intl.DateTimeFormat(undefined, {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+});
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
 
@@ -100,7 +106,7 @@ export function SeatBookingPage() {
 
   const peakHoursLabel =
     peakHourObj && peakHourObj.visits > 0
-      ? `${formatHourLabel(peakHourObj.hour === 15 ? 14 : peakHourObj.hour)} - ${formatHourLabel((peakHourObj.hour === 15 ? 17 : (peakHourObj.hour + 1) % 24))}`
+      ? `${formatHourLabel(peakHourObj.hour === 15 ? 14 : peakHourObj.hour)} - ${formatHourLabel(peakHourObj.hour === 15 ? 17 : (peakHourObj.hour + 1) % 24)}`
       : '2 PM - 5 PM';
 
   const avgDurationLabel =
@@ -126,7 +132,7 @@ export function SeatBookingPage() {
           ? t('seatBooking.today')
           : offset === 1
             ? t('seatBooking.tomorrow', { defaultValue: 'Tomorrow' })
-            : WEEKDAYS[dayOfWeek] ?? formattedDate;
+            : (WEEKDAYS[dayOfWeek] ?? formattedDate);
 
       return {
         value: toDateInputValue(date),
@@ -181,7 +187,9 @@ export function SeatBookingPage() {
     selectedSeat?.status !== 'booked_by_me' &&
     myBookings.some((booking) => booking.date === selectedDate && booking.hour === effectiveHour);
 
-  const upcomingMyBookings = myBookings.filter((booking) => !isHourPast(booking.hour, booking.date));
+  const upcomingMyBookings = myBookings.filter(
+    (booking) => !isHourPast(booking.hour, booking.date),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -224,7 +232,11 @@ export function SeatBookingPage() {
       return;
     setIsBusy(true);
     try {
-      await bookSeat({ seat_label: selectedSeat.seat_label, date: selectedDate, hour: effectiveHour });
+      await bookSeat({
+        seat_label: selectedSeat.seat_label,
+        date: selectedDate,
+        hour: effectiveHour,
+      });
       await refreshSchedule();
       setMyBookings(await getMySeatBookings());
       toast.success(t('seatBooking.confirmToast', { seatId: selectedSeat.seat_label }));
@@ -260,7 +272,9 @@ export function SeatBookingPage() {
       setNotifiedSlots((prev) =>
         new Set(prev).add(slotKey(selectedSeat.seat_label, selectedDate, effectiveHour)),
       );
-      toast.success(t('seatBooking.bookingSummary.notifyToast', { seatId: selectedSeat.seat_label }));
+      toast.success(
+        t('seatBooking.bookingSummary.notifyToast', { seatId: selectedSeat.seat_label }),
+      );
     } catch (error) {
       reportError(error);
     } finally {
@@ -281,7 +295,10 @@ export function SeatBookingPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageTitle title={t('seatBooking.pageTitle')} description={t('seatBooking.pageDescription')} />
+      <PageTitle
+        title={t('seatBooking.pageTitle')}
+        description={t('seatBooking.pageDescription')}
+      />
 
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
         {footfall && (busiestDayName || quietestDayName) && (
@@ -319,7 +336,8 @@ export function SeatBookingPage() {
         />
         <p className="text-sm text-muted-foreground">
           {t('seatBooking.selectedSlot', {
-            date: dateOptions.find((option) => option.value === selectedDate)?.label ?? selectedDate,
+            date:
+              dateOptions.find((option) => option.value === selectedDate)?.label ?? selectedDate,
             hour: formatHourLabel(effectiveHour),
           })}{' '}
           <button
@@ -338,7 +356,8 @@ export function SeatBookingPage() {
             <div className="flex items-center gap-2.5 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
               <Flame className="size-4 shrink-0 text-amber-600 dark:text-amber-400 fill-amber-500/20" />
               <div>
-                <strong className="font-semibold">High Demand Slot (Peak Hours):</strong> Expect higher library occupancy during this time ({peakHoursLabel}).
+                <strong className="font-semibold">High Demand Slot (Peak Hours):</strong> Expect
+                higher library occupancy during this time ({peakHoursLabel}).
               </div>
             </div>
           )}
@@ -365,49 +384,49 @@ export function SeatBookingPage() {
                 const rowLabels = SEAT_LABELS.filter((label) => label.startsWith(row));
                 const occupancy = rowOccupancy(seats, rowLabels);
                 return (
-                <div key={row} className="flex items-center gap-2.5 sm:gap-4">
-                  <div className="flex w-6 shrink-0 items-center justify-center gap-1 font-bold text-foreground text-sm sm:text-base">
-                    <span>{row}</span>
-                    {isManagerOrStaff && (
-                      <span
-                        aria-hidden="true"
-                        className={`size-2 shrink-0 rounded-full ${ROW_OCCUPANCY_DOT[occupancy]}`}
-                        title={t('seatBooking.occupancy.rowStatusAria', {
-                          row,
-                          status: t(`seatBooking.occupancy.${occupancy}`),
-                        })}
-                      />
-                    )}
-                  </div>
-                  <div className="grid flex-1 grid-cols-4 gap-2 sm:grid-cols-8">
-                    {rowLabels.map((label) => {
-                      const seat = seats?.find((s) => s.seat_label === label);
-                      // A missing record is unknown, never available. Keep it disabled so
-                      // partial API responses cannot advertise seats that may be occupied.
-                      const visualStatus = !seat
-                        ? 'occupied'
-                        : seat.status === 'available'
-                          ? 'available'
-                          : seat.status === 'booked_by_me'
-                            ? 'mine'
-                            : seat.status === 'booked_for_child'
-                              ? 'booked_for_child'
-                              : 'reserved';
-                      return (
-                        <SeatCard
-                          key={label}
-                          label={label}
-                          status={visualStatus}
-                          avatarUrl={seat?.booked_by_avatar_url}
-                          childName={seat?.booked_for_child_name}
-                          guardianName={seat?.booked_by_guardian_name}
-                          selected={selectedSeatLabel === label}
-                          onSelect={seat ? () => setSelectedSeatLabel(label) : undefined}
+                  <div key={row} className="flex items-center gap-2.5 sm:gap-4">
+                    <div className="flex w-6 shrink-0 items-center justify-center gap-1 font-bold text-foreground text-sm sm:text-base">
+                      <span>{row}</span>
+                      {isManagerOrStaff && (
+                        <span
+                          aria-hidden="true"
+                          className={`size-2 shrink-0 rounded-full ${ROW_OCCUPANCY_DOT[occupancy]}`}
+                          title={t('seatBooking.occupancy.rowStatusAria', {
+                            row,
+                            status: t(`seatBooking.occupancy.${occupancy}`),
+                          })}
                         />
-                      );
-                    })}
+                      )}
+                    </div>
+                    <div className="grid flex-1 grid-cols-4 gap-2 sm:grid-cols-8">
+                      {rowLabels.map((label) => {
+                        const seat = seats?.find((s) => s.seat_label === label);
+                        // A missing record is unknown, never available. Keep it disabled so
+                        // partial API responses cannot advertise seats that may be occupied.
+                        const visualStatus = !seat
+                          ? 'occupied'
+                          : seat.status === 'available'
+                            ? 'available'
+                            : seat.status === 'booked_by_me'
+                              ? 'mine'
+                              : seat.status === 'booked_for_child'
+                                ? 'booked_for_child'
+                                : 'reserved';
+                        return (
+                          <SeatCard
+                            key={label}
+                            label={label}
+                            status={visualStatus}
+                            avatarUrl={seat?.booked_by_avatar_url}
+                            childName={seat?.booked_for_child_name}
+                            guardianName={seat?.booked_by_guardian_name}
+                            selected={selectedSeatLabel === label}
+                            onSelect={seat ? () => setSelectedSeatLabel(label) : undefined}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
                 );
               })}
             </div>
@@ -416,7 +435,9 @@ export function SeatBookingPage() {
 
         <BookingSummary
           selectedSeat={selectedSeat}
-          dateLabel={dateOptions.find((option) => option.value === selectedDate)?.label ?? selectedDate}
+          dateLabel={
+            dateOptions.find((option) => option.value === selectedDate)?.label ?? selectedDate
+          }
           hourLabel={formatHourLabel(effectiveHour)}
           slotEndHourLabel={slotEndHourLabel}
           minutesUntilFree={minutesUntilFree}
@@ -436,7 +457,9 @@ export function SeatBookingPage() {
         title={
           slotModalDate
             ? t('seatBooking.pickTimeTitle', {
-                date: dateOptions.find((option) => option.value === slotModalDate)?.label ?? slotModalDate,
+                date:
+                  dateOptions.find((option) => option.value === slotModalDate)?.label ??
+                  slotModalDate,
               })
             : undefined
         }
@@ -456,7 +479,8 @@ export function SeatBookingPage() {
                 <span className="flex items-center gap-1.5 font-medium text-foreground">
                   <Clock className="size-4 text-primary" />
                   <span>
-                    <strong className="text-foreground">Avg. Visit Duration:</strong> {avgDurationLabel}
+                    <strong className="text-foreground">Avg. Visit Duration:</strong>{' '}
+                    {avgDurationLabel}
                   </span>
                 </span>
               )}
@@ -467,7 +491,8 @@ export function SeatBookingPage() {
             {HOURS.map((hour) => {
               const disabled = slotModalDate ? isHourPast(hour, slotModalDate) : false;
               const isCurrent = slotModalDate === selectedDate && effectiveHour === hour;
-              const isPeak = peakHourObj && peakHourObj.visits > 0 && Math.abs(hour - peakHourObj.hour) <= 1;
+              const isPeak =
+                peakHourObj && peakHourObj.visits > 0 && Math.abs(hour - peakHourObj.hour) <= 1;
 
               return (
                 <button

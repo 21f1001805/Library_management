@@ -1,3 +1,5 @@
+'use client';
+
 import { AlertCircle, IndianRupee, KeyRound, UploadCloud, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -165,7 +167,10 @@ export function ITHeadDashboardPage() {
             icon={IndianRupee}
             label={t('itHead.stats.feesOutstanding')}
             value={formatCurrency(stats.fees_outstanding)}
-            trend={{ ...stats.fees_outstanding_trend, sentiment: owedSentiment(stats.fees_outstanding_trend) }}
+            trend={{
+              ...stats.fees_outstanding_trend,
+              sentiment: owedSentiment(stats.fees_outstanding_trend),
+            }}
             onClick={() => setActiveStat('feesOutstanding')}
             selected={activeStat === 'feesOutstanding'}
           />

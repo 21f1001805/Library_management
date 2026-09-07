@@ -1,3 +1,5 @@
+'use client';
+
 import { ChevronDown } from 'lucide-react';
 import { useRef, useState } from 'react';
 
@@ -40,7 +42,10 @@ export function SortMenu({ label, value, onChange, options, className }: SortMen
       >
         <span className="truncate">{current?.label ?? label}</span>
         <ChevronDown
-          className={cn('size-4 shrink-0 text-muted-foreground transition-transform duration-150', open && 'rotate-180')}
+          className={cn(
+            'size-4 shrink-0 text-muted-foreground transition-transform duration-150',
+            open && 'rotate-180',
+          )}
           aria-hidden="true"
         />
       </button>

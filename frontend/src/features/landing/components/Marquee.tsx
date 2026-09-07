@@ -1,3 +1,5 @@
+'use client';
+
 import { motion, useReducedMotion } from 'framer-motion';
 import type { ReactNode } from 'react';
 
@@ -16,7 +18,8 @@ export function Marquee({ children, reverse = false, duration = 25, gap = 16 }: 
     <div
       className="overflow-hidden"
       style={{
-        maskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
+        maskImage:
+          'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
         WebkitMaskImage:
           'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
       }}
@@ -24,7 +27,9 @@ export function Marquee({ children, reverse = false, duration = 25, gap = 16 }: 
       <motion.div
         className="flex"
         style={{ gap }}
-        animate={prefersReducedMotion ? undefined : { x: reverse ? ['-50%', '0%'] : ['0%', '-50%'] }}
+        animate={
+          prefersReducedMotion ? undefined : { x: reverse ? ['-50%', '0%'] : ['0%', '-50%'] }
+        }
         transition={{ duration, ease: 'linear', repeat: Infinity }}
       >
         {items.map((child, index) => (

@@ -1,11 +1,25 @@
-import { KeyRound, LogIn, Minus, ShieldCheck, TrendingDown, TrendingUp, type LucideIcon } from 'lucide-react';
+'use client';
+
+import {
+  KeyRound,
+  LogIn,
+  Minus,
+  ShieldCheck,
+  TrendingDown,
+  TrendingUp,
+  type LucideIcon,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { TrendLineChart } from '@/components/common';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { formatWeekday } from '@/lib/format';
-import type { AdminTrend, SystemActivityDay, SystemActivitySummary } from '@/providers/AuthProvider';
+import type {
+  AdminTrend,
+  SystemActivityDay,
+  SystemActivitySummary,
+} from '@/providers/AuthProvider';
 
 function StatCell({
   label,

@@ -1,3 +1,5 @@
+'use client';
+
 import { Award, Flame, Target } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -61,7 +63,9 @@ function GuardianReadingProgress() {
   const [children, setChildren] = useState<GuardianChild[]>([]);
 
   useEffect(() => {
-    getGuardianChildren().then(setChildren).catch(() => setChildren([]));
+    getGuardianChildren()
+      .then(setChildren)
+      .catch(() => setChildren([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -117,9 +121,15 @@ function MemberReadingProgress() {
   });
 
   useEffect(() => {
-    getMyReadingProgress().then(setProgress).catch(() => setProgress([]));
-    getMyLoans().then(setLoans).catch(() => setLoans([]));
-    getReadingGoal().then(setGoal).catch(() => setGoal(null));
+    getMyReadingProgress()
+      .then(setProgress)
+      .catch(() => setProgress([]));
+    getMyLoans()
+      .then(setLoans)
+      .catch(() => setLoans([]));
+    getReadingGoal()
+      .then(setGoal)
+      .catch(() => setGoal(null));
     getReadingStreak()
       .then(setStreak)
       .catch(() => setStreak({ current_streak_days: 0, longest_streak_days: 0 }));
@@ -181,23 +191,22 @@ function MemberReadingProgress() {
                   <p className="mt-1.5 text-sm text-muted-foreground">
                     {goal.books_completed_this_month} of {goal.monthly_goal} books this month
                   </p>
-                  {goal.monthly_goal > 0 && goal.books_completed_this_month >= goal.monthly_goal && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-2"
-                      leadingIcon={<Award className="size-4" />}
-                      onClick={() => setCertificate('monthly')}
-                    >
-                      {t('readingProgress.certificate.shareButton')}
-                    </Button>
-                  )}
+                  {goal.monthly_goal > 0 &&
+                    goal.books_completed_this_month >= goal.monthly_goal && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2"
+                        leadingIcon={<Award className="size-4" />}
+                        onClick={() => setCertificate('monthly')}
+                      >
+                        {t('readingProgress.certificate.shareButton')}
+                      </Button>
+                    )}
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                You haven't set a reading goal yet.
-              </p>
+              <p className="text-sm text-muted-foreground">You haven't set a reading goal yet.</p>
             )}
           </CardContent>
         </Card>
@@ -233,7 +242,9 @@ function MemberReadingProgress() {
           onClose={() => setCertificate(null)}
           memberName={fullName ?? ''}
           count={
-            certificate === 'yearly' ? goal.books_completed_this_year : goal.books_completed_this_month
+            certificate === 'yearly'
+              ? goal.books_completed_this_year
+              : goal.books_completed_this_month
           }
           goal={certificate === 'yearly' ? goal.yearly_goal : goal.monthly_goal}
           periodLabel={

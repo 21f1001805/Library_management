@@ -21,7 +21,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Frontend
+# Frontend (Next.js)
+frontend/.next/
+frontend/out/
+
+# Frontend (retired Vite build — no longer produced, kept in case of a stray local build)
 frontend/dist/
 frontend/.vite/
 

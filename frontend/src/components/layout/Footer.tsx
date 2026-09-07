@@ -1,5 +1,7 @@
+'use client';
+
 import { Globe, Link2, Mail, MessageCircle, Phone } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -48,27 +50,27 @@ export function Footer({ minimal }: FooterProps) {
           <div className="flex flex-wrap items-center gap-3">
             <LanguageSwitcher />
             <Link
-              to={`${ROUTES.CONTACT_US}#contact-us`}
+              href={`${ROUTES.CONTACT_US}#contact-us`}
               className="text-sm font-medium text-primary hover:text-foreground"
             >
               {t('nav.contactUs')}
             </Link>
             <Link
-              to={ROUTES.HOME}
+              href={ROUTES.HOME}
               aria-label={t('contactUs.actions.home')}
               className="hover:text-foreground"
             >
               <Globe className="size-3.5" />
             </Link>
             <Link
-              to={`${ROUTES.CONTACT_US}#contact-us`}
+              href={`${ROUTES.CONTACT_US}#contact-us`}
               aria-label={t('contactUs.actions.contactUs')}
               className="hover:text-foreground"
             >
               <MessageCircle className="size-3.5" />
             </Link>
             <Link
-              to={`${ROUTES.CONTACT_US}#faq`}
+              href={`${ROUTES.CONTACT_US}#faq`}
               aria-label={t('contactUs.actions.faq')}
               className="hover:text-foreground"
             >

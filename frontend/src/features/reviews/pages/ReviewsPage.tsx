@@ -1,3 +1,5 @@
+'use client';
+
 import {
   MessageSquare,
   MessageSquareOff,
@@ -8,9 +10,9 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router-dom';
 
 import { toast } from 'sonner';
 
@@ -63,9 +65,8 @@ const EMPTY_BOOK_REVIEWS: BookReviews = {
   review_digest: null,
 };
 
-export function ReviewsPage() {
+export function ReviewsPage({ bookId: routeBookId }: { bookId?: string }) {
   const { t } = useTranslation();
-  const { bookId: routeBookId } = useParams<{ bookId?: string }>();
   const {
     role,
     getBookReviews,
@@ -389,7 +390,7 @@ export function ReviewsPage() {
                   selectedBook ? (
                     <>
                       <Link
-                        to={bookLink(selectedBook.id)}
+                        href={bookLink(selectedBook.id)}
                         className="font-semibold text-primary hover:underline"
                       >
                         {selectedBook.title}
@@ -560,7 +561,7 @@ export function ReviewsPage() {
                         role={
                           <>
                             {formatDate(review.created_at)} ·{' '}
-                            <Link to={bookLink(review.book_id)} className="hover:underline">
+                            <Link href={bookLink(review.book_id)} className="hover:underline">
                               {review.book_title}
                             </Link>
                           </>
@@ -698,7 +699,7 @@ export function ReviewsPage() {
                                 <TableRow key={review.id}>
                                   <TableCell className="font-medium">
                                     <Link
-                                      to={bookLink(review.book_id)}
+                                      href={bookLink(review.book_id)}
                                       className="text-primary hover:underline"
                                     >
                                       {review.book_title}
@@ -777,7 +778,7 @@ export function ReviewsPage() {
                             <CardHeader className="flex-row items-start justify-between gap-3 space-y-0 pb-2">
                               <div className="flex flex-col gap-0.5">
                                 <Link
-                                  to={bookLink(review.book_id)}
+                                  href={bookLink(review.book_id)}
                                   className="text-base font-bold text-foreground hover:text-primary hover:underline"
                                 >
                                   {review.book_title}

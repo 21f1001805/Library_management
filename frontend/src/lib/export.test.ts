@@ -77,20 +77,22 @@ function captureDownloadedBlob(): Captured {
   const origCreateElement = document.createElement.bind(document);
   const anchor = origCreateElement('a');
   vi.spyOn(anchor, 'click').mockImplementation(() => undefined);
-  vi.spyOn(document, 'createElement').mockImplementation((tag: string, options?: ElementCreationOptions) => {
-    if (tag === 'a') {
-      Object.defineProperty(anchor, 'download', {
-        get() {
-          return result.filename ?? '';
-        },
-        set(value: string) {
-          result.filename = value;
-        },
-      });
-      return anchor;
-    }
-    return origCreateElement(tag, options);
-  });
+  vi.spyOn(document, 'createElement').mockImplementation(
+    (tag: string, options?: ElementCreationOptions) => {
+      if (tag === 'a') {
+        Object.defineProperty(anchor, 'download', {
+          get() {
+            return result.filename ?? '';
+          },
+          set(value: string) {
+            result.filename = value;
+          },
+        });
+        return anchor;
+      }
+      return origCreateElement(tag, options);
+    },
+  );
 
   return result;
 }

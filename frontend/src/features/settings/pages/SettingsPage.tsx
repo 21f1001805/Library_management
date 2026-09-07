@@ -1,8 +1,10 @@
+'use client';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { PageTitle } from '@/components/common';
@@ -29,7 +31,7 @@ const THEME_OPTIONS: Theme[] = ['light', 'dark', 'system'];
 
 export function SettingsPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
   const {
@@ -107,7 +109,7 @@ export function SettingsPage() {
 
   function handleLogOut() {
     logout();
-    navigate(ROUTES.HOME);
+    router.push(ROUTES.HOME);
   }
 
   async function handleDeleteAccount() {
@@ -115,7 +117,7 @@ export function SettingsPage() {
     try {
       await deleteAccount();
       toast.success(t('settings.account.deleteAccountSuccess'));
-      navigate(ROUTES.HOME);
+      router.push(ROUTES.HOME);
     } catch (err) {
       toast.error(getErrorMessage(err, t('common.errors.generic')));
     } finally {
@@ -149,7 +151,9 @@ export function SettingsPage() {
     try {
       await unlinkMyGuardian();
       setGuardian(null);
-      toast.success(t('settings.guardianLink.unlinkSuccessToast', 'Guardian unlinked successfully!'));
+      toast.success(
+        t('settings.guardianLink.unlinkSuccessToast', 'Guardian unlinked successfully!'),
+      );
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to unlink guardian.'));
     } finally {
@@ -210,7 +214,9 @@ export function SettingsPage() {
             ) : guardian ? (
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-border p-4 bg-muted/20">
                 <div>
-                  <p className="text-xs uppercase font-semibold text-primary mb-1">Linked Guardian</p>
+                  <p className="text-xs uppercase font-semibold text-primary mb-1">
+                    Linked Guardian
+                  </p>
                   <p className="text-sm font-medium text-foreground">{guardian.full_name}</p>
                   <p className="text-sm text-muted-foreground">{guardian.email}</p>
                 </div>
@@ -227,7 +233,8 @@ export function SettingsPage() {
             ) : (
               <form onSubmit={handleLinkGuardian} className="flex flex-col gap-4 max-w-md">
                 <p className="text-sm text-muted-foreground">
-                  No guardian is linked to your account yet. Enter your guardian's email address below to link your account.
+                  No guardian is linked to your account yet. Enter your guardian's email address
+                  below to link your account.
                 </p>
                 <Input
                   label="Guardian Email"
@@ -261,7 +268,7 @@ export function SettingsPage() {
           )}
 
           <div className="flex gap-2">
-            <Button variant="outline" className="w-fit" onClick={() => navigate(ROUTES.PROFILE)}>
+            <Button variant="outline" className="w-fit" onClick={() => router.push(ROUTES.PROFILE)}>
               {t('userMenu.profile')}
             </Button>
             <Button variant="outline" className="w-fit" onClick={handleLogOut}>

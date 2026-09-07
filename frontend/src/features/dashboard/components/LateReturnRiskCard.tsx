@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -31,7 +33,9 @@ export function LateReturnRiskCard({ items }: { items: LateReturnRiskItem[] }) {
       case 'member-asc':
         return result.sort((a, b) => a.member_name.localeCompare(b.member_name));
       case 'dueDate-asc':
-        return result.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+        return result.sort(
+          (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+        );
       case 'risk-asc':
         return result.sort((a, b) => a.risk_score - b.risk_score);
       case 'risk-desc':
@@ -63,15 +67,21 @@ export function LateReturnRiskCard({ items }: { items: LateReturnRiskItem[] }) {
                   { value: 'all', label: t('common.filters.all', { defaultValue: 'All Levels' }) },
                   {
                     value: 'high',
-                    label: t('managerDashboard.lateReturnRisk.levelShort.high', { defaultValue: 'High Risk' }),
+                    label: t('managerDashboard.lateReturnRisk.levelShort.high', {
+                      defaultValue: 'High Risk',
+                    }),
                   },
                   {
                     value: 'medium',
-                    label: t('managerDashboard.lateReturnRisk.levelShort.medium', { defaultValue: 'Medium Risk' }),
+                    label: t('managerDashboard.lateReturnRisk.levelShort.medium', {
+                      defaultValue: 'Medium Risk',
+                    }),
                   },
                   {
                     value: 'low',
-                    label: t('managerDashboard.lateReturnRisk.levelShort.low', { defaultValue: 'Low Risk' }),
+                    label: t('managerDashboard.lateReturnRisk.levelShort.low', {
+                      defaultValue: 'Low Risk',
+                    }),
                   },
                 ],
               },
@@ -131,12 +141,18 @@ export function LateReturnRiskCard({ items }: { items: LateReturnRiskItem[] }) {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-foreground leading-snug">{item.book_title}</p>
+                        <p className="truncate text-sm font-semibold text-foreground leading-snug">
+                          {item.book_title}
+                        </p>
                         <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                          {t('managerDashboard.lateReturnRisk.borrower', { name: item.member_name })}
+                          {t('managerDashboard.lateReturnRisk.borrower', {
+                            name: item.member_name,
+                          })}
                           <span className="mx-1.5 text-muted-foreground/40">•</span>
                           <span className="font-medium text-foreground/80">
-                            {t('managerDashboard.lateReturnRisk.dueDate', { date: formatDate(item.due_date) })}
+                            {t('managerDashboard.lateReturnRisk.dueDate', {
+                              date: formatDate(item.due_date),
+                            })}
                           </span>
                         </p>
                       </div>

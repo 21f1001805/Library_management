@@ -1,3 +1,5 @@
+'use client';
+
 import { useTranslation } from 'react-i18next';
 
 import { MultiLineTrendChart } from '@/components/common';
@@ -21,16 +23,29 @@ export function FinancialTrendChart() {
     <Card>
       <CardHeader>
         <CardTitle>{t('itHead.reportsPage.financialTrend.title')}</CardTitle>
-        <p className="text-sm text-muted-foreground">{t('itHead.reportsPage.financialTrend.subtitle')}</p>
+        <p className="text-sm text-muted-foreground">
+          {t('itHead.reportsPage.financialTrend.subtitle')}
+        </p>
       </CardHeader>
       <CardContent>
         <MultiLineTrendChart
           ariaLabel={t('itHead.reportsPage.financialTrend.title')}
           axisPrefix="₹"
-          data={MONTHS.map((m) => ({ label: m.label, values: { income: m.income, expenses: m.expenses } }))}
+          data={MONTHS.map((m) => ({
+            label: m.label,
+            values: { income: m.income, expenses: m.expenses },
+          }))}
           series={[
-            { key: 'income', label: t('itHead.reportsPage.financialTrend.income'), color: 'var(--color-primary)' },
-            { key: 'expenses', label: t('itHead.reportsPage.financialTrend.expenses'), color: 'var(--color-warning)' },
+            {
+              key: 'income',
+              label: t('itHead.reportsPage.financialTrend.income'),
+              color: 'var(--color-primary)',
+            },
+            {
+              key: 'expenses',
+              label: t('itHead.reportsPage.financialTrend.expenses'),
+              color: 'var(--color-warning)',
+            },
           ]}
         />
       </CardContent>

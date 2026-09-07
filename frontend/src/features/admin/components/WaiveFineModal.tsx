@@ -1,3 +1,5 @@
+'use client';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -128,7 +130,9 @@ export function WaiveFineModal({ open, onClose, onWaived }: WaiveFineModalProps)
                         }}
                         className="flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left hover:bg-secondary"
                       >
-                        <span className="text-sm font-medium text-foreground">{member.full_name}</span>
+                        <span className="text-sm font-medium text-foreground">
+                          {member.full_name}
+                        </span>
                         <span className="text-xs text-muted-foreground">{member.email}</span>
                       </button>
                     </li>

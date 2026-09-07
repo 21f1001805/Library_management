@@ -23,7 +23,7 @@ describe('useWishlist', () => {
     vi.clearAllMocks();
   });
 
-  it('loads the signed-in member\'s wishlist from the backend', async () => {
+  it("loads the signed-in member's wishlist from the backend", async () => {
     mockedUseAuth.mockReturnValue({
       userId: 'member-1',
       isAuthenticated: true,

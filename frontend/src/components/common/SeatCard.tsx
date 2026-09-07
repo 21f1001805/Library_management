@@ -1,3 +1,5 @@
+'use client';
+
 import { Armchair, CheckCircle2, Clock, X } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -64,8 +66,8 @@ export function SeatCard({
         ? `Booked for ${childName}`
         : 'Booked for Child'
       : status === 'mine' && guardianName
-      ? `Booked by Guardian (${guardianName})`
-      : t(`landing.seatAvailability.${status}`, { defaultValue: status });
+        ? `Booked by Guardian (${guardianName})`
+        : t(`landing.seatAvailability.${status}`, { defaultValue: status });
   const StatusIcon = statusIcons[status];
 
   const isMineOrChild = status === 'mine' || status === 'booked_for_child';

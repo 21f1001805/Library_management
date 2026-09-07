@@ -1,3 +1,5 @@
+'use client';
+
 import { Bell, BellRing, Clock3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -147,10 +149,7 @@ export function BookingSummary({
             {t('seatBooking.bookingSummary.cancelButton')}
           </Button>
         ) : (
-          <Button
-            disabled={!isAvailable || isBusy || hasOtherBookingThisSlot}
-            onClick={onConfirm}
-          >
+          <Button disabled={!isAvailable || isBusy || hasOtherBookingThisSlot} onClick={onConfirm}>
             {t('seatBooking.bookingSummary.confirmButton')}
           </Button>
         )}

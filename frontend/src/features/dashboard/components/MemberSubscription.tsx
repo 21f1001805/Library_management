@@ -1,7 +1,9 @@
+'use client';
+
 import { Crown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 
 import { ProgressBar } from '@/components/common';
 import { Badge, Button, Card, CardContent, Modal } from '@/components/ui';
@@ -54,28 +56,28 @@ export function MemberSubscription({
   fineEscalatedAmount,
 }: MemberSubscriptionProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [showFineDetails, setShowFineDetails] = useState(false);
   const hasFine = outstandingFine !== '₹0';
   const percent = elapsedPercent(purchasedAtIso, expiresAtIso);
 
   function payFine() {
     const amount = Number(outstandingFine.replace(/[^\d.]/g, ''));
-    navigate(
+    router.push(
       `${ROUTES.PAYMENT}?amount=${amount}&label=${encodeURIComponent(t('dashboard.subscription.fineOwed', { amount: outstandingFine }))}`,
     );
   }
 
   function renewOrViewPlans() {
     if (!expiresOn) {
-      navigate(ROUTES.PRICING);
+      router.push(ROUTES.PRICING);
       return;
     }
     const label = t('dashboard.subscription.renewalPaymentLabel', { plan: planLabel });
     // Renewal always renews at the 1-month plan/price, regardless of the member's
     // original plan length — same simplification as before, now sourced from the
     // backend plan by id instead of a hardcoded price constant.
-    navigate(`${ROUTES.PAYMENT}?plan=1m&label=${encodeURIComponent(label)}&renewal=1`);
+    router.push(`${ROUTES.PAYMENT}?plan=1m&label=${encodeURIComponent(label)}&renewal=1`);
   }
 
   return (
@@ -142,7 +144,9 @@ export function MemberSubscription({
               leadingIcon={<Crown className="size-4" />}
               onClick={renewOrViewPlans}
             >
-              {expiresOn ? t('dashboard.subscription.renew') : t('dashboard.subscription.viewPlans')}
+              {expiresOn
+                ? t('dashboard.subscription.renew')
+                : t('dashboard.subscription.viewPlans')}
             </Button>
           </div>
         </div>
@@ -155,19 +159,27 @@ export function MemberSubscription({
       >
         <div className="flex flex-col gap-3 text-sm">
           <div className="flex justify-between gap-4">
-            <span className="text-muted-foreground">{t('dashboard.subscription.fineDetails.reason')}</span>
+            <span className="text-muted-foreground">
+              {t('dashboard.subscription.fineDetails.reason')}
+            </span>
             <span className="text-right font-medium text-foreground">
-              {fineReasonKey ? t(`dashboard.subscription.fineDetails.reasons.${fineReasonKey}`) : '—'}
+              {fineReasonKey
+                ? t(`dashboard.subscription.fineDetails.reasons.${fineReasonKey}`)
+                : '—'}
               {fineBookTitle ? ` — ${fineBookTitle}` : ''}
             </span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="text-muted-foreground">{t('dashboard.subscription.fineDetails.amountDue')}</span>
+            <span className="text-muted-foreground">
+              {t('dashboard.subscription.fineDetails.amountDue')}
+            </span>
             <span className="font-semibold text-danger">{outstandingFine}</span>
           </div>
           {fineDueDate && (
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">{t('dashboard.subscription.fineDetails.payBy')}</span>
+              <span className="text-muted-foreground">
+                {t('dashboard.subscription.fineDetails.payBy')}
+              </span>
               <span className="font-medium text-foreground">{fineDueDate}</span>
             </div>
           )}

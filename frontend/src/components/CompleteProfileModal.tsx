@@ -1,7 +1,9 @@
+'use client';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { Button, Checkbox, Input, Modal, Select } from '@/components/ui';
@@ -16,7 +18,7 @@ import { useAuth } from '@/providers/AuthProvider';
 export function CompleteProfileModal() {
   const { t } = useTranslation();
   const { needsProfileCompletion, fullName, completeProfile } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { options: planOptions, isLoading: isLoadingPlans } = usePlanOptions();
 
   const {
@@ -44,7 +46,7 @@ export function CompleteProfileModal() {
         password: values.password,
       });
       const plan = planOptions.find((option) => option.value === values.membershipPlan);
-      navigate(
+      router.push(
         `${ROUTES.PAYMENT}?plan=${values.membershipPlan}&label=${encodeURIComponent(plan?.label ?? '')}`,
       );
     } catch (err) {
@@ -60,9 +62,7 @@ export function CompleteProfileModal() {
       dismissible={false}
     >
       <div className="flex flex-col gap-4">
-        <p className="text-sm text-muted-foreground">
-          A few more details before you get started.
-        </p>
+        <p className="text-sm text-muted-foreground">A few more details before you get started.</p>
 
         <form className="flex flex-col gap-3" onSubmit={handleSubmit(onSubmit)} noValidate>
           <Input

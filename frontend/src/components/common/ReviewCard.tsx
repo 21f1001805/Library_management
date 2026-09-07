@@ -1,3 +1,5 @@
+'use client';
+
 import { Pencil, Star, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';

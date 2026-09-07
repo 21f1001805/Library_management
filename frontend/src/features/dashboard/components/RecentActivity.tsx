@@ -1,3 +1,5 @@
+'use client';
+
 import { useTranslation } from 'react-i18next';
 
 import { ErrorState, LoadingState } from '@/components/feedback';
@@ -6,11 +8,7 @@ import { formatRelativeTime } from '@/lib/formatRelativeTime';
 import type { DashboardEvent } from '@/mocks/dashboard';
 import type { AppNotificationRecord } from '@/providers/AuthProvider';
 
-export function RecentNotifications({
-  notifications,
-}: {
-  notifications: AppNotificationRecord[];
-}) {
+export function RecentNotifications({ notifications }: { notifications: AppNotificationRecord[] }) {
   const { t } = useTranslation();
 
   return (
@@ -29,7 +27,9 @@ export function RecentNotifications({
             {notifications.map((notification) => (
               <li key={notification.id} className="text-sm">
                 <p className="text-foreground">{notification.message}</p>
-                <p className="text-muted-foreground">{formatRelativeTime(notification.created_at)}</p>
+                <p className="text-muted-foreground">
+                  {formatRelativeTime(notification.created_at)}
+                </p>
               </li>
             ))}
           </ul>
@@ -69,9 +69,7 @@ export function UpcomingEvents({ events, isLoading, error, onRetry }: UpcomingEv
             className="min-h-24 p-2"
           />
         ) : events.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {t('dashboard.upcomingEvents.noEvents')}
-          </p>
+          <p className="text-sm text-muted-foreground">{t('dashboard.upcomingEvents.noEvents')}</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {events.map((event) => (

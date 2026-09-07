@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -6,11 +8,7 @@ import { ExportButton } from '@/components/common';
 import { Loader } from '@/components/ui';
 import { apiGet, getErrorMessage } from '@/lib/api';
 
-import {
-  FillRateDonut,
-  RegistrationTrendChart,
-  RoleBreakdownBars,
-} from './EventAnalyticsCharts';
+import { FillRateDonut, RegistrationTrendChart, RoleBreakdownBars } from './EventAnalyticsCharts';
 
 interface AnalyticsRegistrant {
   id: string;
@@ -163,7 +161,9 @@ export function EventAnalyticsPanel({ eventId, eventTitle, token }: EventAnalyti
               summaryLines={[
                 `${t('events.analytics.totalRegistered')}: ${analytics.total_registered ?? 0} / ${analytics.capacity ?? 0}`,
                 `${t('events.analytics.fillRate')}: ${Math.round((analytics.fill_rate ?? 0) * 100)}%`,
-                ...(analytics.registrants_by_role || []).map((rb) => `${rb?.role ?? ''}: ${rb?.count ?? 0}`),
+                ...(analytics.registrants_by_role || []).map(
+                  (rb) => `${rb?.role ?? ''}: ${rb?.count ?? 0}`,
+                ),
               ]}
             />
           </div>

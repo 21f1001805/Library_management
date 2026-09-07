@@ -69,10 +69,10 @@ export async function downloadPdf(
     typeof (autoTableModule as unknown as AutoTableModule).default === 'function'
       ? (autoTableModule as unknown as AutoTableModule).default
       : typeof (autoTableModule as unknown as AutoTableModule).autoTable === 'function'
-      ? (autoTableModule as unknown as AutoTableModule).autoTable
-      : typeof autoTableModule === 'function'
-      ? (autoTableModule as unknown as (doc: unknown, options: unknown) => void)
-      : null;
+        ? (autoTableModule as unknown as AutoTableModule).autoTable
+        : typeof autoTableModule === 'function'
+          ? (autoTableModule as unknown as (doc: unknown, options: unknown) => void)
+          : null;
 
   const doc = new jsPDFConstructor() as unknown as AutoTableDoc;
   doc.text(String(title || ''), 14, 16);

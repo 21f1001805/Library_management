@@ -1,3 +1,5 @@
+'use client';
+
 import { Armchair, BookPlus, ClipboardList, UserPlus } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,10 +13,7 @@ import type {
 } from '@/providers/AuthProvider';
 
 export type ManagerStatKey =
-  | 'seatsBookedToday'
-  | 'booksIssuedToday'
-  | 'newRegistrationsToday'
-  | 'pendingTasks';
+  'seatsBookedToday' | 'booksIssuedToday' | 'newRegistrationsToday' | 'pendingTasks';
 
 export interface ManagerStatModalProps {
   statKey: ManagerStatKey | null;
@@ -72,17 +71,18 @@ function BooksIssuedTodayBody({
   onIssueBook: () => void;
 }) {
   const { t } = useTranslation();
-  const issuedToday = useMemo(
-    () => loans.filter((loan) => isToday(loan.borrowed_at)),
-    [loans],
-  );
+  const issuedToday = useMemo(() => loans.filter((loan) => isToday(loan.borrowed_at)), [loans]);
 
   if (issuedToday.length === 0) {
     return (
       <EmptyState
         title={t('managerDashboard.statModal.booksIssuedToday.emptyTitle')}
         description={t('managerDashboard.statModal.booksIssuedToday.emptyDescription')}
-        action={<Button onClick={onIssueBook}>{t('managerDashboard.quickActions.issueBookForMember')}</Button>}
+        action={
+          <Button onClick={onIssueBook}>
+            {t('managerDashboard.quickActions.issueBookForMember')}
+          </Button>
+        }
       />
     );
   }

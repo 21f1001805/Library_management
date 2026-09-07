@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Award,
   BookOpen,
@@ -198,13 +200,22 @@ export function LeaderboardPage() {
         <div className="rounded-xl border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-card p-4 sm:p-5 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="flex size-16 sm:size-20 shrink-0 flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-primary-foreground shadow-md ring-4 ring-primary/20">
-              <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider opacity-90">RANK</span>
-              <span className="text-xl sm:text-2xl font-extrabold leading-none">#{currentUserEntry.rank}</span>
+              <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider opacity-90">
+                RANK
+              </span>
+              <span className="text-xl sm:text-2xl font-extrabold leading-none">
+                #{currentUserEntry.rank}
+              </span>
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-semibold text-foreground text-base sm:text-lg">Your Standing</h3>
-                <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-xs font-semibold">
+                <h3 className="font-semibold text-foreground text-base sm:text-lg">
+                  Your Standing
+                </h3>
+                <Badge
+                  variant="outline"
+                  className="border-primary/40 bg-primary/10 text-primary text-xs font-semibold"
+                >
                   {currentUserEntry.rank <= 3
                     ? '🏆 Podium Leader'
                     : `#${currentUserEntry.rank} of ${entries.length} Members`}
@@ -222,24 +233,38 @@ export function LeaderboardPage() {
             <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/80 px-3 py-1.5 shadow-2xs">
               <Trophy className="size-4 text-primary" />
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Score</p>
-                <p className="text-sm font-bold text-foreground">{currentUserEntry.score.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">pts</span></p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Score
+                </p>
+                <p className="text-sm font-bold text-foreground">
+                  {currentUserEntry.score.toLocaleString()}{' '}
+                  <span className="text-xs font-normal text-muted-foreground">pts</span>
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/80 px-3 py-1.5 shadow-2xs">
               <BookOpen className="size-4 text-emerald-600 dark:text-emerald-400" />
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Books</p>
-                <p className="text-sm font-bold text-foreground">{currentUserEntry.books_completed}</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Books
+                </p>
+                <p className="text-sm font-bold text-foreground">
+                  {currentUserEntry.books_completed}
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/80 px-3 py-1.5 shadow-2xs">
               <Flame className="size-4 text-amber-500" />
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Streak</p>
-                <p className="text-sm font-bold text-foreground">{currentUserEntry.reading_streak} <span className="text-xs font-normal text-muted-foreground">Days</span></p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Streak
+                </p>
+                <p className="text-sm font-bold text-foreground">
+                  {currentUserEntry.reading_streak}{' '}
+                  <span className="text-xs font-normal text-muted-foreground">Days</span>
+                </p>
               </div>
             </div>
 
@@ -401,10 +426,18 @@ export function LeaderboardPage() {
                 <Table className="min-w-full">
                   <TableHeader className="bg-secondary/20">
                     <TableRow>
-                      <TableHead className="w-20 whitespace-nowrap px-3.5 py-2.5">{t('leaderboard.table.rank')}</TableHead>
-                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('leaderboard.table.reader')}</TableHead>
-                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('leaderboard.table.score')}</TableHead>
-                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('leaderboard.table.badges')}</TableHead>
+                      <TableHead className="w-20 whitespace-nowrap px-3.5 py-2.5">
+                        {t('leaderboard.table.rank')}
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                        {t('leaderboard.table.reader')}
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                        {t('leaderboard.table.score')}
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                        {t('leaderboard.table.badges')}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -414,7 +447,8 @@ export function LeaderboardPage() {
                         id={`rank-row-${entry.rank}`}
                         className={cn(
                           'transition-all hover:bg-secondary/40',
-                          entry.is_current_user && 'bg-primary/10 border-l-4 border-l-primary font-semibold',
+                          entry.is_current_user &&
+                            'bg-primary/10 border-l-4 border-l-primary font-semibold',
                         )}
                       >
                         <TableCell className="whitespace-nowrap px-3.5 py-2.5">
@@ -432,7 +466,9 @@ export function LeaderboardPage() {
                               name={entry.full_name}
                               size="sm"
                             />
-                            <span className="font-semibold text-foreground text-xs sm:text-sm">{entry.full_name}</span>
+                            <span className="font-semibold text-foreground text-xs sm:text-sm">
+                              {entry.full_name}
+                            </span>
                             {entry.is_current_user && (
                               <Badge variant="outline" className="ml-1 text-[11px] py-0">
                                 {t('common.you')}

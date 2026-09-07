@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -7,11 +9,7 @@ import { NoResults } from '@/components/feedback';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { usePagination } from '@/hooks';
 import { getErrorMessage } from '@/lib/api';
-import {
-  useAuth,
-  type MemberRecord,
-  type PermissionRequestRecord,
-} from '@/providers/AuthProvider';
+import { useAuth, type MemberRecord, type PermissionRequestRecord } from '@/providers/AuthProvider';
 
 export interface AccessControlProps {
   members: MemberRecord[];
@@ -28,7 +26,9 @@ export function AccessControl({ members, permissionRequests, onChanged }: Access
 
   const filteredMembers = useMemo(() => {
     const items = [...members].filter((member) => {
-      const statusMatches = statusFilter === 'all' || (statusFilter === 'active' ? member.is_active : !member.is_active);
+      const statusMatches =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' ? member.is_active : !member.is_active);
       const roleMatches = roleFilter === 'all' || member.role.name === roleFilter;
       return statusMatches && roleMatches;
     });
@@ -37,14 +37,19 @@ export function AccessControl({ members, permissionRequests, onChanged }: Access
       case 'name-desc':
         return items.sort((a, b) => b.full_name.localeCompare(a.full_name));
       case 'created':
-        return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return items.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
       case 'name':
       default:
         return items.sort((a, b) => a.full_name.localeCompare(b.full_name));
     }
   }, [members, roleFilter, sortValue, statusFilter]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredMembers, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
+    filteredMembers,
+    5,
+  );
 
   async function handleGrant(requestId: string, name: string) {
     try {
@@ -158,7 +163,9 @@ export function AccessControl({ members, permissionRequests, onChanged }: Access
                       <p className="font-medium text-foreground">{member.full_name}</p>
                       <Badge variant="outline">{t(`auth.login.roles.${member.role.name}`)}</Badge>
                       <Badge variant={member.is_active ? 'success' : 'danger'}>
-                        {t(`itHead.accessControl.status.${member.is_active ? 'active' : 'deactivated'}`)}
+                        {t(
+                          `itHead.accessControl.status.${member.is_active ? 'active' : 'deactivated'}`,
+                        )}
                       </Badge>
                     </div>
                     <p className="text-muted-foreground">{member.email}</p>
@@ -173,7 +180,10 @@ export function AccessControl({ members, permissionRequests, onChanged }: Access
                   <div className="flex gap-2">
                     {pendingRequest && (
                       <>
-                        <Button size="sm" onClick={() => handleGrant(pendingRequest.id, member.full_name)}>
+                        <Button
+                          size="sm"
+                          onClick={() => handleGrant(pendingRequest.id, member.full_name)}
+                        >
                           {t('itHead.accessControl.grantAccess')}
                         </Button>
                         <Button
@@ -186,7 +196,9 @@ export function AccessControl({ members, permissionRequests, onChanged }: Access
                       </>
                     )}
                     <Button size="sm" variant="outline" onClick={() => handleToggleActive(member)}>
-                      {member.is_active ? t('itHead.accessControl.deactivate') : t('itHead.accessControl.reactivate')}
+                      {member.is_active
+                        ? t('itHead.accessControl.deactivate')
+                        : t('itHead.accessControl.reactivate')}
                     </Button>
                   </div>
                 </div>

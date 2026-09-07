@@ -1,3 +1,5 @@
+'use client';
+
 import { ChevronDown, Loader2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +24,10 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
   const current = LANGUAGES.find((option) => option.code === language);
 
   return (
-    <div ref={rootRef} className={cn('relative inline-flex items-center gap-1.5 text-xs', className)}>
+    <div
+      ref={rootRef}
+      className={cn('relative inline-flex items-center gap-1.5 text-xs', className)}
+    >
       {isTranslating && <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />}
       <button
         type="button"

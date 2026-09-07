@@ -1,6 +1,9 @@
 import { useEffect, type RefObject } from 'react';
 
-export function useClickOutside(ref: RefObject<HTMLElement | null>, onOutsideClick: () => void): void {
+export function useClickOutside(
+  ref: RefObject<HTMLElement | null>,
+  onOutsideClick: () => void,
+): void {
   useEffect(() => {
     function handlePointerDown(event: MouseEvent | TouchEvent) {
       const node = ref.current;

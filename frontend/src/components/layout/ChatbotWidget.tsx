@@ -1,3 +1,5 @@
+'use client';
+
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Bot, RotateCcw, Send, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -39,10 +41,13 @@ export function ChatbotWidget() {
   useEffect(() => {
     if (!open) return;
 
-    const focusTimer = window.setTimeout(() => {
-      if (isAuthenticated) inputRef.current?.focus();
-      else panelRef.current?.querySelector<HTMLElement>('button')?.focus();
-    }, prefersReducedMotion ? 0 : 200);
+    const focusTimer = window.setTimeout(
+      () => {
+        if (isAuthenticated) inputRef.current?.focus();
+        else panelRef.current?.querySelector<HTMLElement>('button')?.focus();
+      },
+      prefersReducedMotion ? 0 : 200,
+    );
 
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key !== 'Escape') return;
@@ -129,14 +134,22 @@ export function ChatbotWidget() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.18 }}
-                    className={cn('flex items-end gap-2', msg.from === 'user' && 'flex-row-reverse')}
+                    className={cn(
+                      'flex items-end gap-2',
+                      msg.from === 'user' && 'flex-row-reverse',
+                    )}
                   >
                     {msg.from === 'bot' && (
                       <span className="mb-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                         <Bot className="size-3.5" />
                       </span>
                     )}
-                    <div className={cn('flex max-w-[78%] flex-col gap-1', msg.from === 'user' && 'items-end')}>
+                    <div
+                      className={cn(
+                        'flex max-w-[78%] flex-col gap-1',
+                        msg.from === 'user' && 'items-end',
+                      )}
+                    >
                       <div
                         className={cn(
                           'rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm',
@@ -149,12 +162,31 @@ export function ChatbotWidget() {
                           <ReactMarkdown
                             components={{
                               p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
-                              ul: ({ children }) => <ul className="ml-4 list-disc space-y-0.5">{children}</ul>,
-                              ol: ({ children }) => <ol className="ml-4 list-decimal space-y-0.5">{children}</ol>,
+                              ul: ({ children }) => (
+                                <ul className="ml-4 list-disc space-y-0.5">{children}</ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="ml-4 list-decimal space-y-0.5">{children}</ol>
+                              ),
                               li: ({ children }) => <li className="leading-snug">{children}</li>,
-                              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                              code: ({ children }) => <code className="rounded bg-black/10 px-1 font-mono text-xs">{children}</code>,
-                              a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer" className="underline text-primary hover:opacity-80">{children}</a>,
+                              strong: ({ children }) => (
+                                <strong className="font-semibold">{children}</strong>
+                              ),
+                              code: ({ children }) => (
+                                <code className="rounded bg-black/10 px-1 font-mono text-xs">
+                                  {children}
+                                </code>
+                              ),
+                              a: ({ href, children }) => (
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="underline text-primary hover:opacity-80"
+                                >
+                                  {children}
+                                </a>
+                              ),
                             }}
                           >
                             {msg.text}
@@ -163,7 +195,6 @@ export function ChatbotWidget() {
                           msg.text
                         )}
                       </div>
-
                     </div>
                   </motion.div>
                 ))}
@@ -256,7 +287,9 @@ export function ChatbotWidget() {
 
       {/* FAB */}
       <div className="pointer-events-auto relative">
-        {!open && <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-20" />}
+        {!open && (
+          <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-20" />
+        )}
         <Button
           id="chatbot-launcher"
           ref={launcherRef}

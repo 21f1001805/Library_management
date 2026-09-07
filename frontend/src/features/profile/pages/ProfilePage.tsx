@@ -1,3 +1,5 @@
+'use client';
+
 import {
   AlertCircle,
   Armchair,
@@ -106,7 +108,9 @@ function AdminProfile() {
   const [entries, setEntries] = useState<AuditLogEntry[]>([]);
 
   useEffect(() => {
-    getAuditLog().then(setEntries).catch(() => setEntries([]));
+    getAuditLog()
+      .then(setEntries)
+      .catch(() => setEntries([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -151,8 +155,12 @@ function GuardianProfile() {
   const [childrenVisitStatus, setChildrenVisitStatus] = useState<ChildVisitStatus[]>([]);
 
   useEffect(() => {
-    getGuardianChildren().then(setRealChildren).catch(() => setRealChildren([]));
-    getChildrenVisitStatus().then(setChildrenVisitStatus).catch(() => setChildrenVisitStatus([]));
+    getGuardianChildren()
+      .then(setRealChildren)
+      .catch(() => setRealChildren([]));
+    getChildrenVisitStatus()
+      .then(setChildrenVisitStatus)
+      .catch(() => setChildrenVisitStatus([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -194,9 +202,12 @@ function GuardianProfile() {
           childId: child.id,
           title: child.fine_book_title,
           author: 'Library Collection',
-          dueDate: child.fine_due_date ? new Date(child.fine_due_date).toLocaleDateString() : 'Overdue',
+          dueDate: child.fine_due_date
+            ? new Date(child.fine_due_date).toLocaleDateString()
+            : 'Overdue',
           status: 'overdue',
-          fineAccrued: child.outstanding_fine > 0 ? formatCurrency(child.outstanding_fine) : undefined,
+          fineAccrued:
+            child.outstanding_fine > 0 ? formatCurrency(child.outstanding_fine) : undefined,
         });
       }
     });
@@ -245,7 +256,9 @@ function ManagerProfile() {
   const [isIssueBookOpen, setIsIssueBookOpen] = useState(false);
 
   function refreshStats() {
-    getManagerDashboard().then(setStats).catch(() => setStats(null));
+    getManagerDashboard()
+      .then(setStats)
+      .catch(() => setStats(null));
   }
 
   useEffect(() => {
@@ -410,8 +423,12 @@ function MemberProfile() {
   const [readingProfileError, setReadingProfileError] = useState(false);
 
   useEffect(() => {
-    getMyReadingProgress().then(setProgress).catch(() => setProgress([]));
-    getMyLoans().then(setLoans).catch(() => setLoans([]));
+    getMyReadingProgress()
+      .then(setProgress)
+      .catch(() => setProgress([]));
+    getMyLoans()
+      .then(setLoans)
+      .catch(() => setLoans([]));
     getLeaderboard()
       .then((entries) => {
         const me = entries.find((e) => e.is_current_user || e.member_id === userId);
@@ -469,7 +486,11 @@ function MemberProfile() {
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-        <StatisticCard icon={BookOpen} label={t('profile.stats.booksRead')} value={String(booksReadCount)} />
+        <StatisticCard
+          icon={BookOpen}
+          label={t('profile.stats.booksRead')}
+          value={String(booksReadCount)}
+        />
         <StatisticCard
           icon={Trophy}
           label="Leaderboard Score"
@@ -549,7 +570,8 @@ function MemberProfile() {
           </div>
           {myLeaderboardEntry && (
             <Badge variant="outline" className="gap-1 font-semibold text-primary">
-              <Trophy className="size-3.5" /> Score: {myLeaderboardEntry.score.toLocaleString()} pts (Rank #{myLeaderboardEntry.rank})
+              <Trophy className="size-3.5" /> Score: {myLeaderboardEntry.score.toLocaleString()} pts
+              (Rank #{myLeaderboardEntry.rank})
             </Badge>
           )}
         </CardHeader>
@@ -564,13 +586,13 @@ function MemberProfile() {
                     'flex items-start gap-3 rounded-xl border p-3.5 transition-all',
                     unlocked
                       ? 'border-emerald-500/40 bg-emerald-500/5 shadow-xs'
-                      : 'border-dashed border-border bg-card'
+                      : 'border-dashed border-border bg-card',
                   )}
                 >
                   <div
                     className={cn(
                       'flex size-10 shrink-0 items-center justify-center rounded-lg text-lg',
-                      unlocked ? 'bg-emerald-500/10' : 'bg-muted'
+                      unlocked ? 'bg-emerald-500/10' : 'bg-muted',
                     )}
                   >
                     {ach.icon}
@@ -590,9 +612,7 @@ function MemberProfile() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {t(ach.descKey)}
-                    </p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{t(ach.descKey)}</p>
                   </div>
                 </div>
               );
@@ -658,8 +678,8 @@ function MemberProfile() {
                         loan.status === 'returned'
                           ? 'success'
                           : loan.status === 'overdue'
-                          ? 'danger'
-                          : 'outline'
+                            ? 'danger'
+                            : 'outline'
                       }
                     >
                       {loan.status}

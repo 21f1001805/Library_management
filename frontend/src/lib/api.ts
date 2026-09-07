@@ -1,5 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
-const API_PREFIX = import.meta.env.VITE_API_PREFIX ?? '/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const API_PREFIX = process.env.NEXT_PUBLIC_API_PREFIX ?? '/api/v1';
 
 export function apiUrl(path: string): string {
   return `${API_URL}${API_PREFIX}${path}`;
@@ -55,6 +55,12 @@ async function apiRequest<T>(
   const response = await fetch(`${API_URL}${API_PREFIX}${path}`, {
     method,
     headers,
+    // Sends/receives the httpOnly access_token/refresh_token cookies the backend sets on
+    // login/refresh — required for this cross-origin request (Next.js on :3000, backend on
+    // :8002) to carry them. The bearer `token` argument above still works as a
+    // fallback/override (Authorization takes priority server-side), so nothing else in this
+    // file or its ~110 call sites in AuthProvider needs to change.
+    credentials: 'include',
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 

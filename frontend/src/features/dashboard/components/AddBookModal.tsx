@@ -1,3 +1,5 @@
+'use client';
+
 import { Camera, Check, CircleAlert, ClipboardPaste, Sparkles, Wand2, X } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -204,12 +206,17 @@ export function AddBookModal({
     }
   }
 
-  const canSuggest = draft.title.trim().length > 0 && draft.author.trim().length > 0 && !isSuggesting;
+  const canSuggest =
+    draft.title.trim().length > 0 && draft.author.trim().length > 0 && !isSuggesting;
   const canSubmit =
     draft.title.trim().length > 0 && draft.author.trim().length > 0 && draft.category.length > 0;
 
   return (
-    <Modal open={open} onClose={onClose} title={title ?? t('managerDashboard.books.addModal.title')}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title ?? t('managerDashboard.books.addModal.title')}
+    >
       <form onSubmit={handleSubmit} onPaste={handlePaste} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2 rounded-lg border border-dashed border-border p-3">
           <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">

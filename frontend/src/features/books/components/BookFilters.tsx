@@ -1,3 +1,5 @@
+'use client';
+
 import { useTranslation } from 'react-i18next';
 
 import { SearchBar, Select } from '@/components/ui';
@@ -65,7 +67,9 @@ export function BookFilters({
         options={bookCategories.map((value) => ({
           value,
           label:
-            value === 'All' ? t('books.filters.allCategories') : t(`books.categories.${CATEGORY_KEYS[value]}`, value),
+            value === 'All'
+              ? t('books.filters.allCategories')
+              : t(`books.categories.${CATEGORY_KEYS[value]}`, value),
         }))}
       />
       <Select

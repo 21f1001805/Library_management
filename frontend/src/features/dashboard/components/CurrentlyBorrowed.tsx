@@ -1,3 +1,5 @@
+'use client';
+
 import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent, CardHeader, CardTitle, EmptyState } from '@/components/ui';

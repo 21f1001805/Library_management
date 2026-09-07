@@ -1,3 +1,5 @@
+'use client';
+
 import { SearchX } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -120,11 +122,21 @@ export function AdminPaymentsPage() {
             <Table className="min-w-full">
               <TableHeader className="bg-secondary/20">
                 <TableRow>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.payments.table.member')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.payments.table.amount')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.payments.table.label')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.payments.table.status')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5 text-right">{t('admin.payments.table.date')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">
+                    {t('admin.payments.table.member')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">
+                    {t('admin.payments.table.amount')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">
+                    {t('admin.payments.table.label')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">
+                    {t('admin.payments.table.status')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5 text-right">
+                    {t('admin.payments.table.date')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -134,7 +146,9 @@ export function AdminPaymentsPage() {
                       <div className="flex items-center gap-2.5">
                         <Avatar name={payment.member_name} size="sm" />
                         <div>
-                          <p className="font-semibold text-foreground text-xs sm:text-sm">{payment.member_name}</p>
+                          <p className="font-semibold text-foreground text-xs sm:text-sm">
+                            {payment.member_name}
+                          </p>
                           <p className="text-xs text-muted-foreground">{payment.member_email}</p>
                         </div>
                       </div>

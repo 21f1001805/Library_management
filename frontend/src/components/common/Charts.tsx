@@ -142,7 +142,13 @@ const AXIS_LABEL_GAP = 8;
 // `x` per label is supplied by the caller — line charts position labels flush with the
 // plot edges (xFor), bar charts center them under their own band (bandXFor); baking
 // either choice in here would misalign the other chart type's labels under its marks.
-function XAxisLabels({ data, xForIndex }: { data: { label: string }[]; xForIndex: (i: number) => number }) {
+function XAxisLabels({
+  data,
+  xForIndex,
+}: {
+  data: { label: string }[];
+  xForIndex: (i: number) => number;
+}) {
   // A label per point is too dense once there are many points (e.g. 12 hourly slots) —
   // or even at a modest point count if the labels themselves are wide (e.g. 6 "Mon
   // YYYY" labels). Either way they visually merge, so the stride accounts for both:
@@ -304,7 +310,15 @@ export function TrendLineChart({
           filter={compact ? undefined : `url(#${glowId})`}
         />
         {coords.map((c, i) => (
-          <circle key={i} cx={c.x} cy={c.y} r={compact ? 2.5 : 3.25} fill={color} stroke="var(--color-surface)" strokeWidth={compact ? 1.25 : 1.5} />
+          <circle
+            key={i}
+            cx={c.x}
+            cy={c.y}
+            r={compact ? 2.5 : 3.25}
+            fill={color}
+            stroke="var(--color-surface)"
+            strokeWidth={compact ? 1.25 : 1.5}
+          />
         ))}
         {/* Endpoint label only */}
         <text
@@ -376,7 +390,10 @@ export function MultiLineTrendChart({
 
   const seriesCoords = series.map((s) => ({
     series: s,
-    coords: data.map((d, i) => ({ x: xFor(i, data.length), y: yFor(d.values[s.key] ?? 0, axisMax) })),
+    coords: data.map((d, i) => ({
+      x: xFor(i, data.length),
+      y: yFor(d.values[s.key] ?? 0, axisMax),
+    })),
   }));
 
   const legend = (
@@ -393,7 +410,12 @@ export function MultiLineTrendChart({
   return (
     <div className={cn('flex flex-col gap-2', className)}>
       {legendPosition === 'top' && legend}
-      <svg viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`} className="aspect-320/168 w-full" role="img" aria-label={ariaLabel}>
+      <svg
+        viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+        className="aspect-320/168 w-full"
+        role="img"
+        aria-label={ariaLabel}
+      >
         <defs>
           <GlowFilter id={glowId} />
         </defs>
@@ -411,7 +433,14 @@ export function MultiLineTrendChart({
             />
             {coords.map((c, i) => (
               <g key={i}>
-                <circle cx={c.x} cy={c.y} r={3.5} fill={s.color} stroke="var(--color-surface)" strokeWidth={1.75} />
+                <circle
+                  cx={c.x}
+                  cy={c.y}
+                  r={3.5}
+                  fill={s.color}
+                  stroke="var(--color-surface)"
+                  strokeWidth={1.75}
+                />
                 {showPointLabels && (
                   <text
                     x={c.x}
@@ -510,7 +539,12 @@ export function MultiBarChart({
   return (
     <div className={cn('flex flex-col gap-2', className)}>
       {legendPosition === 'top' && legend}
-      <svg viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`} className="aspect-320/168 w-full" role="img" aria-label={ariaLabel}>
+      <svg
+        viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+        className="aspect-320/168 w-full"
+        role="img"
+        aria-label={ariaLabel}
+      >
         <defs>
           <GlowFilter id={glowId} />
         </defs>
@@ -523,7 +557,9 @@ export function MultiBarChart({
             // Bottom-up: series[0] sits on the axis, later series stack above it — only
             // the topmost non-zero segment gets a rounded cap, everything below stays a
             // plain rect so the stack reads as one continuous bar, not stacked pills.
-            const nonZeroKeys = series.filter((s) => (point.values[s.key] ?? 0) > 0).map((s) => s.key);
+            const nonZeroKeys = series
+              .filter((s) => (point.values[s.key] ?? 0) > 0)
+              .map((s) => s.key);
             const topKey = nonZeroKeys.at(-1);
             let cumulative = 0;
             const total = totals[groupIndex];
@@ -545,7 +581,14 @@ export function MultiBarChart({
                       filter={`url(#${glowId})`}
                     />
                   ) : (
-                    <rect key={s.key} x={groupX} y={segmentTop} width={barWidth} height={height} fill={s.color} />
+                    <rect
+                      key={s.key}
+                      x={groupX}
+                      y={segmentTop}
+                      width={barWidth}
+                      height={height}
+                      fill={s.color}
+                    />
                   );
                 })}
                 {groupIndex === lastGroupIndex && total > 0 && (
@@ -763,7 +806,12 @@ export function ComboBarLineChart({
   return (
     <div className={cn('flex flex-col gap-2', className)}>
       {legendPosition === 'top' && legend}
-      <svg viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`} className="aspect-320/168 w-full" role="img" aria-label={ariaLabel}>
+      <svg
+        viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+        className="aspect-320/168 w-full"
+        role="img"
+        aria-label={ariaLabel}
+      >
         <defs>
           <GlowFilter id={glowId} />
         </defs>
@@ -803,7 +851,15 @@ export function ComboBarLineChart({
               filter={`url(#${glowId})`}
             />
             {coords.map((c, i) => (
-              <circle key={i} cx={c.x} cy={c.y} r={3.5} fill={s.color} stroke="var(--color-surface)" strokeWidth={1.75} />
+              <circle
+                key={i}
+                cx={c.x}
+                cy={c.y}
+                r={3.5}
+                fill={s.color}
+                stroke="var(--color-surface)"
+                strokeWidth={1.75}
+              />
             ))}
           </g>
         ))}
@@ -859,7 +915,14 @@ export function MultiSegmentDonut({
         aria-label={`${centerLabel}: ${centerValue}. ${segments.map((s) => `${s.label} ${s.value}`).join(', ')}`}
       >
         <svg className="size-full -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r={DONUT_RADIUS} stroke="var(--color-secondary)" strokeWidth="12" fill="transparent" />
+          <circle
+            cx="50"
+            cy="50"
+            r={DONUT_RADIUS}
+            stroke="var(--color-secondary)"
+            strokeWidth="12"
+            fill="transparent"
+          />
           {total > 0 &&
             segments
               .filter((s) => s.value > 0)
@@ -892,7 +955,10 @@ export function MultiSegmentDonut({
           {segments.map((segment) => (
             <li key={segment.key} className="flex items-center justify-between gap-2 text-xs">
               <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: segment.color }} />
+                <span
+                  className="size-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: segment.color }}
+                />
                 {segment.label}
               </span>
               <span className="font-medium text-foreground">{valueFormatter(segment.value)}</span>
@@ -1004,4 +1070,3 @@ export function MultiSegmentPie({
     </div>
   );
 }
-

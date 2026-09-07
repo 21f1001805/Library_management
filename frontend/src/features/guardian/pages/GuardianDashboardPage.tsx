@@ -1,7 +1,9 @@
+'use client';
+
 import { BookOpen, HandCoins, MessageSquare, RefreshCw, Star } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { toast } from 'sonner';
 
 import { PageHeader, QuickActionsCard, StatisticCard } from '@/components/common';
@@ -54,7 +56,7 @@ function ChildrenReadingProgress({ realChildren }: { realChildren: GuardianChild
           ))
         )}
         <Link
-          to={ROUTES.READING_PROGRESS}
+          href={ROUTES.READING_PROGRESS}
           className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
         >
           <BookOpen className="size-4" />
@@ -67,7 +69,8 @@ function ChildrenReadingProgress({ realChildren }: { realChildren: GuardianChild
 
 export function GuardianDashboardPage() {
   const { t } = useTranslation();
-  const { getGuardianChildren, getChildrenVisitStatus, payChildFines, renewChildSubscription } = useAuth();
+  const { getGuardianChildren, getChildrenVisitStatus, payChildFines, renewChildSubscription } =
+    useAuth();
   const [realChildren, setRealChildren] = useState<GuardianChild[]>([]);
   const [childrenVisitStatus, setChildrenVisitStatus] = useState<ChildVisitStatus[]>([]);
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
@@ -76,8 +79,12 @@ export function GuardianDashboardPage() {
   const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
 
   function refreshChildren() {
-    getGuardianChildren().then(setRealChildren).catch(() => setRealChildren([]));
-    getChildrenVisitStatus().then(setChildrenVisitStatus).catch(() => setChildrenVisitStatus([]));
+    getGuardianChildren()
+      .then(setRealChildren)
+      .catch(() => setRealChildren([]));
+    getChildrenVisitStatus()
+      .then(setChildrenVisitStatus)
+      .catch(() => setChildrenVisitStatus([]));
   }
 
   useEffect(refreshChildren, [getGuardianChildren, getChildrenVisitStatus]);
@@ -138,8 +145,8 @@ export function GuardianDashboardPage() {
                 stat.labelKey === 'guardian.stats.linkedChildren'
                   ? String(realChildren.length)
                   : stat.labelKey === 'guardian.stats.currentlyInLibrary'
-                  ? String(currentlyInLibraryCount)
-                  : stat.value
+                    ? String(currentlyInLibraryCount)
+                    : stat.value
               }
               onClick={() => setActiveStat(statKey)}
               selected={activeStat === statKey}
@@ -160,7 +167,10 @@ export function GuardianDashboardPage() {
 
       <ChildrenReadingProgress realChildren={realChildren} />
 
-      <LibraryReviewCard onOpenModal={() => setIsReviewModalOpen(true)} refreshKey={reviewRefreshKey} />
+      <LibraryReviewCard
+        onOpenModal={() => setIsReviewModalOpen(true)}
+        refreshKey={reviewRefreshKey}
+      />
 
       <QuickActionsCard
         actions={[

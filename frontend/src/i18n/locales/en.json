@@ -1515,13 +1515,7 @@
       "badge": "Community Reading Club & Library Platform",
       "title": "Your library, your community, all in one place.",
       "titlePrefix": "Build Better ",
-      "titleWords": [
-        "Libraries",
-        "Communities",
-        "Learning",
-        "Reading Habits",
-        "Connections"
-      ],
+      "titleWords": ["Libraries", "Communities", "Learning", "Reading Habits", "Connections"],
       "subtitle": "Borrow books, reserve a study seat, join a reading club, and get personalized recommendations, without the paper registers and group chats.",
       "ctaJoin": "Join the Community",
       "ctaBrowse": "Browse Books",

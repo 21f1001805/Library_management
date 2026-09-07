@@ -1,3 +1,5 @@
+'use client';
+
 import { Download } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';

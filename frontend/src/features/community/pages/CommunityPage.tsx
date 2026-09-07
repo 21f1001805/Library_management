@@ -1,3 +1,5 @@
+'use client';
+
 import { Flag, MessageCircle, Plus, UserX, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -162,7 +164,11 @@ export function CommunityPage() {
   );
 
   async function handleSubmitPost(draft: PostDraft) {
-    const payload = { book_title: draft.bookTitle || null, content: draft.content, images: draft.images };
+    const payload = {
+      book_title: draft.bookTitle || null,
+      content: draft.content,
+      images: draft.images,
+    };
     try {
       if (editingPost) {
         const updated = await updateCommunityPost(editingPost.id, payload);

@@ -1,9 +1,19 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Pagination, TableToolbar } from '@/components/common';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+} from '@/components/ui';
 import { usePagination } from '@/hooks';
 import { getErrorMessage } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/format';
@@ -25,7 +35,10 @@ export function ActiveLoans({ loans, onReturn, onRemind }: ActiveLoansProps) {
     const items = [...loans].filter((loan) => {
       if (statusFilter === 'all') return true;
       if (statusFilter === 'due-today') {
-        return loan.status === 'active' && new Date(loan.due_date).toDateString() === new Date().toDateString();
+        return (
+          loan.status === 'active' &&
+          new Date(loan.due_date).toDateString() === new Date().toDateString()
+        );
       }
       if (statusFilter === 'overdue') return loan.status === 'overdue';
       if (statusFilter === 'active') return loan.status === 'active';
@@ -39,7 +52,9 @@ export function ActiveLoans({ loans, onReturn, onRemind }: ActiveLoansProps) {
         return items.sort((a, b) => a.book_title.localeCompare(b.book_title));
       case 'due-date':
       default:
-        return items.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+        return items.sort(
+          (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+        );
     }
   }, [loans, statusFilter, sortValue]);
 
@@ -132,7 +147,9 @@ export function ActiveLoans({ loans, onReturn, onRemind }: ActiveLoansProps) {
                       {t('managerDashboard.activeLoans.borrowedBy', { name: loan.member_name })}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {t('managerDashboard.activeLoans.dueDate', { date: formatDate(loan.due_date) })}
+                      {t('managerDashboard.activeLoans.dueDate', {
+                        date: formatDate(loan.due_date),
+                      })}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -154,7 +171,11 @@ export function ActiveLoans({ loans, onReturn, onRemind }: ActiveLoansProps) {
                     >
                       {t('managerDashboard.activeLoans.sendReminder')}
                     </Button>
-                    <Button size="sm" isLoading={busyId === loan.id} onClick={() => handleReturn(loan)}>
+                    <Button
+                      size="sm"
+                      isLoading={busyId === loan.id}
+                      onClick={() => handleReturn(loan)}
+                    >
                       {t('managerDashboard.activeLoans.markReturned')}
                     </Button>
                   </div>

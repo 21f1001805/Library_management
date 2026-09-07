@@ -32,7 +32,15 @@ function tokens(opener: string): Record<string, string> {
   const found = Object.fromEntries(
     [...body.matchAll(/--color-([\w-]+):\s*(#[0-9a-f]{6})/gi)].map(([, k, v]) => [k, v]),
   );
-  for (const name of ['background', 'surface', 'foreground', 'muted', 'muted-foreground', 'secondary', 'primary']) {
+  for (const name of [
+    'background',
+    'surface',
+    'foreground',
+    'muted',
+    'muted-foreground',
+    'secondary',
+    'primary',
+  ]) {
     if (!found[name]) throw new Error(`"${opener}" block is missing --color-${name}`);
   }
   return found;

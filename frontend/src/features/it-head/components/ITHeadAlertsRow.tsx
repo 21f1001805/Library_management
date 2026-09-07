@@ -1,3 +1,5 @@
+'use client';
+
 import { AlertTriangle, CheckCircle2, Info, ShieldAlert, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -17,7 +19,9 @@ export function ITHeadAlertsRow({ alerts }: { alerts: ITHeadAlert[] }) {
 
   return (
     <div>
-      <h2 className="mb-3 text-lg font-semibold text-foreground">{t('itHead.systemAlerts.title')}</h2>
+      <h2 className="mb-3 text-lg font-semibold text-foreground">
+        {t('itHead.systemAlerts.title')}
+      </h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {alerts.map((alert) => {
           const { icon: Icon, classes } = SEVERITY[alert.severity];

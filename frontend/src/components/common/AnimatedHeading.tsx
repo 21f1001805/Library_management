@@ -49,7 +49,11 @@ export function AnimatedHeading({
 
   return (
     <FadeUp delay={delay}>
-      <As id={id} aria-label={ariaLabel} className={cn(sizeClasses[size], colorClasses[color], className)}>
+      <As
+        id={id}
+        aria-label={ariaLabel}
+        className={cn(sizeClasses[size], colorClasses[color], className)}
+      >
         {children}
         {highlight && (
           <>

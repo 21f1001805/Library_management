@@ -19,11 +19,7 @@ export function GuardianProgressArt({ className }: GuardianProgressArtProps) {
         {/* Head */}
         <circle cx="72" cy="48" r="16" fill="var(--color-primary)" opacity="0.9" />
         {/* Body/Shoulders */}
-        <path
-          d="M48 88 C48 70, 96 70, 96 88 Z"
-          fill="var(--color-primary)"
-          opacity="0.85"
-        />
+        <path d="M48 88 C48 70, 96 70, 96 88 Z" fill="var(--color-primary)" opacity="0.85" />
       </g>
 
       {/* Child Avatar (Right) */}
@@ -31,11 +27,7 @@ export function GuardianProgressArt({ className }: GuardianProgressArtProps) {
         {/* Head */}
         <circle cx="128" cy="54" r="13" fill="var(--color-info)" opacity="0.9" />
         {/* Body/Shoulders */}
-        <path
-          d="M108 88 C108 72, 148 72, 148 88 Z"
-          fill="var(--color-info)"
-          opacity="0.85"
-        />
+        <path d="M108 88 C108 72, 148 72, 148 88 Z" fill="var(--color-info)" opacity="0.85" />
       </g>
 
       {/* Open Book in Front */}
@@ -63,13 +55,67 @@ export function GuardianProgressArt({ className }: GuardianProgressArtProps) {
         {/* Book Spine Center */}
         <line x1="60" y1="2" x2="60" y2="22" stroke="var(--color-primary)" strokeWidth="2.5" />
         {/* Page text lines (Left) */}
-        <line x1="14" y1="9" x2="48" y2="6" stroke="var(--color-muted-foreground)" strokeWidth="1.75" strokeLinecap="round" opacity="0.6" />
-        <line x1="14" y1="14" x2="44" y2="12" stroke="var(--color-muted-foreground)" strokeWidth="1.75" strokeLinecap="round" opacity="0.6" />
-        <line x1="14" y1="19" x2="50" y2="17" stroke="var(--color-muted-foreground)" strokeWidth="1.75" strokeLinecap="round" opacity="0.6" />
+        <line
+          x1="14"
+          y1="9"
+          x2="48"
+          y2="6"
+          stroke="var(--color-muted-foreground)"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          opacity="0.6"
+        />
+        <line
+          x1="14"
+          y1="14"
+          x2="44"
+          y2="12"
+          stroke="var(--color-muted-foreground)"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          opacity="0.6"
+        />
+        <line
+          x1="14"
+          y1="19"
+          x2="50"
+          y2="17"
+          stroke="var(--color-muted-foreground)"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          opacity="0.6"
+        />
         {/* Page text lines (Right) */}
-        <line x1="72" y1="6" x2="106" y2="9" stroke="var(--color-muted-foreground)" strokeWidth="1.75" strokeLinecap="round" opacity="0.6" />
-        <line x1="76" y1="12" x2="106" y2="14" stroke="var(--color-muted-foreground)" strokeWidth="1.75" strokeLinecap="round" opacity="0.6" />
-        <line x1="70" y1="17" x2="106" y2="19" stroke="var(--color-muted-foreground)" strokeWidth="1.75" strokeLinecap="round" opacity="0.6" />
+        <line
+          x1="72"
+          y1="6"
+          x2="106"
+          y2="9"
+          stroke="var(--color-muted-foreground)"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          opacity="0.6"
+        />
+        <line
+          x1="76"
+          y1="12"
+          x2="106"
+          y2="14"
+          stroke="var(--color-muted-foreground)"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          opacity="0.6"
+        />
+        <line
+          x1="70"
+          y1="17"
+          x2="106"
+          y2="19"
+          stroke="var(--color-muted-foreground)"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          opacity="0.6"
+        />
       </g>
 
       {/* Floating Milestone Stars & Achievement Badge */}

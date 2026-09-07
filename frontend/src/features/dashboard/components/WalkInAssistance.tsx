@@ -1,7 +1,17 @@
+'use client';
+
 import { useTranslation } from 'react-i18next';
 
 import { Pagination } from '@/components/common';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+} from '@/components/ui';
 import { usePagination } from '@/hooks';
 import { comingSoonToast } from '@/lib/comingSoonToast';
 import type { WalkInRequest } from '@/mocks/manager';
@@ -20,7 +30,10 @@ export function WalkInAssistance({ requests, onBookSeat, onIssueBook }: WalkInAs
     (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
   );
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(sortedRequests, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
+    sortedRequests,
+    5,
+  );
 
   function handleAction(request: WalkInRequest) {
     const toastKey = request.type === 'seat' ? 'bookSeatToast' : 'issueBookToast';
@@ -63,7 +76,9 @@ export function WalkInAssistance({ requests, onBookSeat, onIssueBook }: WalkInAs
                   <div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">
-                        {t(`managerDashboard.walkIns.${request.type === 'seat' ? 'seatBadge' : 'bookBadge'}`)}
+                        {t(
+                          `managerDashboard.walkIns.${request.type === 'seat' ? 'seatBadge' : 'bookBadge'}`,
+                        )}
                       </Badge>
                       <p className="text-sm font-medium text-foreground">{request.memberName}</p>
                     </div>
@@ -74,7 +89,9 @@ export function WalkInAssistance({ requests, onBookSeat, onIssueBook }: WalkInAs
                     </p>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => handleAction(request)}>
-                    {t(`managerDashboard.walkIns.${request.type === 'seat' ? 'bookSeat' : 'issueBook'}`)}
+                    {t(
+                      `managerDashboard.walkIns.${request.type === 'seat' ? 'bookSeat' : 'issueBook'}`,
+                    )}
                   </Button>
                 </li>
               ))}

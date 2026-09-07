@@ -1,3 +1,5 @@
+'use client';
+
 import {
   ArrowRight,
   BarChart3,
@@ -24,13 +26,55 @@ type ReportKey =
   | 'bookProcurement'
   | 'accessControl';
 
-const REPORTS: { key: ReportKey; icon: LucideIcon; tone: IconBadgeTone; lastGenerated: string; frequency: string }[] = [
-  { key: 'expenseBreakdown', icon: PieChart, tone: 'primary-tint', lastGenerated: 'May 16, 2026', frequency: 'Monthly' },
-  { key: 'membershipGrowth', icon: Users, tone: 'info', lastGenerated: 'May 16, 2026', frequency: 'Monthly' },
-  { key: 'profitAndLoss', icon: BarChart3, tone: 'warning', lastGenerated: 'May 16, 2026', frequency: 'Monthly' },
-  { key: 'revenueByPlan', icon: TrendingUp, tone: 'success', lastGenerated: 'May 16, 2026', frequency: 'Monthly' },
-  { key: 'bookProcurement', icon: BookMarked, tone: 'primary-tint', lastGenerated: 'May 16, 2026', frequency: 'Monthly' },
-  { key: 'accessControl', icon: ShieldCheck, tone: 'info', lastGenerated: 'May 16, 2026', frequency: 'Weekly' },
+const REPORTS: {
+  key: ReportKey;
+  icon: LucideIcon;
+  tone: IconBadgeTone;
+  lastGenerated: string;
+  frequency: string;
+}[] = [
+  {
+    key: 'expenseBreakdown',
+    icon: PieChart,
+    tone: 'primary-tint',
+    lastGenerated: 'May 16, 2026',
+    frequency: 'Monthly',
+  },
+  {
+    key: 'membershipGrowth',
+    icon: Users,
+    tone: 'info',
+    lastGenerated: 'May 16, 2026',
+    frequency: 'Monthly',
+  },
+  {
+    key: 'profitAndLoss',
+    icon: BarChart3,
+    tone: 'warning',
+    lastGenerated: 'May 16, 2026',
+    frequency: 'Monthly',
+  },
+  {
+    key: 'revenueByPlan',
+    icon: TrendingUp,
+    tone: 'success',
+    lastGenerated: 'May 16, 2026',
+    frequency: 'Monthly',
+  },
+  {
+    key: 'bookProcurement',
+    icon: BookMarked,
+    tone: 'primary-tint',
+    lastGenerated: 'May 16, 2026',
+    frequency: 'Monthly',
+  },
+  {
+    key: 'accessControl',
+    icon: ShieldCheck,
+    tone: 'info',
+    lastGenerated: 'May 16, 2026',
+    frequency: 'Weekly',
+  },
 ];
 
 export function ITHeadReportsList() {
@@ -54,7 +98,9 @@ export function ITHeadReportsList() {
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
         <div>
           <CardTitle>{t('itHead.reportsPage.reportsList.title')}</CardTitle>
-          <p className="text-sm text-muted-foreground">{t('itHead.reportsPage.reportsList.subtitle')}</p>
+          <p className="text-sm text-muted-foreground">
+            {t('itHead.reportsPage.reportsList.subtitle')}
+          </p>
         </div>
         <TableToolbar
           variant="icon-only"
@@ -75,7 +121,10 @@ export function ITHeadReportsList() {
       <CardContent className="flex flex-col gap-3">
         <ul className="flex flex-col gap-2.5">
           {paginatedItems.map((report) => (
-            <li key={report.key} className="flex items-center gap-3 rounded-lg border border-border p-3">
+            <li
+              key={report.key}
+              className="flex items-center gap-3 rounded-lg border border-border p-3"
+            >
               <IconBadge icon={report.icon} tone={report.tone} shape="square" size={11} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">
@@ -96,7 +145,9 @@ export function ITHeadReportsList() {
                 variant="ghost"
                 className="shrink-0 text-primary hover:text-primary"
                 trailingIcon={<ArrowRight className="size-3.5" />}
-                onClick={() => comingSoonToast(t(`itHead.reportsPage.reportsList.items.${report.key}.name`))}
+                onClick={() =>
+                  comingSoonToast(t(`itHead.reportsPage.reportsList.items.${report.key}.name`))
+                }
               >
                 {t('common.actions.viewReport')}
               </Button>

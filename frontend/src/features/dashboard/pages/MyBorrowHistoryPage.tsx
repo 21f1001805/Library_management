@@ -1,3 +1,5 @@
+'use client';
+
 import { History } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -173,21 +175,37 @@ export function MyBorrowHistoryPage() {
                 <Table className="min-w-full">
                   <TableHeader className="bg-secondary/20">
                     <TableRow>
-                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('myLoans.table.book')}</TableHead>
-                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('myLoans.table.borrowed')}</TableHead>
-                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('myLoans.table.due')}</TableHead>
-                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('myLoans.table.returned')}</TableHead>
-                      <TableHead className="whitespace-nowrap px-3.5 py-2.5 text-right">{t('myLoans.table.status')}</TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                        {t('myLoans.table.book')}
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                        {t('myLoans.table.borrowed')}
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                        {t('myLoans.table.due')}
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                        {t('myLoans.table.returned')}
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap px-3.5 py-2.5 text-right">
+                        {t('myLoans.table.status')}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedItems.map((loan) => (
                       <TableRow key={loan.id} className="transition-colors hover:bg-secondary/40">
                         <TableCell className="px-3.5 py-2.5">
-                          <p className="font-semibold text-foreground text-xs sm:text-sm">{loan.book_title}</p>
+                          <p className="font-semibold text-foreground text-xs sm:text-sm">
+                            {loan.book_title}
+                          </p>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">{formatDate(loan.borrowed_at)}</TableCell>
-                        <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">{formatDate(loan.due_date)}</TableCell>
+                        <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">
+                          {formatDate(loan.borrowed_at)}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">
+                          {formatDate(loan.due_date)}
+                        </TableCell>
                         <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">
                           {formatDate(loan.returned_at) ?? t('myLoans.notReturned')}
                         </TableCell>

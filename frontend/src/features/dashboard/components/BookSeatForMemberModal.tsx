@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -31,7 +33,11 @@ function formatHourLabel(hour: number): string {
   return `${displayHour}:00 ${period}`;
 }
 
-const dayFormatter = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+const dayFormatter = new Intl.DateTimeFormat(undefined, {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+});
 
 export interface BookSeatForMemberModalProps {
   open: boolean;
@@ -193,7 +199,10 @@ export function BookSeatForMemberModal({ open, onClose, onBooked }: BookSeatForM
 
         <div className="flex min-h-64 flex-col gap-3 rounded-lg border border-border bg-surface p-4">
           {isLoadingSeats ? (
-            <div className="flex flex-1 items-center justify-center" aria-label="Loading seat availability">
+            <div
+              className="flex flex-1 items-center justify-center"
+              aria-label="Loading seat availability"
+            >
               <Loader />
             </div>
           ) : scheduleError ? (
@@ -204,33 +213,37 @@ export function BookSeatForMemberModal({ open, onClose, onBooked }: BookSeatForM
               onRetry={() => setRetryKey((key) => key + 1)}
             />
           ) : (
-          <>
-          {SEAT_ROWS.map((row) => (
-            <div key={row} className="flex items-center gap-3">
-              <span className="w-6 text-sm font-semibold text-muted-foreground">{row}</span>
-              <div className="grid flex-1 grid-cols-4 gap-2 sm:grid-cols-8">
-                {SEAT_LABELS.filter((label) => label.startsWith(row)).map((label) => {
-                  const seat = seats?.find((s) => s.seat_label === label);
-                  const visualStatus = !seat
-                    ? 'occupied'
-                    : seat.status === 'available'
-                      ? 'available'
-                      : 'reserved';
-                  return (
-                    <SeatCard
-                      key={label}
-                      label={label}
-                      status={visualStatus}
-                      avatarUrl={seat?.booked_by_avatar_url}
-                      selected={selectedSeatLabel === label}
-                      onSelect={visualStatus === 'available' ? () => setSelectedSeatLabel(label) : undefined}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-          </>
+            <>
+              {SEAT_ROWS.map((row) => (
+                <div key={row} className="flex items-center gap-3">
+                  <span className="w-6 text-sm font-semibold text-muted-foreground">{row}</span>
+                  <div className="grid flex-1 grid-cols-4 gap-2 sm:grid-cols-8">
+                    {SEAT_LABELS.filter((label) => label.startsWith(row)).map((label) => {
+                      const seat = seats?.find((s) => s.seat_label === label);
+                      const visualStatus = !seat
+                        ? 'occupied'
+                        : seat.status === 'available'
+                          ? 'available'
+                          : 'reserved';
+                      return (
+                        <SeatCard
+                          key={label}
+                          label={label}
+                          status={visualStatus}
+                          avatarUrl={seat?.booked_by_avatar_url}
+                          selected={selectedSeatLabel === label}
+                          onSelect={
+                            visualStatus === 'available'
+                              ? () => setSelectedSeatLabel(label)
+                              : undefined
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </>
           )}
         </div>
 

@@ -1,9 +1,18 @@
+'use client';
+
 import { CheckCircle2, Clock, HandCoins, XCircle, type LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { IconBadge, Pagination, TableToolbar } from '@/components/common';
-import { Badge, Card, CardContent, CardHeader, CardTitle, type BadgeVariant } from '@/components/ui';
+import {
+  Badge,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  type BadgeVariant,
+} from '@/components/ui';
 import { usePagination } from '@/hooks';
 import { formatCurrency } from '@/lib/format';
 
@@ -22,18 +31,102 @@ interface FinancialActivityEntry {
 // (admin's /admin/audit-log is admin-only). Swap for a real fetch once IT Head gets read
 // access to that data.
 const ENTRIES: FinancialActivityEntry[] = [
-  { id: '1', status: 'approved', description: 'Approved ₹1,119 expense for Book Procurement', actor: 'Rohan Rao (Admin)', timeAgo: '12 hours ago', amount: 1119 },
-  { id: '2', status: 'waived', description: 'Waived a ₹100 fee for Aarav Sharma', actor: 'Rohan Rao (Admin)', timeAgo: '22 hours ago', amount: 100 },
-  { id: '3', status: 'approved', description: 'Approved ₹295 expense for Marketing', actor: 'Rohan Rao (Admin)', timeAgo: 'Yesterday', amount: 295 },
-  { id: '4', status: 'approved', description: 'Approved ₹492 expense for Utilities & Maintenance', actor: 'Rohan Rao (Admin)', timeAgo: '2 days ago', amount: 492 },
-  { id: '5', status: 'rejected', description: 'Rejected a ₹150 refund request from Dev Tiwari', actor: 'Rohan Rao (Admin)', timeAgo: '2 days ago', amount: 150 },
-  { id: '6', status: 'approved', description: 'Approved ₹2,350 expense for System Upgrade', actor: 'Rohan Rao (Admin)', timeAgo: '3 days ago', amount: 2350 },
-  { id: '7', status: 'pending', description: 'Pending approval for ₹680 expense for Stationery', actor: 'Rohan Rao (Admin)', timeAgo: '3 days ago', amount: 680 },
-  { id: '8', status: 'approved', description: 'Approved ₹1,860 expense for Book Procurement', actor: 'Rohan Rao (Admin)', timeAgo: '4 days ago', amount: 1860 },
-  { id: '9', status: 'waived', description: 'Waived a ₹250 late fee for Priya Nair', actor: 'Rohan Rao (Admin)', timeAgo: '5 days ago', amount: 250 },
-  { id: '10', status: 'approved', description: 'Approved ₹3,120 expense for Technology Upgrade', actor: 'Rohan Rao (Admin)', timeAgo: '6 days ago', amount: 3120 },
-  { id: '11', status: 'rejected', description: 'Rejected a ₹400 reimbursement request from Karan Mehta', actor: 'Rohan Rao (Admin)', timeAgo: '1 week ago', amount: 400 },
-  { id: '12', status: 'approved', description: 'Approved ₹610 expense for Marketing', actor: 'Rohan Rao (Admin)', timeAgo: '1 week ago', amount: 610 },
+  {
+    id: '1',
+    status: 'approved',
+    description: 'Approved ₹1,119 expense for Book Procurement',
+    actor: 'Rohan Rao (Admin)',
+    timeAgo: '12 hours ago',
+    amount: 1119,
+  },
+  {
+    id: '2',
+    status: 'waived',
+    description: 'Waived a ₹100 fee for Aarav Sharma',
+    actor: 'Rohan Rao (Admin)',
+    timeAgo: '22 hours ago',
+    amount: 100,
+  },
+  {
+    id: '3',
+    status: 'approved',
+    description: 'Approved ₹295 expense for Marketing',
+    actor: 'Rohan Rao (Admin)',
+    timeAgo: 'Yesterday',
+    amount: 295,
+  },
+  {
+    id: '4',
+    status: 'approved',
+    description: 'Approved ₹492 expense for Utilities & Maintenance',
+    actor: 'Rohan Rao (Admin)',
+    timeAgo: '2 days ago',
+    amount: 492,
+  },
+  {
+    id: '5',
+    status: 'rejected',
+    description: 'Rejected a ₹150 refund request from Dev Tiwari',
+    actor: 'Rohan Rao (Admin)',
+    timeAgo: '2 days ago',
+    amount: 150,
+  },
+  {
+    id: '6',
+    status: 'approved',
+    description: 'Approved ₹2,350 expense for System Upgrade',
+    actor: 'Rohan Rao (Admin)',
+    timeAgo: '3 days ago',
+    amount: 2350,
+  },
+  {
+    id: '7',
+    status: 'pending',
+    description: 'Pending approval for ₹680 expense for Stationery',
+    actor: 'Rohan Rao (Admin)',
+    timeAgo: '3 days ago',
+    amount: 680,
+  },
+  {
+    id: '8',
+    status: 'approved',
+    description: 'Approved ₹1,860 expense for Book Procurement',
+    actor: 'Rohan Rao (Admin)',
+    timeAgo: '4 days ago',
+    amount: 1860,
+  },
+  {
+    id: '9',
+    status: 'waived',
+    description: 'Waived a ₹250 late fee for Priya Nair',
+    actor: 'Rohan Rao (Admin)',
+    timeAgo: '5 days ago',
+    amount: 250,
+  },
+  {
+    id: '10',
+    status: 'approved',
+    description: 'Approved ₹3,120 expense for Technology Upgrade',
+    actor: 'Rohan Rao (Admin)',
+    timeAgo: '6 days ago',
+    amount: 3120,
+  },
+  {
+    id: '11',
+    status: 'rejected',
+    description: 'Rejected a ₹400 reimbursement request from Karan Mehta',
+    actor: 'Rohan Rao (Admin)',
+    timeAgo: '1 week ago',
+    amount: 400,
+  },
+  {
+    id: '12',
+    status: 'approved',
+    description: 'Approved ₹610 expense for Marketing',
+    actor: 'Rohan Rao (Admin)',
+    timeAgo: '1 week ago',
+    amount: 610,
+  },
 ];
 
 const STATUS_ICON: Record<ActivityStatus, LucideIcon> = {
@@ -79,7 +172,10 @@ export function FinancialActivityLog() {
     return sort === 'oldest' ? [...items].reverse() : items;
   }, [filter, sort]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredEntries, 4);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
+    filteredEntries,
+    4,
+  );
 
   return (
     <Card>
@@ -102,10 +198,22 @@ export function FinancialActivityLog() {
               },
               options: [
                 { value: 'all', label: t('itHead.reportsPage.financialActivityLog.status.all') },
-                { value: 'approved', label: t('itHead.reportsPage.financialActivityLog.status.approved') },
-                { value: 'waived', label: t('itHead.reportsPage.financialActivityLog.status.waived') },
-                { value: 'pending', label: t('itHead.reportsPage.financialActivityLog.status.pending') },
-                { value: 'rejected', label: t('itHead.reportsPage.financialActivityLog.status.rejected') },
+                {
+                  value: 'approved',
+                  label: t('itHead.reportsPage.financialActivityLog.status.approved'),
+                },
+                {
+                  value: 'waived',
+                  label: t('itHead.reportsPage.financialActivityLog.status.waived'),
+                },
+                {
+                  value: 'pending',
+                  label: t('itHead.reportsPage.financialActivityLog.status.pending'),
+                },
+                {
+                  value: 'rejected',
+                  label: t('itHead.reportsPage.financialActivityLog.status.rejected'),
+                },
               ],
             },
           ]}
@@ -117,8 +225,14 @@ export function FinancialActivityLog() {
               setPage(1);
             },
             options: [
-              { value: 'newest', label: t('itHead.reportsPage.financialActivityLog.sort.newestFirst') },
-              { value: 'oldest', label: t('itHead.reportsPage.financialActivityLog.sort.oldestFirst') },
+              {
+                value: 'newest',
+                label: t('itHead.reportsPage.financialActivityLog.sort.newestFirst'),
+              },
+              {
+                value: 'oldest',
+                label: t('itHead.reportsPage.financialActivityLog.sort.oldestFirst'),
+              },
             ],
           }}
           onReset={() => {
@@ -130,7 +244,6 @@ export function FinancialActivityLog() {
         />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-
         <ul className="flex flex-col gap-2.5">
           {paginatedItems.map((entry) => (
             <ActivityRow key={entry.id} entry={entry} />

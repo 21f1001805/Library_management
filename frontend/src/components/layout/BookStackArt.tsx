@@ -19,16 +19,48 @@ export function BookStackArt({ className }: BookStackArtProps) {
       {/* Books, bottom of the stack upward. The inset light rect on each is its page block. */}
       <g>
         <rect x="12" y="103" width="116" height="17" rx="4" fill="var(--color-info)" />
-        <rect x="110" y="107" width="14" height="9" rx="2" fill="var(--color-surface)" opacity="0.6" />
+        <rect
+          x="110"
+          y="107"
+          width="14"
+          height="9"
+          rx="2"
+          fill="var(--color-surface)"
+          opacity="0.6"
+        />
 
         <rect x="20" y="85" width="104" height="17" rx="4" fill="var(--color-success)" />
-        <rect x="106" y="89" width="14" height="9" rx="2" fill="var(--color-surface)" opacity="0.6" />
+        <rect
+          x="106"
+          y="89"
+          width="14"
+          height="9"
+          rx="2"
+          fill="var(--color-surface)"
+          opacity="0.6"
+        />
 
         <rect x="14" y="67" width="112" height="17" rx="4" fill="var(--color-warning)" />
-        <rect x="108" y="71" width="14" height="9" rx="2" fill="var(--color-surface)" opacity="0.6" />
+        <rect
+          x="108"
+          y="71"
+          width="14"
+          height="9"
+          rx="2"
+          fill="var(--color-surface)"
+          opacity="0.6"
+        />
 
         <rect x="24" y="49" width="94" height="17" rx="4" fill="var(--color-danger)" />
-        <rect x="100" y="53" width="14" height="9" rx="2" fill="var(--color-surface)" opacity="0.6" />
+        <rect
+          x="100"
+          y="53"
+          width="14"
+          height="9"
+          rx="2"
+          fill="var(--color-surface)"
+          opacity="0.6"
+        />
       </g>
 
       {/* Potted plant */}

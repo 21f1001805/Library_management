@@ -1,3 +1,5 @@
+'use client';
+
 import { BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -53,7 +55,13 @@ function BookBarList({ books, caption }: { books: MostBorrowedBook[]; caption: s
   );
 }
 
-function MostBorrowedModalContent({ books, caption }: { books: MostBorrowedBook[]; caption: string }) {
+function MostBorrowedModalContent({
+  books,
+  caption,
+}: {
+  books: MostBorrowedBook[];
+  caption: string;
+}) {
   const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(books, 5);
 
   return (
@@ -109,7 +117,12 @@ export function MostBorrowedBooks({ books }: { books: MostBorrowedBooksByPeriod 
           <>
             <BookBarList books={preview} caption={caption} />
             {selected.length > PREVIEW_COUNT && (
-              <Button variant="ghost" size="sm" className="self-start px-0" onClick={() => setShowAll(true)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="self-start px-0"
+                onClick={() => setShowAll(true)}
+              >
                 {t('managerDashboard.mostBorrowedBooks.seeMore')}
               </Button>
             )}

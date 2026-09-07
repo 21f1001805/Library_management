@@ -5,12 +5,7 @@ import { cn } from '@/lib/cn';
 export type IconBadgeShape = 'circle' | 'square';
 export type IconBadgeSize = 7 | 8 | 9 | 10 | 11 | 12;
 export type IconBadgeTone =
-  | 'primary-tint'
-  | 'primary-solid'
-  | 'success'
-  | 'warning'
-  | 'danger'
-  | 'info';
+  'primary-tint' | 'primary-solid' | 'success' | 'warning' | 'danger' | 'info';
 
 const shapeClasses: Record<IconBadgeShape, string> = {
   circle: 'rounded-full',

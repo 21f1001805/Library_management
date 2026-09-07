@@ -1,7 +1,9 @@
+'use client';
+
 import { SearchX, Ticket } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { PageHeader, Pagination, TableToolbar } from '@/components/common';
@@ -18,7 +20,7 @@ import { useReservationsStream } from '../hooks/useReservationsStream';
 
 export function ReservationsPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { cancelReservation } = useAuth();
   // Shared cache with the dashboard's reservations stat, kept live by the stream below:
   // a manager's approve/reject now lands here without a reload.
@@ -31,7 +33,9 @@ export function ReservationsPage() {
   useReservationsStream();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'cancelled'>('all');
+  const [statusFilter, setStatusFilter] = useState<
+    'all' | 'pending' | 'approved' | 'rejected' | 'cancelled'
+  >('all');
   const [sort, setSort] = useState<'newest' | 'oldest' | 'titleAsc' | 'titleDesc'>('newest');
 
   const cancellingReservation = reservations.find((entry) => entry.id === cancellingId);
@@ -63,14 +67,19 @@ export function ReservationsPage() {
     },
   });
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(sortedReservations, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
+    sortedReservations,
+    5,
+  );
 
   async function confirmCancel() {
     if (!cancellingReservation) return;
     try {
       await cancelReservation(cancellingReservation.id);
       void loadReservations();
-      toast.success(t('reservations.cancelSuccessToast', { book: cancellingReservation.book_title }));
+      toast.success(
+        t('reservations.cancelSuccessToast', { book: cancellingReservation.book_title }),
+      );
     } catch (error) {
       toast.error(getErrorMessage(error, t('common.errors.generic')));
     } finally {
@@ -87,7 +96,10 @@ export function ReservationsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t('reservations.pageTitle')} description={t('reservations.pageDescription')} />
+      <PageHeader
+        title={t('reservations.pageTitle')}
+        description={t('reservations.pageDescription')}
+      />
 
       {/* Styled Filter & Search Toolbar Container matching Admin Members page */}
       <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
@@ -157,7 +169,7 @@ export function ReservationsPage() {
             title={t('reservations.current.emptyTitle')}
             description={t('reservations.current.emptyDescription')}
             action={
-              <Button size="sm" onClick={() => navigate(ROUTES.BOOKS)}>
+              <Button size="sm" onClick={() => router.push(ROUTES.BOOKS)}>
                 {t('reservations.current.browseBooks')}
               </Button>
             }

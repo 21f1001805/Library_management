@@ -23,10 +23,10 @@ describe('toChartPoints', () => {
 
   it('buckets 30 days into weekly totals', () => {
     const thirtyDays = daily(
-      Array.from({ length: 30 }, (_, i) => [
-        `2026-08-${String((i % 28) + 1).padStart(2, '0')}`,
-        1,
-      ] as [string, number]),
+      Array.from(
+        { length: 30 },
+        (_, i) => [`2026-08-${String((i % 28) + 1).padStart(2, '0')}`, 1] as [string, number],
+      ),
     );
     const points = toChartPoints(thirtyDays, '30d');
     // 30 days / 7-day chunks = 5 buckets (4 full weeks + a 2-day remainder).

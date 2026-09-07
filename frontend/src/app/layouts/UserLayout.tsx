@@ -1,4 +1,7 @@
-import { useLocation } from 'react-router-dom';
+'use client';
+
+import { usePathname } from 'next/navigation';
+import type { ReactNode } from 'react';
 
 import { CompleteProfileModal } from '@/components/CompleteProfileModal';
 
@@ -35,9 +38,9 @@ const dedicatedNavigationByRole: Partial<Record<Role, NavItem[]>> = {
   'it-head': itHeadNavigation,
 };
 
-export function UserLayout() {
+export function UserLayout({ children }: { children: ReactNode }) {
   const { role } = useAuth();
-  const { pathname } = useLocation();
+  const pathname = usePathname();
   const dedicatedNav = role ? dedicatedNavigationByRole[role] : undefined;
   const overviewNavItem = role ? overviewNavItemByRole[role] : undefined;
 
@@ -50,7 +53,7 @@ export function UserLayout() {
     return (
       <>
         <CompleteProfileModal />
-        <AppShellLayout items={dedicatedNav} />
+        <AppShellLayout items={dedicatedNav}>{children}</AppShellLayout>
       </>
     );
   }
@@ -60,7 +63,7 @@ export function UserLayout() {
   return (
     <>
       <CompleteProfileModal />
-      <AppShellLayout items={items} />
+      <AppShellLayout items={items}>{children}</AppShellLayout>
     </>
   );
 }

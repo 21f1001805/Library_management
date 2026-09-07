@@ -1,5 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
-
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { useLocalStorageState } from '@/lib/useLocalStorageState';
@@ -17,6 +15,9 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function resolveIsDark(theme: Theme): boolean {
   if (theme === 'system') {
+    // No window during Next's server render pass — fall back to light; the effect below
+    // (client-only) immediately re-resolves against the real media query after hydration.
+    if (typeof window === 'undefined') return false;
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
   return theme === 'dark';

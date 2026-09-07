@@ -1,3 +1,5 @@
+'use client';
+
 import { Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

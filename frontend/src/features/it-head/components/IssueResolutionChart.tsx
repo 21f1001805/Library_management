@@ -1,3 +1,5 @@
+'use client';
+
 import { AlertCircle, CheckCircle2, HelpCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -52,9 +54,7 @@ export function IssueResolutionChart({ months }: { months: IssueResolutionMonth[
                 <p className="text-xs font-medium text-muted-foreground">
                   {t('itHead.issueResolutionOverview.other')}
                 </p>
-                <p className="text-base font-bold text-foreground tracking-tight">
-                  {latest.other}
-                </p>
+                <p className="text-base font-bold text-foreground tracking-tight">{latest.other}</p>
               </div>
             </div>
           </div>

@@ -6,7 +6,9 @@ import { Switch } from './Switch';
 describe('Switch', () => {
   it('has an accessible name and reports the requested checked state', () => {
     const onCheckedChange = vi.fn();
-    render(<Switch checked={false} label="Email notifications" onCheckedChange={onCheckedChange} />);
+    render(
+      <Switch checked={false} label="Email notifications" onCheckedChange={onCheckedChange} />,
+    );
 
     const control = screen.getByRole('switch', { name: 'Email notifications' });
     expect(control).toHaveAttribute('aria-checked', 'false');

@@ -1,3 +1,5 @@
+'use client';
+
 import { Bell, BellRing } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +17,11 @@ const SEAT_LABELS = SEAT_ROWS.flatMap((row) =>
   Array.from({ length: SEATS_PER_ROW }, (_, index) => `${row}${index + 1}`),
 );
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
-const dayFormatter = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+const dayFormatter = new Intl.DateTimeFormat(undefined, {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+});
 
 function toDateInputValue(date: Date): string {
   const year = date.getFullYear();
@@ -32,7 +38,8 @@ function formatHourLabel(hour: number): string {
 
 export function SeatReservationForChild({ children }: { children: GuardianChild[] }) {
   const { t } = useTranslation();
-  const { getSeatSchedule, bookSeatForChild, requestSeatNotifyForChild, cancelSeatBooking } = useAuth();
+  const { getSeatSchedule, bookSeatForChild, requestSeatNotifyForChild, cancelSeatBooking } =
+    useAuth();
   const [selectedChildId, setSelectedChildId] = useState<string>(children[0]?.id ?? '');
   const [selectedSeatLabel, setSelectedSeatLabel] = useState<string | null>(null);
   const [notifiedSeatLabels, setNotifiedSeatLabels] = useState<Set<string>>(new Set());
@@ -70,7 +77,6 @@ export function SeatReservationForChild({ children }: { children: GuardianChild[
       .then((schedule) => setSeats(schedule.seats))
       .catch(() => setSeats(null));
   }
-
 
   function openSlotModal(date: string) {
     setSlotModalDate(date);
@@ -182,7 +188,8 @@ export function SeatReservationForChild({ children }: { children: GuardianChild[
 
         <p className="text-sm text-muted-foreground">
           {t('seatBooking.selectedSlot', {
-            date: dateOptions.find((option) => option.value === selectedDate)?.label ?? selectedDate,
+            date:
+              dateOptions.find((option) => option.value === selectedDate)?.label ?? selectedDate,
             hour: formatHourLabel(effectiveHour),
           })}{' '}
           <button
@@ -199,19 +206,21 @@ export function SeatReservationForChild({ children }: { children: GuardianChild[
         <div className="flex flex-col gap-3">
           {SEAT_ROWS.map((row) => (
             <div key={row} className="flex items-center gap-2.5 sm:gap-4">
-              <span className="w-6 shrink-0 text-center font-bold text-foreground text-sm sm:text-base">{row}</span>
+              <span className="w-6 shrink-0 text-center font-bold text-foreground text-sm sm:text-base">
+                {row}
+              </span>
               <div className="grid flex-1 grid-cols-4 gap-2 sm:grid-cols-8">
                 {SEAT_LABELS.filter((label) => label.startsWith(row)).map((label) => {
                   const seat = seats?.find((s) => s.seat_label === label);
                   const visualStatus = !seat
                     ? 'available'
                     : seat.status === 'booked_for_child'
-                    ? 'booked_for_child'
-                    : seat.status === 'booked_by_me'
-                    ? 'mine'
-                    : seat.status === 'available'
-                    ? 'available'
-                    : 'reserved';
+                      ? 'booked_for_child'
+                      : seat.status === 'booked_by_me'
+                        ? 'mine'
+                        : seat.status === 'available'
+                          ? 'available'
+                          : 'reserved';
                   return (
                     <SeatCard
                       key={label}
@@ -230,7 +239,9 @@ export function SeatReservationForChild({ children }: { children: GuardianChild[
         </div>
 
         {!selectedSeat && (
-          <p className="text-sm text-muted-foreground">{t('guardian.seatReservation.selectPrompt')}</p>
+          <p className="text-sm text-muted-foreground">
+            {t('guardian.seatReservation.selectPrompt')}
+          </p>
         )}
 
         {selectedSeat && isAvailable && selectedChild && (
@@ -269,12 +280,19 @@ export function SeatReservationForChild({ children }: { children: GuardianChild[
               {t('guardian.seatReservation.notifySet')}
             </p>
           ) : (
-            <Button variant="outline" leadingIcon={<Bell className="size-4" />} onClick={requestNotify}>
+            <Button
+              variant="outline"
+              leadingIcon={<Bell className="size-4" />}
+              onClick={requestNotify}
+            >
               {t('guardian.seatReservation.notifyButton')}
             </Button>
           ))}
 
-        <Button disabled={!selectedSeatLabel || !selectedChild || !isAvailable} onClick={confirmBooking}>
+        <Button
+          disabled={!selectedSeatLabel || !selectedChild || !isAvailable}
+          onClick={confirmBooking}
+        >
           {t('guardian.seatReservation.confirmButton')}
         </Button>
 
@@ -284,7 +302,9 @@ export function SeatReservationForChild({ children }: { children: GuardianChild[
           title={
             slotModalDate
               ? t('seatBooking.pickTimeTitle', {
-                  date: dateOptions.find((option) => option.value === slotModalDate)?.label ?? slotModalDate,
+                  date:
+                    dateOptions.find((option) => option.value === slotModalDate)?.label ??
+                    slotModalDate,
                 })
               : undefined
           }

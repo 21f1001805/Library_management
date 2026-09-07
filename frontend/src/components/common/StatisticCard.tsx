@@ -1,3 +1,5 @@
+'use client';
+
 import { Minus, TrendingDown, TrendingUp, type LucideIcon } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';

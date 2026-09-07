@@ -1,7 +1,10 @@
+'use client';
+
 import { Banknote, CheckCircle2, ShieldCheck, XCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { AnimatedNumber, PageHeader } from '@/components/common';
@@ -14,8 +17,8 @@ import { useAuth, type CouponValidation, type PricingPlan } from '@/providers/Au
 // (see AppRouter.tsx) — no need to re-check isAuthenticated here.
 export function PaymentPage() {
   const { t } = useTranslation();
-  const [params] = useSearchParams();
-  const navigate = useNavigate();
+  const params = useSearchParams();
+  const router = useRouter();
   const {
     createPayment,
     payAtLibrary,
@@ -114,7 +117,7 @@ export function PaymentPage() {
         coupon_code: appliedCoupon?.code,
       });
       toast.success('Payment successful');
-      navigate(ROUTES.DASHBOARD);
+      router.push(ROUTES.DASHBOARD);
     } catch (err) {
       toast.error(getErrorMessage(err, 'Could not record payment'));
     }
@@ -122,9 +125,8 @@ export function PaymentPage() {
 
   function handleSimulateFailure() {
     const planOrAmountParam = planId ? `plan=${planId}` : `amount=${baseAmount}`;
-    navigate(
+    router.replace(
       `${ROUTES.PAYMENT}?${planOrAmountParam}&label=${encodeURIComponent(label)}&failed=1`,
-      { replace: true },
     );
   }
 
@@ -132,7 +134,7 @@ export function PaymentPage() {
     try {
       await payAtLibrary({ amount: baseAmount, label });
       toast.success(t('payment.payAtLibraryToast'));
-      navigate(ROUTES.DASHBOARD);
+      router.push(ROUTES.DASHBOARD);
     } catch (err) {
       toast.error(getErrorMessage(err, t('common.errors.generic')));
     }
@@ -202,7 +204,7 @@ export function PaymentPage() {
       {isRenewal && (
         <p className="text-center text-sm text-muted-foreground">
           {t('payment.renewingCurrentPlan')}{' '}
-          <Link to={ROUTES.PRICING} className="font-medium text-primary-gradient hover:underline">
+          <Link href={ROUTES.PRICING} className="font-medium text-primary-gradient hover:underline">
             {t('payment.changePlan')}
           </Link>
         </p>

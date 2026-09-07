@@ -1,3 +1,5 @@
+'use client';
+
 import { ArrowRight, BookOpen, Check, PartyPopper, Sparkles, Wand2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +22,8 @@ export interface FindMyNextBookModalProps {
   onClose: () => void;
 }
 
-type Phase = 'loading' | 'initial' | 'quiz' | 'submitting' | 'results' | 'load_error' | 'submit_error';
+type Phase =
+  'loading' | 'initial' | 'quiz' | 'submitting' | 'results' | 'load_error' | 'submit_error';
 type SubmitMode = 'quiz' | 'describe';
 
 const DESCRIBE_MAX_LENGTH = 500;
@@ -267,8 +270,8 @@ function QuizStep({ quiz, questionIndex, answers, onToggle, onBack, onNext }: Qu
   const selectedList: string[] = Array.isArray(rawSelected)
     ? rawSelected
     : typeof rawSelected === 'string'
-    ? [rawSelected]
-    : [];
+      ? [rawSelected]
+      : [];
 
   return (
     <>
@@ -399,7 +402,11 @@ function ResultsStep({ result, onClose }: ResultsStepProps) {
   if (result.items.length === 0) {
     return (
       <>
-        <EmptyState icon={BookOpen} title={t('books.quiz.notEnoughBooksTitle')} description={result.message} />
+        <EmptyState
+          icon={BookOpen}
+          title={t('books.quiz.notEnoughBooksTitle')}
+          description={result.message}
+        />
         <Button onClick={onClose}>{t('books.quiz.done')}</Button>
       </>
     );

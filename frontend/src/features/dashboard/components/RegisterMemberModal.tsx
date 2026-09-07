@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -16,7 +18,9 @@ const PHONE_PATTERN = /^[6-9]\d{9}$/;
 
 const registerMemberSchema = z.object({
   name: z.string().trim().min(1, { message: 'managerDashboard.registerMember.errors.name' }),
-  email: z.string().refine(isValidEmail, { message: 'managerDashboard.registerMember.errors.email' }),
+  email: z
+    .string()
+    .refine(isValidEmail, { message: 'managerDashboard.registerMember.errors.email' }),
   phoneNumber: z
     .string()
     .regex(PHONE_PATTERN, { message: 'managerDashboard.registerMember.errors.phoneNumber' }),

@@ -1,3 +1,5 @@
+'use client';
+
 import { Calendar, MapPin, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -50,10 +52,7 @@ export function EventCard({
           {registered ? (
             <Badge variant="success">{t('common.cards.event.registered')}</Badge>
           ) : status === 'ongoing' || status === 'upcoming' ? (
-            <Badge
-              variant="outline"
-              className="animate-pulse gap-1.5 border-success text-success"
-            >
+            <Badge variant="outline" className="animate-pulse gap-1.5 border-success text-success">
               <span className="flex size-1.5 animate-ping rounded-full bg-success" />
               {status === 'ongoing'
                 ? t('common.cards.event.ongoing')

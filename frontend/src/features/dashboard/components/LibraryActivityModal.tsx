@@ -1,3 +1,5 @@
+'use client';
+
 import { useTranslation } from 'react-i18next';
 
 import { MultiLineTrendChart } from '@/components/common';
@@ -18,11 +20,15 @@ export function LibraryActivityModal({ open, onClose, activity }: LibraryActivit
     <Modal
       open={open}
       onClose={onClose}
-      title={t('managerDashboard.libraryActivity.title', { defaultValue: 'Library Activity (Last 7 Days)' })}
+      title={t('managerDashboard.libraryActivity.title', {
+        defaultValue: 'Library Activity (Last 7 Days)',
+      })}
     >
       <div className="flex flex-col gap-4 py-2">
         <MultiLineTrendChart
-          ariaLabel={t('managerDashboard.libraryActivity.title', { defaultValue: 'Library Activity (Last 7 Days)' })}
+          ariaLabel={t('managerDashboard.libraryActivity.title', {
+            defaultValue: 'Library Activity (Last 7 Days)',
+          })}
           showPointLabels
           data={activity.map((day) => ({
             label: formatWeekday(day.date),
@@ -36,7 +42,9 @@ export function LibraryActivityModal({ open, onClose, activity }: LibraryActivit
             },
             {
               key: 'returned',
-              label: t('managerDashboard.libraryActivity.returned', { defaultValue: 'Books Returned' }),
+              label: t('managerDashboard.libraryActivity.returned', {
+                defaultValue: 'Books Returned',
+              }),
               color: 'var(--color-info)',
             },
           ]}

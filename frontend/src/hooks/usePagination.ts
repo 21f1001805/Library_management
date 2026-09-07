@@ -11,7 +11,11 @@ export interface UsePaginationResult<T> {
   resetPage: () => void;
 }
 
-export function usePagination<T>(items: T[], pageSize: number, initialPage = 1): UsePaginationResult<T> {
+export function usePagination<T>(
+  items: T[],
+  pageSize: number,
+  initialPage = 1,
+): UsePaginationResult<T> {
   const safePageSize = Math.max(1, pageSize);
   const [page, setPageState] = useState(initialPage);
 

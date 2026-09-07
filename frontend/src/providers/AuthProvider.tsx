@@ -1,10 +1,13 @@
-/* eslint-disable react-refresh/only-export-components */
-
 import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
 
 import type { Book } from '@/features/books/types';
 import * as reviewsApi from '@/features/reviews/api';
-import type { BookReviews, RatingBreakdownEntry, Review, ReviewPayload } from '@/features/reviews/types';
+import type {
+  BookReviews,
+  RatingBreakdownEntry,
+  Review,
+  ReviewPayload,
+} from '@/features/reviews/types';
 import {
   apiDelete,
   apiGet,
@@ -1038,13 +1041,22 @@ interface AuthState {
   /** True right after a first-time Google sign-in, until completeProfile() runs. */
   needsProfileCompletion: boolean;
   /**
-   * Set right after registerAccount() so PublicRoute's auth-state redirect (see Login.tsx's
-   * comment on that race) sends the new user to Payment instead of its usual role home.
+   * Set right after registerAccount() so RedirectIfAuthenticated's auth-state redirect (see
+   * Login.tsx's comment on that race) sends the new user to Payment instead of its usual
+   * role home.
    */
   postAuthRedirect: string | null;
 }
 
 interface AuthContextValue extends AuthState {
+  /**
+   * False for exactly one effect cycle after mount, while useLocalStorageState is still
+   * reading the real session from localStorage — isAuthenticated is only meaningful once
+   * this is true. AuthGuard's RequireAuth/RequireRole/RedirectIfAuthenticated must wait for
+   * it before redirecting, or every fresh page load races a bogus "signed out" redirect
+   * against this hook's own sync (see useLocalStorageState.ts's isHydrated comment).
+   */
+  isAuthReady: boolean;
   /** ponytail: dev-only role preview — logs into a seeded per-role dev account (see seed_dev_accounts.py), drop the buttons using this before production. */
   login: (role: Role) => Promise<void>;
   loginWithCredentials: (email: string, password: string) => Promise<void>;
@@ -1217,7 +1229,7 @@ const DEV_PREVIEW_EMAIL_DOMAIN = 'devpreview.internal';
 const DEV_PREVIEW_PASSWORD = 'DevPreview123!';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useLocalStorageState<AuthState>('mock-auth', SIGNED_OUT);
+  const [state, setState, isAuthReady] = useLocalStorageState<AuthState>('mock-auth', SIGNED_OUT);
 
   // Lets the ~110 action functions below read the current token without being in their
   // closure — so those functions can be created once (via useMemo, see the bottom of this
@@ -1227,7 +1239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // A real session always sets isAuthenticated and token together (see applySession) — the
   // only way to see one without the other is a session cached by the old role-preview login,
-  // which faked isAuthenticated/role locally with no real token. Clear it so ProtectedRoute
+  // which faked isAuthenticated/role locally with no real token. Clear it so RequireAuth
   // sends the tab back to Login instead of silently showing empty data everywhere.
   useEffect(() => {
     if (state.isAuthenticated && !state.token) setState(SIGNED_OUT);
@@ -1344,7 +1356,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function getChildPayments(childId: string): Promise<PaymentRecord[]> {
     if (!stateRef.current.token) return [];
-    return apiGet<PaymentRecord[]>(`/guardian/children/${childId}/payments`, stateRef.current.token);
+    return apiGet<PaymentRecord[]>(
+      `/guardian/children/${childId}/payments`,
+      stateRef.current.token,
+    );
   }
 
   async function payChildFines(childId: string): Promise<void> {
@@ -1447,17 +1462,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function toggleCommunityLike(postId: string): Promise<CommunityPost> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<CommunityPost>(`/community/posts/${postId}/like`, undefined, stateRef.current.token);
+    return apiPost<CommunityPost>(
+      `/community/posts/${postId}/like`,
+      undefined,
+      stateRef.current.token,
+    );
   }
 
   async function toggleCommunitySave(postId: string): Promise<CommunityPost> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<CommunityPost>(`/community/posts/${postId}/save`, undefined, stateRef.current.token);
+    return apiPost<CommunityPost>(
+      `/community/posts/${postId}/save`,
+      undefined,
+      stateRef.current.token,
+    );
   }
 
   async function reportCommunityPost(postId: string): Promise<CommunityPost> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<CommunityPost>(`/community/posts/${postId}/report`, undefined, stateRef.current.token);
+    return apiPost<CommunityPost>(
+      `/community/posts/${postId}/report`,
+      undefined,
+      stateRef.current.token,
+    );
   }
 
   async function addCommunityComment(
@@ -1465,7 +1492,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     payload: AddCommentPayload,
   ): Promise<CommunityPost> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<CommunityPost>(`/community/posts/${postId}/comments`, payload, stateRef.current.token);
+    return apiPost<CommunityPost>(
+      `/community/posts/${postId}/comments`,
+      payload,
+      stateRef.current.token,
+    );
   }
 
   async function deleteCommunityComment(commentId: string): Promise<void> {
@@ -1543,12 +1574,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function markNotificationRead(notificationId: string): Promise<AppNotificationRecord> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<AppNotificationRecord>(`/notifications/${notificationId}/read`, undefined, stateRef.current.token);
+    return apiPost<AppNotificationRecord>(
+      `/notifications/${notificationId}/read`,
+      undefined,
+      stateRef.current.token,
+    );
   }
 
   async function markAllNotificationsRead(): Promise<AppNotificationRecord[]> {
     if (!stateRef.current.token) return [];
-    return apiPost<AppNotificationRecord[]>('/notifications/read-all', undefined, stateRef.current.token);
+    return apiPost<AppNotificationRecord[]>(
+      '/notifications/read-all',
+      undefined,
+      stateRef.current.token,
+    );
   }
 
   async function getBookReviews(bookId: string): Promise<BookReviews> {
@@ -1602,12 +1641,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function getExpenseBreakdownReport(): Promise<ExpenseBreakdownReport> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiGet<ExpenseBreakdownReport>('/admin/reports/expense-breakdown', stateRef.current.token);
+    return apiGet<ExpenseBreakdownReport>(
+      '/admin/reports/expense-breakdown',
+      stateRef.current.token,
+    );
   }
 
   async function getMembershipGrowthReport(): Promise<MembershipGrowthReport> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiGet<MembershipGrowthReport>('/admin/reports/membership-growth', stateRef.current.token);
+    return apiGet<MembershipGrowthReport>(
+      '/admin/reports/membership-growth',
+      stateRef.current.token,
+    );
   }
 
   async function getAdminMembers(query: AdminMemberQuery = {}): Promise<AdminMemberListResponse> {
@@ -1624,7 +1669,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return apiGet<AdminMemberListResponse>(`/admin/members?${params}`, stateRef.current.token);
   }
 
-  async function getAdminPayments(query: AdminPaymentQuery = {}): Promise<AdminPaymentListResponse> {
+  async function getAdminPayments(
+    query: AdminPaymentQuery = {},
+  ): Promise<AdminPaymentListResponse> {
     if (!stateRef.current.token) return { items: [], total: 0, page: 1, page_size: 20 };
     const params = new URLSearchParams({
       page: String(query.page ?? 1),
@@ -1652,11 +1699,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     answers: RecommendationAnswers,
   ): Promise<RecommendationResult> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<RecommendationResult>(
-      '/recommendations/quiz',
-      answers,
-      stateRef.current.token,
-    );
+    return apiPost<RecommendationResult>('/recommendations/quiz', answers, stateRef.current.token);
   }
 
   async function describeRecommendation(description: string): Promise<RecommendationResult> {
@@ -1691,7 +1734,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     payload: ResolveTicketPayload,
   ): Promise<SupportTicketRecord> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<SupportTicketRecord>(`/support-tickets/${ticketId}/resolve`, payload, stateRef.current.token);
+    return apiPost<SupportTicketRecord>(
+      `/support-tickets/${ticketId}/resolve`,
+      payload,
+      stateRef.current.token,
+    );
   }
 
   async function confirmSupportTicket(ticketId: string): Promise<SupportTicketRecord> {
@@ -1720,7 +1767,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const params = new URLSearchParams({ search: query.trim(), page_size: '6' });
     if (options?.role) params.set('role', options.role);
     if (options?.activeOnly) params.set('active_only', 'true');
-    const data = await apiGet<{ items: MemberSummary[] }>(`/members?${params}`, stateRef.current.token);
+    const data = await apiGet<{ items: MemberSummary[] }>(
+      `/members?${params}`,
+      stateRef.current.token,
+    );
     return data.items;
   }
 
@@ -1741,10 +1791,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function getFootfallAnalytics(range: FootfallRange): Promise<FootfallAnalytics> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiGet<FootfallAnalytics>(
-      `/manager/footfall?range=${range}`,
-      stateRef.current.token,
-    );
+    return apiGet<FootfallAnalytics>(`/manager/footfall?range=${range}`, stateRef.current.token);
   }
 
   async function bookSeatForMember(payload: ManagerSeatBookingPayload): Promise<SeatBookingRecord> {
@@ -1803,7 +1850,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function getPendingReservations(): Promise<PendingReservationRequest[]> {
     if (!stateRef.current.token) return [];
-    return apiGet<PendingReservationRequest[]>('/manager/reservations/pending', stateRef.current.token);
+    return apiGet<PendingReservationRequest[]>(
+      '/manager/reservations/pending',
+      stateRef.current.token,
+    );
   }
 
   async function approveReservation(
@@ -1820,7 +1870,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function rejectReservation(id: string): Promise<Reservation> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<Reservation>(`/manager/reservations/${id}/reject`, undefined, stateRef.current.token);
+    return apiPost<Reservation>(
+      `/manager/reservations/${id}/reject`,
+      undefined,
+      stateRef.current.token,
+    );
   }
 
   async function getActiveLoans(): Promise<LoanRecord[]> {
@@ -1882,7 +1936,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function waiveFine(payload: WaiveFinePayload): Promise<BillingRequestRecord> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<BillingRequestRecord>('/billing-requests/waive-fine', payload, stateRef.current.token);
+    return apiPost<BillingRequestRecord>(
+      '/billing-requests/waive-fine',
+      payload,
+      stateRef.current.token,
+    );
   }
 
   // Public — the homepage's "What Our Members Say" reads this without needing a session.
@@ -1961,7 +2019,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function validateCoupon(code: string): Promise<CouponValidation> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiGet<CouponValidation>(`/coupons/${encodeURIComponent(code)}/validate`, stateRef.current.token);
+    return apiGet<CouponValidation>(
+      `/coupons/${encodeURIComponent(code)}/validate`,
+      stateRef.current.token,
+    );
   }
 
   async function getMembers(query: MemberListQuery = {}): Promise<MemberListResponse> {
@@ -1985,17 +2046,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     payload: PermissionRequestPayload,
   ): Promise<PermissionRequestRecord> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<PermissionRequestRecord>('/permission-requests', payload, stateRef.current.token);
+    return apiPost<PermissionRequestRecord>(
+      '/permission-requests',
+      payload,
+      stateRef.current.token,
+    );
   }
 
   async function grantPermissionRequest(id: string): Promise<PermissionRequestRecord> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<PermissionRequestRecord>(`/permission-requests/${id}/approve`, undefined, stateRef.current.token);
+    return apiPost<PermissionRequestRecord>(
+      `/permission-requests/${id}/approve`,
+      undefined,
+      stateRef.current.token,
+    );
   }
 
   async function denyPermissionRequest(id: string): Promise<PermissionRequestRecord> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<PermissionRequestRecord>(`/permission-requests/${id}/reject`, undefined, stateRef.current.token);
+    return apiPost<PermissionRequestRecord>(
+      `/permission-requests/${id}/reject`,
+      undefined,
+      stateRef.current.token,
+    );
   }
 
   async function createLoan(payload: LoanPayload): Promise<LoanRecord> {
@@ -2078,7 +2151,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await apiPost<TokenResponse>('/auth/refresh', {
         refresh_token: stateRef.current.refreshToken,
       });
-      applySession(data, stateRef.current.needsProfileCompletion, stateRef.current.postAuthRedirect);
+      applySession(
+        data,
+        stateRef.current.needsProfileCompletion,
+        stateRef.current.postAuthRedirect,
+      );
       return data.access_token;
     } catch {
       setState(SIGNED_OUT);
@@ -2088,12 +2165,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function checkInMember(memberId: string): Promise<LibraryVisitRecord> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<LibraryVisitRecord>('/visits/check-in', { member_id: memberId }, stateRef.current.token);
+    return apiPost<LibraryVisitRecord>(
+      '/visits/check-in',
+      { member_id: memberId },
+      stateRef.current.token,
+    );
   }
 
   async function checkOutMember(memberId: string): Promise<LibraryVisitRecord> {
     if (!stateRef.current.token) throw new Error('Not authenticated');
-    return apiPost<LibraryVisitRecord>('/visits/check-out', { member_id: memberId }, stateRef.current.token);
+    return apiPost<LibraryVisitRecord>(
+      '/visits/check-out',
+      { member_id: memberId },
+      stateRef.current.token,
+    );
   }
 
   async function getCurrentlyInLibrary(): Promise<LibraryVisitRecord[]> {
@@ -2292,7 +2377,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Only recomputes when auth state actually changes (login/logout/profile update/token
   // refresh) — not on every render of AuthProvider or its ancestors. This is the object every
   // useAuth() consumer subscribes to, so this is what stops the app-wide re-render fan-out.
-  const value = useMemo(() => ({ ...state, ...actions }), [state, actions]);
+  const value = useMemo(
+    () => ({ ...state, isAuthReady, ...actions }),
+    [state, isAuthReady, actions],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

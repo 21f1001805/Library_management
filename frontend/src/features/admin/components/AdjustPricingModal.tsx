@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -11,7 +13,13 @@ export interface AdjustPricingModalProps {
   onClose: () => void;
 }
 
-function PlanRow({ plan, onUpdated }: { plan: PricingPlan; onUpdated: (plan: PricingPlan) => void }) {
+function PlanRow({
+  plan,
+  onUpdated,
+}: {
+  plan: PricingPlan;
+  onUpdated: (plan: PricingPlan) => void;
+}) {
   const { t } = useTranslation();
   const { updatePricingPlan } = useAuth();
   const [price, setPrice] = useState(String(plan.price));
@@ -186,7 +194,12 @@ export function AdjustPricingModal({ open, onClose }: AdjustPricingModalProps) {
   }, [open]);
 
   return (
-    <Modal open={open} onClose={onClose} title={t('admin.adjustPricing.title')} className="max-w-lg">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t('admin.adjustPricing.title')}
+      className="max-w-lg"
+    >
       {plans === null ? (
         <div className="flex justify-center py-8">
           <Loader />

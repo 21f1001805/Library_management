@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { Calendar, MapPin, Pencil, Trash2, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -80,137 +82,140 @@ export function EventDetailsDrawer({
 
             <p className="text-sm text-muted-foreground">{event.description}</p>
 
-          <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-            <span className="flex items-center gap-2">
-              <Calendar className="size-4" />
-              {new Date(event.date).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-            </span>
-            <span className="flex items-center gap-2">
-              <MapPin className="size-4" /> {event.location}
-            </span>
-            <span className="flex items-center gap-2">
-              <Users className="size-4" />
-              {t('events.details.attending', {
-                attendees: event.attendees,
-                capacity: event.capacity,
-              })}
-            </span>
-          </div>
+            <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+              <span className="flex items-center gap-2">
+                <Calendar className="size-4" />
+                {new Date(event.date).toLocaleString('en-IN', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </span>
+              <span className="flex items-center gap-2">
+                <MapPin className="size-4" /> {event.location}
+              </span>
+              <span className="flex items-center gap-2">
+                <Users className="size-4" />
+                {t('events.details.attending', {
+                  attendees: event.attendees,
+                  capacity: event.capacity,
+                })}
+              </span>
+            </div>
 
-          {isStaff ? (
+            {isStaff ? (
+              <div className="rounded-lg border border-border p-3">
+                <p className="text-sm font-semibold text-foreground">
+                  {t('events.details.registeredAttendeesTitle')}
+                </p>
+                {event.registrants.length === 0 ? (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {t('events.details.noRegistrants')}
+                  </p>
+                ) : (
+                  <ul className="mt-2 flex max-h-56 flex-col gap-1.5 overflow-y-auto">
+                    {event.registrants.map((r) => (
+                      <li key={r.id} className="flex items-center justify-between text-sm">
+                        <span className="text-foreground">{r.full_name}</span>
+                        {canModerate && onRemoveRegistrant && (
+                          <button
+                            type="button"
+                            onClick={() => onRemoveRegistrant(event.id, r.id)}
+                            className="text-xs font-medium text-danger hover:underline"
+                          >
+                            {t('events.details.removeRegistrant')}
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-border p-3">
+                <p className="text-sm font-semibold text-foreground">
+                  {t('events.details.registrationTitle')}
+                </p>
+                <div className="mt-2 flex items-center justify-between">
+                  {event.registered ? (
+                    <Badge variant="success">{t('events.details.registered')}</Badge>
+                  ) : (
+                    <Badge variant="outline">{t('events.details.notRegistered')}</Badge>
+                  )}
+                  <Button
+                    size="sm"
+                    variant={event.registered ? 'outline' : 'primary'}
+                    onClick={() => onToggleRegistration(event)}
+                    isLoading={registrationBusy}
+                    disabled={registrationBlocked}
+                  >
+                    {event.registered
+                      ? t('events.details.cancelRegistration')
+                      : t('events.details.register')}
+                  </Button>
+                </div>
+                {registrationBlocked && (
+                  <p className="mt-2 text-xs text-muted-foreground" role="status">
+                    {hasHappened
+                      ? 'Registration is closed because this event has started.'
+                      : 'Registration is closed because this event is full.'}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="rounded-lg border border-border p-3">
               <p className="text-sm font-semibold text-foreground">
-                {t('events.details.registeredAttendeesTitle')}
+                {t('events.details.managerAssignmentsTitle')}
               </p>
-              {event.registrants.length === 0 ? (
+              {event.assigned_managers.length === 0 ? (
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {t('events.details.noRegistrants')}
+                  {t('events.details.noManagersAssigned')}
                 </p>
               ) : (
-                <ul className="mt-2 flex max-h-56 flex-col gap-1.5 overflow-y-auto">
-                  {event.registrants.map((r) => (
-                    <li key={r.id} className="flex items-center justify-between text-sm">
-                      <span className="text-foreground">{r.full_name}</span>
-                      {canModerate && onRemoveRegistrant && (
-                        <button
-                          type="button"
-                          onClick={() => onRemoveRegistrant(event.id, r.id)}
-                          className="text-xs font-medium text-danger hover:underline"
-                        >
-                          {t('events.details.removeRegistrant')}
-                        </button>
-                      )}
+                <ul className="mt-2 flex flex-col gap-1.5">
+                  {event.assigned_managers.map((manager) => (
+                    <li key={manager.id} className="text-sm text-foreground">
+                      {manager.full_name}
                     </li>
                   ))}
                 </ul>
               )}
             </div>
-          ) : (
-            <div className="rounded-lg border border-border p-3">
-              <p className="text-sm font-semibold text-foreground">
-                {t('events.details.registrationTitle')}
-              </p>
-              <div className="mt-2 flex items-center justify-between">
-                {event.registered ? (
-                  <Badge variant="success">{t('events.details.registered')}</Badge>
-                ) : (
-                  <Badge variant="outline">{t('events.details.notRegistered')}</Badge>
-                )}
-                <Button
-                  size="sm"
-                  variant={event.registered ? 'outline' : 'primary'}
-                  onClick={() => onToggleRegistration(event)}
-                  isLoading={registrationBusy}
-                  disabled={registrationBlocked}
-                >
-                  {event.registered
-                    ? t('events.details.cancelRegistration')
-                    : t('events.details.register')}
-                </Button>
-              </div>
-              {registrationBlocked && (
-                <p className="mt-2 text-xs text-muted-foreground" role="status">
-                  {hasHappened
-                    ? 'Registration is closed because this event has started.'
-                    : 'Registration is closed because this event is full.'}
-                </p>
-              )}
-            </div>
-          )}
 
-          <div className="rounded-lg border border-border p-3">
-            <p className="text-sm font-semibold text-foreground">
-              {t('events.details.managerAssignmentsTitle')}
-            </p>
-            {event.assigned_managers.length === 0 ? (
-              <p className="mt-2 text-sm text-muted-foreground">
-                {t('events.details.noManagersAssigned')}
-              </p>
-            ) : (
-              <ul className="mt-2 flex flex-col gap-1.5">
-                {event.assigned_managers.map((manager) => (
-                  <li key={manager.id} className="text-sm text-foreground">
-                    {manager.full_name}
-                  </li>
-                ))}
-              </ul>
+            {isAdmin && hasHappened && token && (
+              <EventAnalyticsPanel eventId={event.id} eventTitle={event.title} token={token} />
             )}
           </div>
+        )}
+      </Drawer>
 
-          {isAdmin && hasHappened && token && (
-            <EventAnalyticsPanel eventId={event.id} eventTitle={event.title} token={token} />
-          )}
-        </div>
-      )}
-    </Drawer>
-
-    <ConfirmDialog
-      open={confirmDeleteOpen}
-      title={t('events.details.deleteConfirmTitle', 'Delete Event?')}
-      description={
-        event
-          ? t('events.details.deleteConfirmDescription', {
-              title: event.title,
-              defaultValue: `Are you sure you want to delete "${event.title}"? This action cannot be undone.`,
-            })
-          : ''
-      }
-      confirmLabel={t('events.details.delete', 'Delete')}
-      cancelLabel={t('common.actions.cancel', 'Cancel')}
-      destructive
-      isLoading={isDeleting}
-      onCancel={() => setConfirmDeleteOpen(false)}
-      onConfirm={async () => {
-        if (!event || !onDelete) return;
-        setIsDeleting(true);
-        try {
-          await onDelete(event);
-          setConfirmDeleteOpen(false);
-        } finally {
-          setIsDeleting(false);
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title={t('events.details.deleteConfirmTitle', 'Delete Event?')}
+        description={
+          event
+            ? t('events.details.deleteConfirmDescription', {
+                title: event.title,
+                defaultValue: `Are you sure you want to delete "${event.title}"? This action cannot be undone.`,
+              })
+            : ''
         }
-      }}
-    />
-  </>
-);
+        confirmLabel={t('events.details.delete', 'Delete')}
+        cancelLabel={t('common.actions.cancel', 'Cancel')}
+        destructive
+        isLoading={isDeleting}
+        onCancel={() => setConfirmDeleteOpen(false)}
+        onConfirm={async () => {
+          if (!event || !onDelete) return;
+          setIsDeleting(true);
+          try {
+            await onDelete(event);
+            setConfirmDeleteOpen(false);
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
+      />
+    </>
+  );
 }

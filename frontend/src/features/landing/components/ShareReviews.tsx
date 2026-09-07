@@ -1,6 +1,8 @@
+'use client';
+
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 import { Section, SectionHeading } from '@/components/common';
 import { Badge, Button } from '@/components/ui';
@@ -31,12 +33,17 @@ const reactionPills = [
 
 export function ShareReviews() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   return (
     <Section ariaLabelledBy="share-reviews-heading" tone="secondary">
       <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-        <motion.div initial="hidden" whileInView="visible" viewport={viewportOnce} variants={fadeUp}>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
+          variants={fadeUp}
+        >
           <SectionHeading
             id="share-reviews-heading"
             title={t('landing.shareReviews.heading')}
@@ -44,7 +51,7 @@ export function ShareReviews() {
             descriptionClassName="max-w-lg"
           />
           <div className="mt-8">
-            <Button size="lg" onClick={() => navigate(ROUTES.REVIEWS)}>
+            <Button size="lg" onClick={() => router.push(ROUTES.REVIEWS)}>
               {t('reviews.writeReview')}
             </Button>
           </div>

@@ -1,3 +1,5 @@
+'use client';
+
 import { ImagePlus, Star, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -29,7 +31,12 @@ const MAX_COMMENT_LENGTH = 500;
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const SEARCH_DEBOUNCE_MS = 300;
 
-export function WriteReviewModal({ open, onClose, onSubmit, initialValues }: WriteReviewModalProps) {
+export function WriteReviewModal({
+  open,
+  onClose,
+  onSubmit,
+  initialValues,
+}: WriteReviewModalProps) {
   const { t } = useTranslation();
   const isEditing = Boolean(initialValues);
   const [rating, setRating] = useState(initialValues?.rating ?? 0);
@@ -122,12 +129,16 @@ export function WriteReviewModal({ open, onClose, onSubmit, initialValues }: Wri
     const selectedFiles = files.slice(0, remainingSlots);
     const invalidType = selectedFiles.find((file) => !file.type.startsWith('image/'));
     if (invalidType) {
-      setImageError(t('reviews.writeReviewModal.invalidImageType', 'Only image files can be attached.'));
+      setImageError(
+        t('reviews.writeReviewModal.invalidImageType', 'Only image files can be attached.'),
+      );
       return;
     }
     const oversized = selectedFiles.find((file) => file.size > MAX_IMAGE_SIZE_BYTES);
     if (oversized) {
-      setImageError(t('reviews.writeReviewModal.imageTooLarge', 'Each image must be 5 MB or smaller.'));
+      setImageError(
+        t('reviews.writeReviewModal.imageTooLarge', 'Each image must be 5 MB or smaller.'),
+      );
       return;
     }
     // Data URLs (not blob: URLs) because there's no upload/object storage yet (see the
@@ -137,7 +148,9 @@ export function WriteReviewModal({ open, onClose, onSubmit, initialValues }: Wri
       const nextUrls = await Promise.all(selectedFiles.map(readAsDataUrl));
       setImages((prev) => [...prev, ...nextUrls]);
     } catch {
-      setImageError(t('reviews.writeReviewModal.imageReadFailed', 'One or more images could not be read.'));
+      setImageError(
+        t('reviews.writeReviewModal.imageReadFailed', 'One or more images could not be read.'),
+      );
     }
   }
 
@@ -162,11 +175,15 @@ export function WriteReviewModal({ open, onClose, onSubmit, initialValues }: Wri
     <Modal
       open={open}
       onClose={onClose}
-      title={isEditing ? t('reviews.writeReviewModal.editTitle') : t('reviews.writeReviewModal.title')}
+      title={
+        isEditing ? t('reviews.writeReviewModal.editTitle') : t('reviews.writeReviewModal.title')
+      }
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <p className="text-sm font-medium text-foreground">{t('reviews.writeReviewModal.bookLabel')}</p>
+          <p className="text-sm font-medium text-foreground">
+            {t('reviews.writeReviewModal.bookLabel')}
+          </p>
           {selectedBook ? (
             <ListRow
               title={selectedBook.title}
@@ -215,7 +232,12 @@ export function WriteReviewModal({ open, onClose, onSubmit, initialValues }: Wri
                 </ul>
               )}
               {bookQuery.trim().length > 0 && bookResults.length === 0 && (
-                <p className={cn('px-1 text-xs', bookSearchFailed ? 'text-danger' : 'text-muted-foreground')}>
+                <p
+                  className={cn(
+                    'px-1 text-xs',
+                    bookSearchFailed ? 'text-danger' : 'text-muted-foreground',
+                  )}
+                >
                   {t(
                     bookSearchFailed
                       ? 'reviews.writeReviewModal.bookSearchFailed'
@@ -251,7 +273,9 @@ export function WriteReviewModal({ open, onClose, onSubmit, initialValues }: Wri
                   onClick={() => setRating(value)}
                   className="p-0.5"
                 >
-                  <Star className={cn('size-6', filled ? 'fill-warning text-warning' : 'text-border')} />
+                  <Star
+                    className={cn('size-6', filled ? 'fill-warning text-warning' : 'text-border')}
+                  />
                 </button>
               );
             })}
@@ -279,7 +303,10 @@ export function WriteReviewModal({ open, onClose, onSubmit, initialValues }: Wri
           </p>
           <div className="flex flex-wrap gap-2">
             {images.map((src, index) => (
-              <div key={src} className="relative size-16 overflow-hidden rounded-md border border-border">
+              <div
+                key={src}
+                className="relative size-16 overflow-hidden rounded-md border border-border"
+              >
                 <img src={src} alt="" className="size-full object-cover" />
                 <button
                   type="button"
@@ -320,7 +347,9 @@ export function WriteReviewModal({ open, onClose, onSubmit, initialValues }: Wri
         </div>
 
         <Button type="submit" disabled={!canSubmit} isLoading={isSubmitting}>
-          {isEditing ? t('reviews.writeReviewModal.saveChanges') : t('reviews.writeReviewModal.submit')}
+          {isEditing
+            ? t('reviews.writeReviewModal.saveChanges')
+            : t('reviews.writeReviewModal.submit')}
         </Button>
       </form>
     </Modal>

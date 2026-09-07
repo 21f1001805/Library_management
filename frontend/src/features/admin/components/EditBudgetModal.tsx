@@ -1,3 +1,5 @@
+'use client';
+
 import { Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -119,10 +121,21 @@ export function EditBudgetModal({
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isSubmitting}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             {t('common.actions.cancel', 'Cancel')}
           </Button>
-          <Button type="submit" size="sm" isLoading={isSubmitting} leadingIcon={<Pencil className="size-3.5" />}>
+          <Button
+            type="submit"
+            size="sm"
+            isLoading={isSubmitting}
+            leadingIcon={<Pencil className="size-3.5" />}
+          >
             {t('admin.budget.saveAllocations', 'Save Allocations')}
           </Button>
         </div>

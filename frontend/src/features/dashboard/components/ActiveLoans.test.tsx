@@ -25,9 +25,7 @@ function makeLoan(overrides: Partial<LoanRecord>): LoanRecord {
 
 describe('ActiveLoans', () => {
   it('shows the fine amount for an overdue, unpaid loan', () => {
-    render(
-      <ActiveLoans loans={[makeLoan({})]} onReturn={vi.fn()} onRemind={vi.fn()} />,
-    );
+    render(<ActiveLoans loans={[makeLoan({})]} onReturn={vi.fn()} onRemind={vi.fn()} />);
 
     expect(screen.getByText('₹150')).toBeInTheDocument();
   });

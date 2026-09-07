@@ -27,8 +27,7 @@ export function AnnouncementPopup() {
   // The API returns newest first; reversed so a backlog is acknowledged in the order it
   // was sent rather than newest-first.
   const pending = useMemo(
-    () =>
-      notifications.filter((n) => n.type === 'announcement' && !n.read).reverse(),
+    () => notifications.filter((n) => n.type === 'announcement' && !n.read).reverse(),
     [notifications],
   );
 
@@ -75,9 +74,7 @@ export function AnnouncementPopup() {
           </p>
         )}
         <p className="whitespace-pre-wrap text-sm text-foreground">{current.message}</p>
-        <p className="text-xs text-muted-foreground">
-          {formatRelativeTime(current.created_at)}
-        </p>
+        <p className="text-xs text-muted-foreground">{formatRelativeTime(current.created_at)}</p>
       </div>
     </Modal>
   );

@@ -1,10 +1,14 @@
+'use client';
+
 import { Search, X } from 'lucide-react';
 import type { InputHTMLAttributes, Ref } from 'react';
 
 import { cn } from '@/lib/cn';
 
-export interface SearchBarProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> {
+export interface SearchBarProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'onChange'
+> {
   value: string;
   onChange: (value: string) => void;
   onClear?: () => void;

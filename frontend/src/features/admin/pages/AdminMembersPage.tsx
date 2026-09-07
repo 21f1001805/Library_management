@@ -1,3 +1,5 @@
+'use client';
+
 import { CreditCard, SearchX, ShieldCheck, ShieldOff, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -58,7 +60,11 @@ const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> 
   guardian: { bg: 'bg-info/10', text: 'text-info', border: 'border-info/20' },
   manager: { bg: 'bg-success/10', text: 'text-success', border: 'border-success/20' },
   librarian: { bg: 'bg-warning/10', text: 'text-warning', border: 'border-warning/20' },
-  'it-head': { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-300', border: 'border-purple-500/20' },
+  'it-head': {
+    bg: 'bg-purple-500/10',
+    text: 'text-purple-600 dark:text-purple-300',
+    border: 'border-purple-500/20',
+  },
   admin: { bg: 'bg-danger/10', text: 'text-danger', border: 'border-danger/20' },
 };
 
@@ -74,7 +80,9 @@ function LastPaymentCell({ member }: { member: AdminMemberRecord }) {
   }
   return (
     <div className="whitespace-nowrap">
-      <p className="font-semibold text-foreground text-xs">{formatCurrency(member.last_payment_amount)}</p>
+      <p className="font-semibold text-foreground text-xs">
+        {formatCurrency(member.last_payment_amount)}
+      </p>
       <p className="text-[11px] text-muted-foreground">
         {member.last_payment_label} · {formatDate(member.last_payment_at)}
       </p>
@@ -126,7 +134,11 @@ function EventsCell({ member }: { member: AdminMemberRecord }) {
   if (member.event_registrations === 0) {
     return <span className="text-muted-foreground">—</span>;
   }
-  return <span className="text-xs font-semibold text-foreground">{t('admin.members.eventsCount', { count: member.event_registrations })}</span>;
+  return (
+    <span className="text-xs font-semibold text-foreground">
+      {t('admin.members.eventsCount', { count: member.event_registrations })}
+    </span>
+  );
 }
 
 export function AdminMembersPage() {
@@ -305,14 +317,30 @@ export function AdminMembersPage() {
             <Table className="min-w-[1000px]">
               <TableHeader className="bg-secondary/20">
                 <TableRow>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.member')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.role')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.lastPayment')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.plan')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.progress')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.reported')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.joined')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3 py-2.5">{t('admin.members.table.events')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">
+                    {t('admin.members.table.member')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">
+                    {t('admin.members.table.role')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">
+                    {t('admin.members.table.lastPayment')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">
+                    {t('admin.members.table.plan')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">
+                    {t('admin.members.table.progress')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">
+                    {t('admin.members.table.reported')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">
+                    {t('admin.members.table.joined')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3 py-2.5">
+                    {t('admin.members.table.events')}
+                  </TableHead>
                   <TableHead className="sticky right-0 z-10 whitespace-nowrap border-l border-border/50 bg-card px-3 py-2.5 text-right shadow-xs">
                     {t('admin.members.table.status')}
                   </TableHead>
@@ -327,13 +355,18 @@ export function AdminMembersPage() {
                   };
 
                   return (
-                    <TableRow key={member.id} className="group transition-colors hover:bg-secondary/40">
+                    <TableRow
+                      key={member.id}
+                      className="group transition-colors hover:bg-secondary/40"
+                    >
                       <TableCell className="px-3 py-2.5">
                         <div className="flex items-center gap-2.5">
                           <Avatar name={member.full_name} size="sm" />
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <p className="font-semibold text-foreground text-xs sm:text-sm">{member.full_name}</p>
+                              <p className="font-semibold text-foreground text-xs sm:text-sm">
+                                {member.full_name}
+                              </p>
                               {!member.is_active && (
                                 <span className="rounded bg-danger/10 px-1.5 py-0.2 text-[10px] font-semibold text-danger">
                                   Inactive
@@ -345,16 +378,24 @@ export function AdminMembersPage() {
                         </div>
                       </TableCell>
                       <TableCell className="px-3 py-2.5">
-                        <div className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold ${roleColors.bg} ${roleColors.text} ${roleColors.border}`}>
+                        <div
+                          className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold ${roleColors.bg} ${roleColors.text} ${roleColors.border}`}
+                        >
                           <select
                             value={member.role}
                             disabled={updatingId === member.id}
                             onChange={(event) => changeRole(member, event.target.value)}
-                            aria-label={t('admin.members.roleSelectLabel', { name: member.full_name })}
+                            aria-label={t('admin.members.roleSelectLabel', {
+                              name: member.full_name,
+                            })}
                             className="bg-transparent focus-visible:outline-none disabled:opacity-50 font-semibold cursor-pointer"
                           >
                             {ROLES.map((role) => (
-                              <option key={role} value={role} className="bg-surface text-foreground font-normal">
+                              <option
+                                key={role}
+                                value={role}
+                                className="bg-surface text-foreground font-normal"
+                              >
                                 {t(`auth.login.roles.${role}`)}
                               </option>
                             ))}
@@ -373,11 +414,15 @@ export function AdminMembersPage() {
                       <TableCell className="px-3 py-2.5">
                         <Badge variant={member.reported ? 'danger' : 'success'}>
                           {t(
-                            member.reported ? 'admin.members.reportedYes' : 'admin.members.reportedNo',
+                            member.reported
+                              ? 'admin.members.reportedYes'
+                              : 'admin.members.reportedNo',
                           )}
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-3 py-2.5 text-xs text-muted-foreground">{formatDate(member.joined_at)}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-muted-foreground">
+                        {formatDate(member.joined_at)}
+                      </TableCell>
                       <TableCell className="px-3 py-2.5">
                         <EventsCell member={member} />
                       </TableCell>
@@ -385,7 +430,11 @@ export function AdminMembersPage() {
                         <Button
                           size="sm"
                           variant={member.is_active ? 'outline' : 'success'}
-                          className={member.is_active ? 'border-danger/30 text-danger hover:bg-danger/10 hover:text-danger' : ''}
+                          className={
+                            member.is_active
+                              ? 'border-danger/30 text-danger hover:bg-danger/10 hover:text-danger'
+                              : ''
+                          }
                           isLoading={updatingId === member.id}
                           leadingIcon={
                             member.is_active ? (

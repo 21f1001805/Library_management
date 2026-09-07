@@ -1,9 +1,19 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Pagination, TableToolbar } from '@/components/common';
-import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Select } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Select,
+} from '@/components/ui';
 import { usePagination } from '@/hooks';
 import { getErrorMessage } from '@/lib/api';
 import { formatDate } from '@/lib/format';
@@ -31,14 +41,21 @@ export function PendingReservations({ requests, onApprove, onReject }: PendingRe
       case 'member':
         return items.sort((a, b) => a.member_name.localeCompare(b.member_name));
       case 'oldest':
-        return items.sort((a, b) => new Date(a.requested_at).getTime() - new Date(b.requested_at).getTime());
+        return items.sort(
+          (a, b) => new Date(a.requested_at).getTime() - new Date(b.requested_at).getTime(),
+        );
       case 'newest':
       default:
-        return items.sort((a, b) => new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime());
+        return items.sort(
+          (a, b) => new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime(),
+        );
     }
   }, [requests, sortValue]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredRequests, 3);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
+    filteredRequests,
+    3,
+  );
 
   function durationFor(id: string): LoanDurationDays {
     return durationByRequest[id] ?? 7;
@@ -86,8 +103,14 @@ export function PendingReservations({ requests, onApprove, onReject }: PendingRe
               setPage(1);
             },
             options: [
-              { value: 'newest', label: t('managerDashboard.pendingReservations.sort.newestFirst') },
-              { value: 'oldest', label: t('managerDashboard.pendingReservations.sort.oldestFirst') },
+              {
+                value: 'newest',
+                label: t('managerDashboard.pendingReservations.sort.newestFirst'),
+              },
+              {
+                value: 'oldest',
+                label: t('managerDashboard.pendingReservations.sort.oldestFirst'),
+              },
               { value: 'book', label: t('managerDashboard.pendingReservations.sort.bookTitle') },
               { value: 'member', label: t('managerDashboard.pendingReservations.sort.memberName') },
             ],
@@ -114,17 +137,23 @@ export function PendingReservations({ requests, onApprove, onReject }: PendingRe
                   className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">{request.book_title}</p>
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {request.book_title}
+                    </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {t('managerDashboard.pendingReservations.requestedBy', {
                         name: request.member_name,
-                      })} · {formatDate(request.requested_at)}
+                      })}{' '}
+                      · {formatDate(request.requested_at)}
                     </p>
                   </div>
                   <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
                     <Select
                       value={String(durationFor(request.id))}
-                      aria-label={t('managerDashboard.pendingReservations.durationLabel', 'Loan duration')}
+                      aria-label={t(
+                        'managerDashboard.pendingReservations.durationLabel',
+                        'Loan duration',
+                      )}
                       onChange={(e) =>
                         setDurationByRequest((prev) => ({
                           ...prev,
@@ -148,7 +177,11 @@ export function PendingReservations({ requests, onApprove, onReject }: PendingRe
                     >
                       {t('managerDashboard.pendingReservations.reject')}
                     </Button>
-                    <Button size="sm" isLoading={busyId === request.id} onClick={() => handleApprove(request)}>
+                    <Button
+                      size="sm"
+                      isLoading={busyId === request.id}
+                      onClick={() => handleApprove(request)}
+                    >
                       {t('managerDashboard.pendingReservations.approve')}
                     </Button>
                   </div>

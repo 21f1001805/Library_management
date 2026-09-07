@@ -1,9 +1,18 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Pagination, TableToolbar } from '@/components/common';
 import { NoResults } from '@/components/feedback';
-import { Badge, type BadgeVariant, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import {
+  Badge,
+  type BadgeVariant,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui';
 import { usePagination } from '@/hooks';
 import { formatDate } from '@/lib/format';
 import type { BookRecordEntry, BookRecordType } from '@/providers/AuthProvider';
@@ -33,16 +42,23 @@ export function BookRecords({ records }: { records: BookRecordEntry[] }) {
 
     switch (sortValue) {
       case 'oldest':
-        return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        return items.sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        );
       case 'title':
         return items.sort((a, b) => a.book_title.localeCompare(b.book_title));
       case 'newest':
       default:
-        return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return items.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
     }
   }, [records, sortValue, typeFilter]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredRecords, 4);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
+    filteredRecords,
+    4,
+  );
 
   return (
     <Card className="flex h-full flex-col justify-between">
@@ -96,8 +112,12 @@ export function BookRecords({ records }: { records: BookRecordEntry[] }) {
               {paginatedItems.map((record) => (
                 <li key={record.id} className="rounded-lg border border-border p-3 text-sm">
                   <div className="flex items-center gap-2">
-                    <Badge variant={typeBadgeVariant[record.type]}>{t(typeLabelKey[record.type])}</Badge>
-                    <span className="text-xs text-muted-foreground">{formatDate(record.created_at)}</span>
+                    <Badge variant={typeBadgeVariant[record.type]}>
+                      {t(typeLabelKey[record.type])}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(record.created_at)}
+                    </span>
                   </div>
                   <p className="mt-1 font-medium text-foreground">{record.book_title}</p>
                   {record.note && <p className="text-muted-foreground">{record.note}</p>}

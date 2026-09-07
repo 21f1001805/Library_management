@@ -1,4 +1,14 @@
-import { ArrowRight, Bell, HandCoins, Megaphone, ReceiptText, Ticket, type LucideIcon } from 'lucide-react';
+'use client';
+
+import {
+  ArrowRight,
+  Bell,
+  HandCoins,
+  Megaphone,
+  ReceiptText,
+  Ticket,
+  type LucideIcon,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';

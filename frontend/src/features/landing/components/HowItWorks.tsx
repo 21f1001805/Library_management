@@ -1,11 +1,9 @@
+'use client';
+
 import { ArrowRight, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
-import stepBorrowImage from '@/assets/step-borrow.png';
-import stepReadImage from '@/assets/step-read.png';
-import stepRegisterImage from '@/assets/step-register.png';
-import stepSearchImage from '@/assets/step-search.png';
 import { IconBadge, type IconBadgeTone, Section, SectionHeading } from '@/components/common';
 import { Avatar, Card } from '@/components/ui';
 import { cn } from '@/lib/cn';
@@ -13,11 +11,13 @@ import { howItWorksSteps, testimonials } from '@/mocks/landing';
 
 import { fadeUp, viewportOnce } from '../motion';
 
+// Served straight from public/ (moved out of src/assets, a Vite-only typed-import
+// convention) so both the Vite app and the Next.js app can reference these by plain URL.
 const stepImages: Record<number, string> = {
-  1: stepRegisterImage,
-  2: stepSearchImage,
-  3: stepBorrowImage,
-  4: stepReadImage,
+  1: '/step-register.png',
+  2: '/step-search.png',
+  3: '/step-borrow.png',
+  4: '/step-read.png',
 };
 
 // Solid fill (number badge + connector arrow) and text/tint variants per step tone.

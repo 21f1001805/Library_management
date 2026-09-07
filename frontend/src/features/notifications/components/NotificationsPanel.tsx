@@ -115,7 +115,9 @@ export function NotificationsPanel() {
         </div>
         {unreadCount > 0 && (
           <div className="flex items-center gap-2">
-            <Badge variant="success">{t('notifications.unreadBadge', { count: unreadCount })}</Badge>
+            <Badge variant="success">
+              {t('notifications.unreadBadge', { count: unreadCount })}
+            </Badge>
             <Button
               size="sm"
               variant="ghost"

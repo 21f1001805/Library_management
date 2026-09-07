@@ -19,9 +19,7 @@ describe('CreatePostModal', () => {
           finish = resolve;
         }),
     );
-    render(
-      <CreatePostModal open onClose={() => undefined} onSubmit={onSubmit} />,
-    );
+    render(<CreatePostModal open onClose={() => undefined} onSubmit={onSubmit} />);
 
     const textarea = document.querySelector('textarea');
     if (!textarea) throw new Error('Expected post textarea');
@@ -36,9 +34,7 @@ describe('CreatePostModal', () => {
   });
 
   it('rejects a non-image attachment before reading it', () => {
-    render(
-      <CreatePostModal open onClose={() => undefined} onSubmit={() => undefined} />,
-    );
+    render(<CreatePostModal open onClose={() => undefined} onSubmit={() => undefined} />);
     const input = document.querySelector<HTMLInputElement>('input[type="file"]');
     if (!input) throw new Error('Expected image input');
 

@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useId } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -5,9 +7,14 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { CheckCircle2 } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
 
-import { AnimatedHeading, AnimatedText, FadeUp, Section, SectionHeading } from '@/components/common';
+import {
+  AnimatedHeading,
+  AnimatedText,
+  FadeUp,
+  Section,
+  SectionHeading,
+} from '@/components/common';
 import {
   Button,
   Card,
@@ -76,7 +83,13 @@ const faqSections = [
   },
   {
     id: 'books',
-    questions: ['borrowBook', 'renewBorrowedBook', 'reserveUnavailableBook', 'requestNewBookTitle', 'loseBook'],
+    questions: [
+      'borrowBook',
+      'renewBorrowedBook',
+      'reserveUnavailableBook',
+      'requestNewBookTitle',
+      'loseBook',
+    ],
   },
   {
     id: 'readingClubs',
@@ -102,7 +115,6 @@ const faqSections = [
 
 export function ContactUsPage() {
   const { t } = useTranslation();
-  const location = useLocation();
   const messageFieldId = useId();
 
   const {
@@ -122,15 +134,17 @@ export function ContactUsPage() {
     },
   });
 
+  // See LandingPage.tsx's comment on the same pattern — Next has no hash-aware routing
+  // hook, so this reads window.location.hash directly on mount instead.
   useEffect(() => {
-    const hash = location.hash?.slice(1);
+    const hash = window.location.hash?.slice(1);
     if (!hash) return;
 
     const section = document.getElementById(hash);
     if (!section) return;
 
     section.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
-  }, [location.hash]);
+  }, []);
 
   async function onSubmit(values: ContactUsFormValues) {
     try {
@@ -158,7 +172,12 @@ export function ContactUsPage() {
 
   function renderAnswer(answer: string) {
     return answer.split('\n').map((line, index) => (
-      <p key={index} className={index === 0 ? 'mt-0 text-sm text-muted-foreground' : 'mt-3 text-sm text-muted-foreground'}>
+      <p
+        key={index}
+        className={
+          index === 0 ? 'mt-0 text-sm text-muted-foreground' : 'mt-3 text-sm text-muted-foreground'
+        }
+      >
         {line}
       </p>
     ));
@@ -173,7 +192,12 @@ export function ContactUsPage() {
         spacing="py-20 md:py-28"
         containerClassName="text-center"
       >
-        <AnimatedHeading as="h1" size="hero" id="contact-us-hero-heading" className="text-4xl md:text-5xl">
+        <AnimatedHeading
+          as="h1"
+          size="hero"
+          id="contact-us-hero-heading"
+          className="text-4xl md:text-5xl"
+        >
           {t('contactUs.hero.heading')}
         </AnimatedHeading>
         <AnimatedText size="lg" spacing={false} delay={1} className="mx-auto mt-5 max-w-xl">
@@ -181,30 +205,48 @@ export function ContactUsPage() {
         </AnimatedText>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          {(['quickResponses', 'dedicatedSupportTeams', 'multilingualAssistance'] as const).map((key, index) => (
-            <FadeUp key={key} delay={index + 2}>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3.5 py-1.5 text-sm font-medium text-foreground">
-                <CheckCircle2 className="size-4 text-success" />
-                {t(`contactUs.hero.badges.${key}`)}
-              </span>
-            </FadeUp>
-          ))}
+          {(['quickResponses', 'dedicatedSupportTeams', 'multilingualAssistance'] as const).map(
+            (key, index) => (
+              <FadeUp key={key} delay={index + 2}>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3.5 py-1.5 text-sm font-medium text-foreground">
+                  <CheckCircle2 className="size-4 text-success" />
+                  {t(`contactUs.hero.badges.${key}`)}
+                </span>
+              </FadeUp>
+            ),
+          )}
         </div>
 
         <div className="mt-10 flex flex-wrap justify-center gap-3">
           <Button variant="outline" size="md" type="button" onClick={() => scrollToSection('faq')}>
             {t('contactUs.quickNav.faq')}
           </Button>
-          <Button variant="outline" size="md" type="button" onClick={() => scrollToSection('contact-us')}>
+          <Button
+            variant="outline"
+            size="md"
+            type="button"
+            onClick={() => scrollToSection('contact-us')}
+          >
             {t('contactUs.quickNav.contactUs')}
           </Button>
-          <Button variant="outline" size="md" type="button" onClick={() => scrollToSection('department-contacts')}>
+          <Button
+            variant="outline"
+            size="md"
+            type="button"
+            onClick={() => scrollToSection('department-contacts')}
+          >
             {t('contactUs.quickNav.departmentContacts')}
           </Button>
         </div>
       </Section>
 
-      <Section id="faq" ariaLabelledBy="faq-heading" tone="surface" className="bg-surface" spacing="pt-12 pb-6">
+      <Section
+        id="faq"
+        ariaLabelledBy="faq-heading"
+        tone="surface"
+        className="bg-surface"
+        spacing="pt-12 pb-6"
+      >
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-12">
           <SectionHeading
             id="faq-heading"
@@ -215,7 +257,10 @@ export function ContactUsPage() {
 
           <div className="grid gap-8">
             {faqSections.map((section) => (
-              <div key={section.id} className="rounded-3xl border border-border bg-surface p-6 shadow-panel">
+              <div
+                key={section.id}
+                className="rounded-3xl border border-border bg-surface p-6 shadow-panel"
+              >
                 <h2 className="text-lg font-semibold text-foreground md:text-xl">
                   {t(`contactUs.faq.categories.${section.id}`)}
                 </h2>
@@ -290,7 +335,9 @@ export function ContactUsPage() {
                     label={t('contactUs.form.organization')}
                     type="text"
                     autoComplete="organization"
-                    error={errors.organization?.message ? t(errors.organization.message) : undefined}
+                    error={
+                      errors.organization?.message ? t(errors.organization.message) : undefined
+                    }
                     {...register('organization')}
                   />
                   <Input
@@ -328,9 +375,15 @@ export function ContactUsPage() {
                   <TableCaption>{t('contactUs.table.caption')}</TableCaption>
                   <TableHeader>
                     <TableRow className="bg-primary/10">
-                      <TableHead className="text-foreground">{t('contactUs.table.category')}</TableHead>
-                      <TableHead className="text-foreground">{t('contactUs.table.email')}</TableHead>
-                      <TableHead className="text-foreground">{t('contactUs.table.phone')}</TableHead>
+                      <TableHead className="text-foreground">
+                        {t('contactUs.table.category')}
+                      </TableHead>
+                      <TableHead className="text-foreground">
+                        {t('contactUs.table.email')}
+                      </TableHead>
+                      <TableHead className="text-foreground">
+                        {t('contactUs.table.phone')}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -338,7 +391,10 @@ export function ContactUsPage() {
                       <TableRow key={contact.id}>
                         <TableCell>{t(`contactUs.table.${contact.id}`)}</TableCell>
                         <TableCell>
-                          <a href={`mailto:${contact.email}`} className="text-primary hover:underline">
+                          <a
+                            href={`mailto:${contact.email}`}
+                            className="text-primary hover:underline"
+                          >
                             {contact.email}
                           </a>
                         </TableCell>

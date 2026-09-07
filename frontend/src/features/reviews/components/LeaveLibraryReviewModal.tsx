@@ -1,3 +1,5 @@
+'use client';
+
 import { Star } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -51,7 +53,12 @@ export function LeaveLibraryReviewModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!quote.trim() || quote.trim().length < 5) {
-      setError(t('reviews.libraryReviewModal.errorMinLength', 'Please write a review of at least 5 characters.'));
+      setError(
+        t(
+          'reviews.libraryReviewModal.errorMinLength',
+          'Please write a review of at least 5 characters.',
+        ),
+      );
       return;
     }
     setError(null);
@@ -63,7 +70,7 @@ export function LeaveLibraryReviewModal({
       toast.success(
         t(
           'reviews.libraryReviewModal.successToast',
-          "Thank you! Your review is awaiting admin approval before it appears on the homepage.",
+          'Thank you! Your review is awaiting admin approval before it appears on the homepage.',
         ),
       );
       onSubmitted?.();
@@ -101,7 +108,10 @@ export function LeaveLibraryReviewModal({
                 onClick={() => setRating(star)}
                 onMouseEnter={() => setHoverRating(star)}
                 className="p-1 text-warning focus:outline-none transition-transform hover:scale-110"
-                aria-label={t('reviews.libraryReviewModal.starAria', { count: star, defaultValue: `Rate ${star} star` })}
+                aria-label={t('reviews.libraryReviewModal.starAria', {
+                  count: star,
+                  defaultValue: `Rate ${star} star`,
+                })}
               >
                 <Star
                   className={`size-7 ${

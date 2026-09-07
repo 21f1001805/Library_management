@@ -1,6 +1,8 @@
+'use client';
+
 import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 import { buttonVariants } from '@/components/ui';
 import { ROUTES } from '@/constants/routes';
@@ -63,7 +65,7 @@ export function SidebarPromo() {
           {t(`sidebar.promo.${promo.variant}.cta`)}
         </button>
       ) : (
-        <Link to={promo.to} className={buttonVariants({ size: 'sm', className: 'mt-3 w-full' })}>
+        <Link href={promo.to} className={buttonVariants({ size: 'sm', className: 'mt-3 w-full' })}>
           {t(`sidebar.promo.${promo.variant}.cta`)}
         </Link>
       )}

@@ -1,5 +1,7 @@
+'use client';
+
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 import { Button, buttonVariants } from '@/components/ui';
 import { ROUTES } from '@/constants/routes';
@@ -43,7 +45,7 @@ export function AuthActions({
     return (
       <>
         <Link
-          to={roleHome}
+          href={roleHome}
           onClick={onNavigate}
           className={cn(buttonVariants({ variant: 'ghost', size }), isMobile && 'justify-start')}
         >
@@ -64,14 +66,14 @@ export function AuthActions({
   return (
     <>
       <Link
-        to={ROUTES.LOGIN}
+        href={ROUTES.LOGIN}
         onClick={onNavigate}
         className={cn(buttonVariants({ variant: 'outline', size }), isMobile && 'w-full')}
       >
         {t('auth.login.title')}
       </Link>
       <Link
-        to={ROUTES.REGISTER}
+        href={ROUTES.REGISTER}
         onClick={onNavigate}
         className={cn(buttonVariants({ size }), isMobile && 'w-full')}
       >

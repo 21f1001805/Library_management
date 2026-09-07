@@ -1,3 +1,5 @@
+'use client';
+
 import { motion } from 'framer-motion';
 import { BookMarked, BookOpen, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -54,7 +56,12 @@ export function Features() {
   return (
     <Section ariaLabelledBy="features-heading" tone="secondary">
       <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-        <motion.div initial="hidden" whileInView="visible" viewport={viewportOnce} variants={fadeUp}>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
+          variants={fadeUp}
+        >
           <SectionHeading
             id="features-heading"
             headingClassName="text-4xl font-extrabold tracking-tight sm:text-5xl"

@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
+'use client';
 
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -84,21 +84,30 @@ export function AuditLog({ entries }: { entries: AuditLogEntry[] }) {
         return ['expenseApproved'].includes(entry.action);
       }
       if (filter === 'refunds') {
-        return ['refundIssued', 'refundRejected', 'feeWaived', 'feeWaiverRejected'].includes(entry.action);
+        return ['refundIssued', 'refundRejected', 'feeWaived', 'feeWaiverRejected'].includes(
+          entry.action,
+        );
       }
       return true;
     });
 
     switch (sort) {
       case 'oldest':
-        return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        return items.sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        );
       case 'newest':
       default:
-        return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return items.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
     }
   }, [entries, filter, sort]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredEntries, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
+    filteredEntries,
+    5,
+  );
 
   function resetToolbar() {
     setFilter('all');
@@ -145,7 +154,6 @@ export function AuditLog({ entries }: { entries: AuditLogEntry[] }) {
         />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-
         {filteredEntries.length === 0 ? (
           <NoResults title={t('admin.auditLog.empty')} />
         ) : (

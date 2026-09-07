@@ -1,3 +1,5 @@
+'use client';
+
 import { CheckCircle2, Clock, IndianRupee, KeyRound, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -133,9 +135,7 @@ function OpenIssuesBody({
               className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3 text-sm"
             >
               <div className="flex items-center justify-between">
-                <Badge variant="warning">
-                  {t(catKey, { defaultValue: ticket.category })}
-                </Badge>
+                <Badge variant="warning">{t(catKey, { defaultValue: ticket.category })}</Badge>
                 <span className="text-xs text-muted-foreground">
                   {ticket.created_at ? formatDate(ticket.created_at) : ''}
                 </span>
@@ -221,7 +221,9 @@ function PendingPermissionsBody({
             className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3 text-sm"
           >
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-foreground">{req.requested_by_name || 'User'}</span>
+              <span className="font-semibold text-foreground">
+                {req.requested_by_name || 'User'}
+              </span>
               <Badge variant="warning">{req.permission}</Badge>
             </div>
             {req.reason && <p className="text-xs text-muted-foreground">{req.reason}</p>}
@@ -234,11 +236,7 @@ function PendingPermissionsBody({
               >
                 {t('itHead.accessControl.deny')}
               </Button>
-              <Button
-                size="sm"
-                isLoading={busyId === req.id}
-                onClick={() => handleGrant(req)}
-              >
+              <Button size="sm" isLoading={busyId === req.id} onClick={() => handleGrant(req)}>
                 {t('itHead.accessControl.grantAccess')}
               </Button>
             </div>
@@ -283,13 +281,13 @@ function FeesOutstandingBody({ entries = [] }: { entries?: ITHeadDashboard['fee_
             <div>
               <p className="font-semibold text-foreground">{entry.member_name}</p>
               {entry.due_date && (
-                <p className="text-xs text-muted-foreground">
-                  Due: {formatDate(entry.due_date)}
-                </p>
+                <p className="text-xs text-muted-foreground">Due: {formatDate(entry.due_date)}</p>
               )}
             </div>
             <div className="flex items-center gap-3">
-              <span className="font-semibold text-foreground">{formatCurrency(entry.amount_due || 0)}</span>
+              <span className="font-semibold text-foreground">
+                {formatCurrency(entry.amount_due || 0)}
+              </span>
               <Badge variant={entry.status === 'overdue' ? 'danger' : 'warning'}>
                 {t(`itHead.feeStatus.status.${entry.status}`, { defaultValue: entry.status })}
               </Badge>
@@ -358,9 +356,7 @@ function LateFinesOutstandingBody({
                 <p className="font-semibold text-foreground">{loan.member_name}</p>
                 <p className="text-xs text-muted-foreground">{loan.book_title}</p>
               </div>
-              <span className="font-semibold text-danger">
-                {formatCurrency(loan.fine_amount)}
-              </span>
+              <span className="font-semibold text-danger">{formatCurrency(loan.fine_amount)}</span>
             </div>
             <div className="flex items-center justify-between border-t border-border pt-2 text-xs text-muted-foreground">
               <span>Due: {loan.due_date ? formatDate(loan.due_date) : ''}</span>

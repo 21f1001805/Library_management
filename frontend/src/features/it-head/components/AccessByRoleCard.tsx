@@ -1,3 +1,5 @@
+'use client';
+
 import { KeyRound, Shield, ShieldCheck, UserCheck, Users, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,7 +18,11 @@ const ROLE_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
   member: { bg: 'bg-primary/10', text: 'text-primary', bar: 'bg-primary' },
   guardian: { bg: 'bg-info/10', text: 'text-info', bar: 'bg-info' },
   manager: { bg: 'bg-success/10', text: 'text-success', bar: 'bg-success' },
-  'it-head': { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-300', bar: 'bg-purple-600' },
+  'it-head': {
+    bg: 'bg-purple-500/10',
+    text: 'text-purple-600 dark:text-purple-300',
+    bar: 'bg-purple-600',
+  },
   admin: { bg: 'bg-danger/10', text: 'text-danger', bar: 'bg-danger' },
 };
 

@@ -1,3 +1,5 @@
+'use client';
+
 import { TrendingDown, TrendingUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -66,7 +68,8 @@ export function OverdueFinesOverview({ months }: { months: OverdueFinesMonth[] }
   const totalOverdue = months.reduce((sum, m) => sum + m.overdue_books, 0);
   const totalGenerated = months.reduce((sum, m) => sum + m.fines_generated, 0);
   const totalCollected = months.reduce((sum, m) => sum + m.fines_collected, 0);
-  const collectionRate = totalGenerated === 0 ? 0 : Math.round((totalCollected / totalGenerated) * 100);
+  const collectionRate =
+    totalGenerated === 0 ? 0 : Math.round((totalCollected / totalGenerated) * 100);
 
   const latest = months.at(-1);
   const previous = months.at(-2);
@@ -90,7 +93,9 @@ export function OverdueFinesOverview({ months }: { months: OverdueFinesMonth[] }
           <StatCell
             label={t('managerDashboard.overdueFines.totalOverdue')}
             value={String(totalOverdue)}
-            trend={latest && previous ? trendFor(latest.overdue_books, previous.overdue_books) : null}
+            trend={
+              latest && previous ? trendFor(latest.overdue_books, previous.overdue_books) : null
+            }
             goodDirection="down"
           />
           <StatCell

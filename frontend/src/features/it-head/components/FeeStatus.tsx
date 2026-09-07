@@ -1,9 +1,18 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Pagination, TableToolbar } from '@/components/common';
 import { NoResults } from '@/components/feedback';
-import { Badge, type BadgeVariant, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import {
+  Badge,
+  type BadgeVariant,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui';
 import { usePagination } from '@/hooks';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { FeeStatusEntryRecord } from '@/providers/AuthProvider';
@@ -101,7 +110,9 @@ export function FeeStatus({ entries }: { entries: FeeStatusEntryRecord[] }) {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">{formatCurrency(entry.amount_due)}</span>
+                  <span className="font-medium text-foreground">
+                    {formatCurrency(entry.amount_due)}
+                  </span>
                   <Badge variant={statusBadgeVariant[entry.status]}>
                     {t(`itHead.feeStatus.status.${entry.status}`)}
                   </Badge>

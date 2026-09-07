@@ -1,6 +1,16 @@
+'use client';
+
 import { useTranslation } from 'react-i18next';
 
-import { Badge, type BadgeVariant, Card, CardContent, CardHeader, CardTitle, EmptyState } from '@/components/ui';
+import {
+  Badge,
+  type BadgeVariant,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+} from '@/components/ui';
 import type { Child, ChildBorrowedBook } from '@/mocks/guardian';
 
 const statusBadgeVariant: Record<ChildBorrowedBook['status'], BadgeVariant> = {
@@ -46,7 +56,8 @@ export function BorrowedBooksByChild({
                 <div>
                   <p className="font-medium text-foreground">{book.title}</p>
                   <p className="text-muted-foreground">
-                    {childName(book.childId)} · {t('guardian.borrowedBooks.dueOn', { date: book.dueDate })}
+                    {childName(book.childId)} ·{' '}
+                    {t('guardian.borrowedBooks.dueOn', { date: book.dueDate })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

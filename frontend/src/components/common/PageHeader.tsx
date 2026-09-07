@@ -23,9 +23,7 @@ export function PageHeader({ title, description, actions, className }: PageHeade
     return (
       <>
         {createPortal(<TopBarHeading title={title} description={description} />, headingSlot.slot)}
-        {actions && (
-          <div className="flex min-w-0 flex-wrap items-center gap-2">{actions}</div>
-        )}
+        {actions && <div className="flex min-w-0 flex-wrap items-center gap-2">{actions}</div>}
       </>
     );
   }

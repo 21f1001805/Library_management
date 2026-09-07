@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -33,7 +35,13 @@ const MONEY_COLOR: Record<Exclude<StatKey, 'totalMembers'>, string> = {
   netProfitMtd: 'var(--color-success)',
 };
 
-function MoneyTrendBody({ statKey, months }: { statKey: Exclude<StatKey, 'totalMembers'>; months: MonthlyFigure[] }) {
+function MoneyTrendBody({
+  statKey,
+  months,
+}: {
+  statKey: Exclude<StatKey, 'totalMembers'>;
+  months: MonthlyFigure[];
+}) {
   const { t } = useTranslation();
   const field = MONEY_FIELD[statKey];
 

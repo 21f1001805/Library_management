@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -23,14 +25,21 @@ export function PendingPayments({ payments, onDismiss }: PendingPaymentsProps) {
     const items = [...payments];
     switch (sortValue) {
       case 'oldest':
-        return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        return items.sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        );
       case 'newest':
       default:
-        return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return items.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
     }
   }, [payments, sortValue]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredPayments, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
+    filteredPayments,
+    5,
+  );
 
   return (
     <Card>
@@ -73,7 +82,9 @@ export function PendingPayments({ payments, onDismiss }: PendingPaymentsProps) {
                 >
                   <div>
                     <p className="text-sm text-foreground">{payment.message}</p>
-                    <p className="text-xs text-muted-foreground">{formatRelativeTime(payment.created_at)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatRelativeTime(payment.created_at)}
+                    </p>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => onDismiss(payment.id)}>
                     {t('managerDashboard.payments.dismissRequest', 'Dismiss request')}

@@ -47,10 +47,10 @@ For a feel of the actual UI (landing page, dashboards, catalog, and more), see
 
 ### Frontend
 - **React 19** — frontend UI framework
-- **Vite** — dev server and build tool
+- **Next.js (App Router)** — dev server, build tool, and file-based routing
+- **Bun** — package manager and script runner
 - **TypeScript** — type-safe frontend development
 - **TanStack Query** — server-state caching/fetching
-- **React Router** — client-side routing
 - **React Hook Form + Zod** — form state and validation
 - **Tailwind CSS v4** — utility-first styling
 - **Framer Motion** — animation
@@ -81,7 +81,7 @@ the platform-agnostic notes on how each piece is meant to be deployed.
 ```mermaid
 flowchart LR
     subgraph Client
-        FE["React 19 + Vite<br/>Frontend"]
+        FE["React 19 + Next.js<br/>Frontend"]
     end
 
     subgraph Server
@@ -133,11 +133,12 @@ flowchart TD
     BModules --> BM3["billing &amp; growth:<br/>payments, pricing_plans, coupons,<br/>billing_requests, leaderboard, events"]
     BModules --> BM4["AI-backed:<br/>chat, recommendations, translate<br/>(book insights live inside books/)"]
 
+    Frontend --> FAppDir["app/  (Next.js routes, layouts, proxy.ts)"]
     Frontend --> FSrc["src/"]
-    FSrc --> FApp["app/  (router, layouts, route guards)"]
+    FSrc --> FAppLayouts["app/layouts/  (AppShellLayout + role shells)"]
     FSrc --> FComponents["components/  (ui/, layout/, common/)"]
     FSrc --> FFeatures["features/  (21 screen folders)"]
-    FSrc --> FProviders["providers/  (auth, theme, query client)"]
+    FSrc --> FProviders["providers/  (auth, theme, query client, AuthGuard)"]
     FSrc --> FI18n["i18n/  (en, hi, pa)"]
 
     FFeatures --> FF1["books, dashboard, reservations,<br/>seat-booking, reading-progress, ..."]
@@ -295,8 +296,7 @@ editing a book is never blocked on an LLM call.
 ### Prerequisites
 - Python 3.12+
 - uv
-- Node.js 20+
-- npm
+- Bun
 - Docker (for local PostgreSQL + Redis)
 
 ### Environment setup
@@ -325,9 +325,9 @@ RAZORPAY_KEY_SECRET=
 
 ```env
 # frontend/.env
-VITE_API_URL=http://127.0.0.1:8000
-VITE_API_PREFIX=/api/v1
-VITE_GOOGLE_CLIENT_ID=
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+NEXT_PUBLIC_API_PREFIX=/api/v1
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=
 ```
 
 ### Install dependencies
@@ -356,15 +356,15 @@ make db-migrate
 
 ### Run backend
 ```bash
-npm run backend          # from the repo root — starts Postgres + Redis, then FastAPI with reload
+bun run backend          # from the repo root — starts Postgres + Redis, then FastAPI with reload
 ```
 Backend URL: `http://localhost:8000`
 
 ### Run frontend
 ```bash
-npm run frontend         # from the repo root
+bun run frontend         # from the repo root
 ```
-Frontend URL: `http://localhost:5173`
+Frontend URL: `http://localhost:3000`
 
 ---
 
@@ -395,12 +395,17 @@ Redis instance rather than the `localhost` default. Optional: `GOOGLE_CLIENT_ID`
 AI features.
 
 ### Frontend
-Static build, servable from any CDN/static host:
+Next.js app — build then run its own Node server (or deploy to any Next.js-compatible host):
 ```bash
-npm --prefix frontend run build   # outputs frontend/dist
+bun --cwd frontend run build   # outputs frontend/.next
+bun --cwd frontend run start   # serves the production build
 ```
-Set `VITE_API_URL` (and `VITE_API_PREFIX`, `VITE_GOOGLE_CLIENT_ID`) at build time to
-point at the deployed backend.
+Set `NEXT_PUBLIC_API_URL` (and `NEXT_PUBLIC_API_PREFIX`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`) at
+build time to point at the deployed backend — being `NEXT_PUBLIC_*`, they're baked into the
+client bundle at build time, not read at runtime. In production, the frontend and backend
+need a shared parent domain (or a reverse proxy putting both under one host) for the
+session cookie `proxy.ts` reads to be visible to the Next.js server — see
+`frontend/proxy.ts`'s comments.
 
 ---
 
@@ -435,14 +440,14 @@ Local backend:
 - Readiness health: `http://localhost:8000/health/ready`
 - OpenAPI docs: `http://localhost:8000/docs`
 
-Local frontend: `http://localhost:5173`
+Local frontend: `http://localhost:3000`
 
 ---
 
 ## 8) Troubleshooting
 
 - **Frontend can't connect to backend**
-  - Verify `VITE_API_URL` + `VITE_API_PREFIX` in `frontend/.env`
+  - Verify `NEXT_PUBLIC_API_URL` + `NEXT_PUBLIC_API_PREFIX` in `frontend/.env`
   - Check the backend is running and reachable at that URL
 
 - **Database connection failure / Docker binds the wrong Postgres**
@@ -485,19 +490,19 @@ uv run pytest
 Frontend lint, type-check, and build:
 ```bash
 cd frontend
-npm run lint
-npm run build
+bun run lint
+bun run build
 ```
 
 Frontend unit tests:
 ```bash
 cd frontend
-npm run test
+bun run test
 ```
 
 End-to-end (Playwright, drives a real browser against a real backend + DB):
 ```bash
-npm run test:e2e:install   # once, to install browser binaries
+bun run test:e2e:install   # once, to install browser binaries
 make test-e2e
 ```
 

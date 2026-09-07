@@ -1,3 +1,5 @@
+'use client';
+
 import { Check, PartyPopper } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -85,7 +87,12 @@ export function RaiseTicketModal({ open, onClose, categories, onCreated }: Raise
                         : 'border-border hover:bg-secondary',
                     )}
                   >
-                    <Icon className={cn('size-5', category === value ? 'text-primary' : 'text-muted-foreground')} />
+                    <Icon
+                      className={cn(
+                        'size-5',
+                        category === value ? 'text-primary' : 'text-muted-foreground',
+                      )}
+                    />
                     <span className="text-sm font-medium text-foreground">
                       {t(`support.categories.${value}`)}
                     </span>
@@ -132,9 +139,7 @@ export function RaiseTicketModal({ open, onClose, categories, onCreated }: Raise
             <p className="text-sm font-medium text-foreground">{t('support.wizard.step3Title')}</p>
             <div className="rounded-lg border border-border bg-secondary/50 p-3 text-sm">
               <p className="font-medium text-foreground">{t(`support.categories.${category}`)}</p>
-              <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
-                {description.trim()}
-              </p>
+              <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{description.trim()}</p>
             </div>
             <Checkbox
               checked={acknowledged}
@@ -158,7 +163,9 @@ export function RaiseTicketModal({ open, onClose, categories, onCreated }: Raise
             <span className="flex size-12 items-center justify-center rounded-full bg-success/10 text-success">
               <PartyPopper className="size-6" />
             </span>
-            <p className="text-lg font-semibold text-foreground">{t('support.wizard.step4Title')}</p>
+            <p className="text-lg font-semibold text-foreground">
+              {t('support.wizard.step4Title')}
+            </p>
             <p className="text-sm text-muted-foreground">{t('support.wizard.step4Description')}</p>
             <Button leadingIcon={<Check className="size-4" />} onClick={onClose}>
               {t('support.wizard.done')}

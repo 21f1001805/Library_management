@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 
 import { ListRow } from '@/components/common';
@@ -37,7 +39,12 @@ export function MemberPicker({
 }: MemberPickerProps) {
   const { searchMembers } = useAuth();
   const [query, setQuery] = useState('');
-  const { data: results, isLoading, error, refresh } = useDebouncedFetch<MemberSummary[]>(
+  const {
+    data: results,
+    isLoading,
+    error,
+    refresh,
+  } = useDebouncedFetch<MemberSummary[]>(
     () => searchMembers(query, { role, activeOnly }),
     [query, role, activeOnly],
     [],

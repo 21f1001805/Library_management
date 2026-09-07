@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -7,7 +9,11 @@ import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Dialog } from 
 import { usePagination } from '@/hooks';
 import { getErrorMessage } from '@/lib/api';
 import { formatDate } from '@/lib/format';
-import { useAuth, type BillingRequestRecord, type BillingRequestType } from '@/providers/AuthProvider';
+import {
+  useAuth,
+  type BillingRequestRecord,
+  type BillingRequestType,
+} from '@/providers/AuthProvider';
 
 const typeLabelKey: Record<BillingRequestType, string> = {
   refund: 'admin.pendingRequests.types.refundRequest',
@@ -41,7 +47,9 @@ export function PendingRequests({ requests, onDecided }: PendingRequestsProps) {
 
     switch (sortValue) {
       case 'oldest':
-        return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        return items.sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        );
       case 'amount-high':
         return items.sort((a, b) => b.amount - a.amount);
       case 'amount-low':
@@ -50,11 +58,16 @@ export function PendingRequests({ requests, onDecided }: PendingRequestsProps) {
         return items.sort((a, b) => a.member_name.localeCompare(b.member_name));
       case 'newest':
       default:
-        return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return items.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
     }
   }, [requests, statusFilter, typeFilter, sortValue]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredRequests, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
+    filteredRequests,
+    5,
+  );
 
   async function confirm() {
     if (!pendingAction) return;
@@ -64,7 +77,9 @@ export function PendingRequests({ requests, onDecided }: PendingRequestsProps) {
       await (kind === 'approve' ? approveBillingRequest : rejectBillingRequest)(request.id);
       toast.success(
         t(
-          kind === 'approve' ? 'admin.pendingRequests.approveToast' : 'admin.pendingRequests.rejectToast',
+          kind === 'approve'
+            ? 'admin.pendingRequests.approveToast'
+            : 'admin.pendingRequests.rejectToast',
           { name: request.member_name },
         ),
       );
@@ -100,9 +115,18 @@ export function PendingRequests({ requests, onDecided }: PendingRequestsProps) {
               },
               options: [
                 { value: 'all', label: t('admin.pendingRequests.filters.statusOptions.all') },
-                { value: 'pending', label: t('admin.pendingRequests.filters.statusOptions.pending') },
-                { value: 'approved', label: t('admin.pendingRequests.filters.statusOptions.approved') },
-                { value: 'rejected', label: t('admin.pendingRequests.filters.statusOptions.rejected') },
+                {
+                  value: 'pending',
+                  label: t('admin.pendingRequests.filters.statusOptions.pending'),
+                },
+                {
+                  value: 'approved',
+                  label: t('admin.pendingRequests.filters.statusOptions.approved'),
+                },
+                {
+                  value: 'rejected',
+                  label: t('admin.pendingRequests.filters.statusOptions.rejected'),
+                },
               ],
             },
             {
@@ -139,7 +163,6 @@ export function PendingRequests({ requests, onDecided }: PendingRequestsProps) {
         />
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-
         {filteredRequests.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
             {t('common.emptyState.noResults')}
@@ -158,7 +181,9 @@ export function PendingRequests({ requests, onDecided }: PendingRequestsProps) {
                       <span className="font-medium text-foreground">
                         ₹{request.amount.toLocaleString('en-IN')}
                       </span>
-                      <span className="text-xs text-muted-foreground">{formatDate(request.created_at)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(request.created_at)}
+                      </span>
                     </div>
                     <p className="mt-1 text-sm text-foreground">{request.reason}</p>
                     <p className="text-xs text-muted-foreground">

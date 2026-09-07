@@ -79,9 +79,9 @@ export function ensureLanguageLoaded(lang: string): Promise<void> {
   const existing = inFlight.get(lang);
   if (existing) return existing;
 
-  const promise = (STATIC_LOCALE_LOADERS[lang] ? loadStaticLocale(lang) : loadLanguage(lang)).finally(
-    () => inFlight.delete(lang),
-  );
+  const promise = (
+    STATIC_LOCALE_LOADERS[lang] ? loadStaticLocale(lang) : loadLanguage(lang)
+  ).finally(() => inFlight.delete(lang));
   inFlight.set(lang, promise);
   return promise;
 }

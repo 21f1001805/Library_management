@@ -1,5 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
-
 import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 
 import { cn } from '@/lib/cn';
@@ -7,13 +5,7 @@ import { cn } from '@/lib/cn';
 import { Loader } from './Loader';
 
 export type ButtonVariant =
-  | 'primary'
-  | 'secondary'
-  | 'outline'
-  | 'ghost'
-  | 'danger'
-  | 'success'
-  | 'warning';
+  'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'warning';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

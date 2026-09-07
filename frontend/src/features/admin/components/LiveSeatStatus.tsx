@@ -1,3 +1,5 @@
+'use client';
+
 import { Armchair, CircleCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

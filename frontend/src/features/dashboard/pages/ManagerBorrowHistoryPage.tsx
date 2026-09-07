@@ -1,3 +1,5 @@
+'use client';
+
 import { History } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -178,25 +180,46 @@ export function ManagerBorrowHistoryPage() {
             <Table className="min-w-full">
               <TableHeader className="bg-secondary/20">
                 <TableRow>
-                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.borrowHistory.table.book')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.borrowHistory.table.member')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.borrowHistory.table.borrowed')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.borrowHistory.table.due')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.borrowHistory.table.returned')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3.5 py-2.5 text-right">{t('managerDashboard.borrowHistory.table.status')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                    {t('managerDashboard.borrowHistory.table.book')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                    {t('managerDashboard.borrowHistory.table.member')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                    {t('managerDashboard.borrowHistory.table.borrowed')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                    {t('managerDashboard.borrowHistory.table.due')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                    {t('managerDashboard.borrowHistory.table.returned')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5 text-right">
+                    {t('managerDashboard.borrowHistory.table.status')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedItems.map((loan) => (
                   <TableRow key={loan.id} className="transition-colors hover:bg-secondary/40">
                     <TableCell className="px-3.5 py-2.5">
-                      <p className="font-semibold text-foreground text-xs sm:text-sm">{loan.book_title}</p>
+                      <p className="font-semibold text-foreground text-xs sm:text-sm">
+                        {loan.book_title}
+                      </p>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 font-medium text-foreground text-xs sm:text-sm">{loan.member_name}</TableCell>
-                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">{formatDate(loan.borrowed_at)}</TableCell>
-                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">{formatDate(loan.due_date)}</TableCell>
+                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 font-medium text-foreground text-xs sm:text-sm">
+                      {loan.member_name}
+                    </TableCell>
                     <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">
-                      {formatDate(loan.returned_at) ?? t('managerDashboard.borrowHistory.notReturned')}
+                      {formatDate(loan.borrowed_at)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">
+                      {formatDate(loan.due_date)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground">
+                      {formatDate(loan.returned_at) ??
+                        t('managerDashboard.borrowHistory.notReturned')}
                     </TableCell>
                     <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-right">
                       <StatusBadge status={loan.status} />

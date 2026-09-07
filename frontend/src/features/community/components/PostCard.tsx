@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Bookmark,
   Flag,
@@ -130,7 +132,9 @@ function CommentRow({
             </button>
             <TranslateToggle onClick={translation.toggle} active={translation.isShown} />
             {translation.loading && (
-              <span className="text-xs text-muted-foreground">{t('community.post.translating')}</span>
+              <span className="text-xs text-muted-foreground">
+                {t('community.post.translating')}
+              </span>
             )}
             {!comment.reported && comment.author_id !== currentUserId && onReportComment && (
               <button
@@ -299,7 +303,9 @@ export const PostCard = memo(function PostCard({
           <div className="flex items-center gap-2">
             <TranslateToggle onClick={translation.toggle} active={translation.isShown} />
             {translation.loading && (
-              <span className="text-xs text-muted-foreground">{t('community.post.translating')}</span>
+              <span className="text-xs text-muted-foreground">
+                {t('community.post.translating')}
+              </span>
             )}
             {translation.error && (
               <span className="text-xs text-danger">{t('community.post.translateFailed')}</span>
@@ -351,7 +357,9 @@ export const PostCard = memo(function PostCard({
               type="button"
               onClick={() => onToggleSave(post.id)}
               aria-pressed={post.is_saved}
-              aria-label={t(post.is_saved ? 'community.post.unsaveAria' : 'community.post.saveAria')}
+              aria-label={t(
+                post.is_saved ? 'community.post.unsaveAria' : 'community.post.saveAria',
+              )}
               className={cn(
                 'ml-auto flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors hover:bg-secondary',
                 post.is_saved ? 'text-primary' : 'text-muted-foreground',

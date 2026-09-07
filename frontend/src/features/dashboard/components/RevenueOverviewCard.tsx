@@ -1,3 +1,5 @@
+'use client';
+
 import { Calendar, IndianRupee, TrendingUp, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

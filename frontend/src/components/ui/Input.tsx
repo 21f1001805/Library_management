@@ -10,7 +10,17 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   ref?: Ref<HTMLInputElement>;
 }
 
-export function Input({ ref, id, className, containerClassName, label, error, hint, disabled, ...props }: InputProps) {
+export function Input({
+  ref,
+  id,
+  className,
+  containerClassName,
+  label,
+  error,
+  hint,
+  disabled,
+  ...props
+}: InputProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const hintId = `${inputId}-hint`;

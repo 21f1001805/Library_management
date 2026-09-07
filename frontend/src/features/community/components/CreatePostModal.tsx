@@ -1,3 +1,5 @@
+'use client';
+
 import { ImagePlus, X } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -108,7 +110,9 @@ export function CreatePostModal({ open, onClose, onSubmit, initialValues }: Crea
     <Modal
       open={open}
       onClose={onClose}
-      title={isEditing ? t('community.createPostModal.editTitle') : t('community.createPostModal.title')}
+      title={
+        isEditing ? t('community.createPostModal.editTitle') : t('community.createPostModal.title')
+      }
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Input
@@ -134,10 +138,15 @@ export function CreatePostModal({ open, onClose, onSubmit, initialValues }: Crea
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <p className="text-sm font-medium text-foreground">{t('community.createPostModal.imagesLabel')}</p>
+          <p className="text-sm font-medium text-foreground">
+            {t('community.createPostModal.imagesLabel')}
+          </p>
           <div className="flex flex-wrap gap-2">
             {images.map((src, index) => (
-              <div key={src} className="relative size-16 overflow-hidden rounded-md border border-border">
+              <div
+                key={src}
+                className="relative size-16 overflow-hidden rounded-md border border-border"
+              >
                 <img src={src} alt="" className="size-full object-cover" />
                 <button
                   type="button"
@@ -178,7 +187,9 @@ export function CreatePostModal({ open, onClose, onSubmit, initialValues }: Crea
         </div>
 
         <Button type="submit" disabled={!canSubmit} isLoading={isSubmitting}>
-          {isEditing ? t('community.createPostModal.saveChanges') : t('community.createPostModal.submit')}
+          {isEditing
+            ? t('community.createPostModal.saveChanges')
+            : t('community.createPostModal.submit')}
         </Button>
       </form>
     </Modal>

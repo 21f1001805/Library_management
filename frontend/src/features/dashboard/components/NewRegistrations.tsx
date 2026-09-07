@@ -1,3 +1,5 @@
+'use client';
+
 import { useTranslation } from 'react-i18next';
 
 import { Pagination } from '@/components/common';
@@ -18,7 +20,10 @@ export function NewRegistrations({ requests, onRegister }: NewRegistrationsProps
     (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
   );
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(sortedRequests, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
+    sortedRequests,
+    5,
+  );
 
   return (
     <Card>
@@ -49,7 +54,9 @@ export function NewRegistrations({ requests, onRegister }: NewRegistrationsProps
                     <p className="text-xs text-muted-foreground">{request.email}</p>
                     <p className="text-xs text-muted-foreground">{request.note}</p>
                     <p className="text-xs text-muted-foreground">
-                      {t('managerDashboard.registrations.requestedAt', { time: request.requestedAt })}
+                      {t('managerDashboard.registrations.requestedAt', {
+                        time: request.requestedAt,
+                      })}
                     </p>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => onRegister(request)}>

@@ -1,3 +1,5 @@
+'use client';
+
 import { Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -59,7 +61,10 @@ export function LibraryReviewCard({ onOpenModal, refreshKey }: LibraryReviewCard
                   <p className="mt-1 text-[11px] font-medium text-warning">
                     {existingReview.status === 'pending'
                       ? t('reviews.libraryReviewCard.pending', 'Awaiting admin approval')
-                      : t('reviews.libraryReviewCard.rejectedNotShown', 'Not approved for the homepage')}
+                      : t(
+                          'reviews.libraryReviewCard.rejectedNotShown',
+                          'Not approved for the homepage',
+                        )}
                   </p>
                 )}
               </div>
@@ -74,7 +79,12 @@ export function LibraryReviewCard({ onOpenModal, refreshKey }: LibraryReviewCard
           </div>
         </div>
 
-        <Button onClick={onOpenModal} variant={existingReview ? 'outline' : 'primary'} size="sm" className="shrink-0 w-fit">
+        <Button
+          onClick={onOpenModal}
+          variant={existingReview ? 'outline' : 'primary'}
+          size="sm"
+          className="shrink-0 w-fit"
+        >
           {existingReview
             ? t('reviews.libraryReviewCard.editButton', 'Edit Review')
             : t('reviews.libraryReviewCard.button', 'Leave a Review')}

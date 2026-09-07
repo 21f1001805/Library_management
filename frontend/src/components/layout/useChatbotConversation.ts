@@ -200,7 +200,8 @@ export function useChatbotConversation() {
     }
   }
 
-  const showOptions = !chipsUsed && !loading && currentNode.options && currentNode.options.length > 0;
+  const showOptions =
+    !chipsUsed && !loading && currentNode.options && currentNode.options.length > 0;
   const showBackButton =
     !isAuthenticated && !loading && (!currentNode.options || currentNode.options.length === 0);
 

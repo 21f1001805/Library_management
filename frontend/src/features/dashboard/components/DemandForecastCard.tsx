@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -54,11 +56,15 @@ export function DemandForecastCard({ items }: { items: DemandForecastItem[] }) {
                   { value: 'all', label: t('common.filters.all', { defaultValue: 'All Levels' }) },
                   {
                     value: 'high',
-                    label: t('managerDashboard.demandForecast.level.high', { defaultValue: 'High' }),
+                    label: t('managerDashboard.demandForecast.level.high', {
+                      defaultValue: 'High',
+                    }),
                   },
                   {
                     value: 'medium',
-                    label: t('managerDashboard.demandForecast.level.medium', { defaultValue: 'Medium' }),
+                    label: t('managerDashboard.demandForecast.level.medium', {
+                      defaultValue: 'Medium',
+                    }),
                   },
                 ],
               },
@@ -115,9 +121,12 @@ export function DemandForecastCard({ items }: { items: DemandForecastItem[] }) {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-foreground leading-snug">{item.title}</p>
+                        <p className="truncate text-sm font-semibold text-foreground leading-snug">
+                          {item.title}
+                        </p>
                         <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                          {item.author} <span className="mx-1 text-muted-foreground/40">•</span> <span className="font-medium text-foreground/80">{item.category}</span>
+                          {item.author} <span className="mx-1 text-muted-foreground/40">•</span>{' '}
+                          <span className="font-medium text-foreground/80">{item.category}</span>
                         </p>
                       </div>
                       <Badge

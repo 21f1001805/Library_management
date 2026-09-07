@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -131,9 +133,7 @@ export function AddGuardianCard() {
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     {t('managerDashboard.addGuardian.currentGuardian')}
                   </p>
-                  <p className="text-sm font-medium text-foreground">
-                    {currentGuardian.full_name}
-                  </p>
+                  <p className="text-sm font-medium text-foreground">{currentGuardian.full_name}</p>
                   <p className="text-sm text-muted-foreground">{currentGuardian.email}</p>
                 </div>
                 <Button

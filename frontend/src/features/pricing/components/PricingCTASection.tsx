@@ -1,6 +1,8 @@
+'use client';
+
 import { ArrowRight, Phone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 import { AnimatedHeading, AnimatedText, FadeUp, Section } from '@/components/common';
 import { Button } from '@/components/ui';
@@ -8,7 +10,7 @@ import { ROUTES } from '@/constants/routes';
 
 export function PricingCTASection() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   return (
     <Section
@@ -46,7 +48,7 @@ export function PricingCTASection() {
             size="lg"
             variant="secondary"
             trailingIcon={<ArrowRight className="size-4" />}
-            onClick={() => navigate(ROUTES.REGISTER)}
+            onClick={() => router.push(ROUTES.REGISTER)}
           >
             {t('pricing.cta.primaryButton')}
           </Button>
@@ -55,7 +57,7 @@ export function PricingCTASection() {
             variant="outline"
             className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
             leadingIcon={<Phone className="size-4" />}
-            onClick={() => navigate(`${ROUTES.CONTACT_US}#contact-us`)}
+            onClick={() => router.push(`${ROUTES.CONTACT_US}#contact-us`)}
           >
             {t('pricing.cta.secondaryButton')}
           </Button>

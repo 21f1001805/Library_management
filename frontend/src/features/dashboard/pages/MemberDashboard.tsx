@@ -1,7 +1,9 @@
+'use client';
+
 import { BookMarked, BookOpen, CalendarCheck, Flame, Star, Ticket } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 
 import { Badge } from '@/components/ui';
 import { cn } from '@/lib/cn';
@@ -52,14 +54,8 @@ interface EventItem {
 
 export function MemberDashboard() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const {
-    token,
-    fullName,
-    getMyLoans,
-    getMySeatBookings,
-    getReadingStreak,
-  } = useAuth();
+  const router = useRouter();
+  const { token, fullName, getMyLoans, getMySeatBookings, getReadingStreak } = useAuth();
 
   // Shared with the notification bell and panel — this page no longer refetches a list
   // the bell already has cached.
@@ -89,21 +85,27 @@ export function MemberDashboard() {
   useEffect(() => {
     let cancelled = false;
 
-    getMyLoans().then((data) => {
-      if (!cancelled) setLoans(data);
-    }).catch(() => {
-      if (!cancelled) setLoans([]);
-    });
-    getMySeatBookings().then((data) => {
-      if (!cancelled) setSeatBookings(data);
-    }).catch(() => {
-      if (!cancelled) setSeatBookings([]);
-    });
-    getReadingStreak().then((data) => {
-      if (!cancelled) setStreak(data);
-    }).catch(() => {
-      if (!cancelled) setStreak(EMPTY_STREAK);
-    });
+    getMyLoans()
+      .then((data) => {
+        if (!cancelled) setLoans(data);
+      })
+      .catch(() => {
+        if (!cancelled) setLoans([]);
+      });
+    getMySeatBookings()
+      .then((data) => {
+        if (!cancelled) setSeatBookings(data);
+      })
+      .catch(() => {
+        if (!cancelled) setSeatBookings([]);
+      });
+    getReadingStreak()
+      .then((data) => {
+        if (!cancelled) setStreak(data);
+      })
+      .catch(() => {
+        if (!cancelled) setStreak(EMPTY_STREAK);
+      });
 
     return () => {
       cancelled = true;
@@ -202,7 +204,9 @@ export function MemberDashboard() {
       <PageHeader
         title={
           <span className="inline-flex flex-wrap items-center gap-2.5">
-            <span>{t('dashboard.welcomeBack', { name: (fullName ?? '').split(' ')[0] || 'there' })}</span>
+            <span>
+              {t('dashboard.welcomeBack', { name: (fullName ?? '').split(' ')[0] || 'there' })}
+            </span>
             <Badge
               variant={visitStatus?.is_in_library ? 'success' : 'outline'}
               className="gap-1.5 text-xs font-normal"
@@ -210,14 +214,16 @@ export function MemberDashboard() {
                 visitStatus?.is_in_library && visitStatus.checked_in_at
                   ? `Checked in at ${formatDate(visitStatus.checked_in_at)}`
                   : visitStatus?.last_checked_out_at
-                  ? `Left at ${formatDate(visitStatus.last_checked_out_at)}`
-                  : undefined
+                    ? `Left at ${formatDate(visitStatus.last_checked_out_at)}`
+                    : undefined
               }
             >
               <span
                 className={cn(
                   'size-2 rounded-full',
-                  visitStatus?.is_in_library ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/50',
+                  visitStatus?.is_in_library
+                    ? 'bg-emerald-500 animate-pulse'
+                    : 'bg-muted-foreground/50',
                 )}
               />
               {visitStatus?.is_in_library ? 'In Library' : 'Not in Library'}
@@ -297,7 +303,10 @@ export function MemberDashboard() {
         />
       </div>
 
-      <LibraryReviewCard onOpenModal={() => setIsReviewModalOpen(true)} refreshKey={reviewRefreshKey} />
+      <LibraryReviewCard
+        onOpenModal={() => setIsReviewModalOpen(true)}
+        refreshKey={reviewRefreshKey}
+      />
 
       <QuickActionsCard
         title={t('dashboard.quickActions.title')}
@@ -305,17 +314,17 @@ export function MemberDashboard() {
           {
             label: t('dashboard.quickActions.browseBooks'),
             icon: BookOpen,
-            onClick: () => navigate(ROUTES.BOOKS),
+            onClick: () => router.push(ROUTES.BOOKS),
           },
           {
             label: t('dashboard.quickActions.bookASeat'),
             icon: CalendarCheck,
-            onClick: () => navigate(ROUTES.SEAT_BOOKING),
+            onClick: () => router.push(ROUTES.SEAT_BOOKING),
           },
           {
             label: t('dashboard.quickActions.viewReservations'),
             icon: Ticket,
-            onClick: () => navigate(ROUTES.RESERVATIONS),
+            onClick: () => router.push(ROUTES.RESERVATIONS),
           },
           {
             label: t('dashboard.quickActions.writeReview', 'Write Library Review'),
@@ -338,10 +347,10 @@ export function MemberDashboard() {
         reservations={reservations}
         seatBookings={seatBookings}
         streak={streak}
-        onBrowseBooks={() => navigate(ROUTES.BOOKS)}
-        onViewReservations={() => navigate(ROUTES.RESERVATIONS)}
-        onManageSeatBookings={() => navigate(ROUTES.SEAT_BOOKING)}
-        onViewReadingProgress={() => navigate(ROUTES.READING_PROGRESS)}
+        onBrowseBooks={() => router.push(ROUTES.BOOKS)}
+        onViewReservations={() => router.push(ROUTES.RESERVATIONS)}
+        onManageSeatBookings={() => router.push(ROUTES.SEAT_BOOKING)}
+        onViewReadingProgress={() => router.push(ROUTES.READING_PROGRESS)}
       />
     </div>
   );

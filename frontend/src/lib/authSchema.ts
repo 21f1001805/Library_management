@@ -41,7 +41,12 @@ const PLAN_IDS = ['1m', '3m', '6m', '12m'] as const;
 export const registerSchema = z
   .object({
     accountType: z.enum(['member', 'guardian']),
-    name: z.string().trim().min(2, { message: 'auth.register.errors.name' }).max(100, { message: 'auth.register.errors.name' }).regex(/^[A-Za-z\s'-]+$/, { message: 'auth.register.errors.name' }),
+    name: z
+      .string()
+      .trim()
+      .min(2, { message: 'auth.register.errors.name' })
+      .max(100, { message: 'auth.register.errors.name' })
+      .regex(/^[A-Za-z\s'-]+$/, { message: 'auth.register.errors.name' }),
     email,
     phoneNumber: z.string().regex(PHONE_PATTERN, { message: 'auth.register.errors.phoneNumber' }),
     password: z.string().regex(PASSWORD_PATTERN, { message: 'auth.register.errors.password' }),
@@ -69,7 +74,12 @@ export type RegisterFormValues = z.infer<typeof registerSchema>;
 // shown once, right after a first-time Google sign-in, to collect what Google doesn't give us.
 export const completeProfileSchema = z
   .object({
-    fullName: z.string().trim().min(2, { message: 'auth.register.errors.name' }).max(100, { message: 'auth.register.errors.name' }).regex(/^[A-Za-z\s'-]+$/, { message: 'auth.register.errors.name' }),
+    fullName: z
+      .string()
+      .trim()
+      .min(2, { message: 'auth.register.errors.name' })
+      .max(100, { message: 'auth.register.errors.name' })
+      .regex(/^[A-Za-z\s'-]+$/, { message: 'auth.register.errors.name' }),
     phoneNumber: z.string().regex(PHONE_PATTERN, { message: 'auth.register.errors.phoneNumber' }),
     password: z.string().regex(PASSWORD_PATTERN, { message: 'auth.register.errors.password' }),
     confirmPassword: z.string(),

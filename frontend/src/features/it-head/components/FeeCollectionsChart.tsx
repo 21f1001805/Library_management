@@ -1,3 +1,5 @@
+'use client';
+
 import { CheckCircle2, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

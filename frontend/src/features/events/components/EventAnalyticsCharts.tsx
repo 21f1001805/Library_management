@@ -141,7 +141,8 @@ export function RegistrationTrendChart({ registeredAtDates, label }: Registratio
       points.length === 1
         ? CHART_WIDTH / 2
         : CHART_PADDING + (i / (points.length - 1)) * (CHART_WIDTH - CHART_PADDING * 2);
-    const y = CHART_HEIGHT - CHART_PADDING - (count / maxCount) * (CHART_HEIGHT - CHART_PADDING * 2);
+    const y =
+      CHART_HEIGHT - CHART_PADDING - (count / maxCount) * (CHART_HEIGHT - CHART_PADDING * 2);
     return { x, y };
   });
 

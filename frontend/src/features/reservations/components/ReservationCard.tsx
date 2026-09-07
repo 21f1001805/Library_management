@@ -1,3 +1,5 @@
+'use client';
+
 import { useTranslation } from 'react-i18next';
 
 import { Badge, Button, Card, CardContent, type BadgeVariant } from '@/components/ui';

@@ -1,8 +1,18 @@
+'use client';
+
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Modal } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Modal,
+} from '@/components/ui';
 import { getErrorMessage } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { useAuth, type GuardianChild } from '@/providers/AuthProvider';
@@ -70,7 +80,10 @@ export function SubscriptionAndFines({ children, onChanged }: SubscriptionAndFin
           const hasFine = child.outstanding_fine > 0;
           const isPending = pendingChildId === child.id;
           return (
-            <div key={child.id} className="flex flex-col gap-2 rounded-lg border border-border p-3 text-sm">
+            <div
+              key={child.id}
+              className="flex flex-col gap-2 rounded-lg border border-border p-3 text-sm"
+            >
               <div className="flex items-start justify-between gap-2">
                 <p className="font-medium text-foreground">{child.full_name}</p>
                 <div className="flex shrink-0 items-center gap-3">
@@ -142,7 +155,9 @@ export function SubscriptionAndFines({ children, onChanged }: SubscriptionAndFin
         {fineDetailsChild && (
           <div className="flex flex-col gap-3 text-sm">
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">{t('guardian.subscription.fineDetails.reason')}</span>
+              <span className="text-muted-foreground">
+                {t('guardian.subscription.fineDetails.reason')}
+              </span>
               <span className="text-right font-medium text-foreground">
                 {fineDetailsChild.fine_book_title
                   ? t('guardian.subscription.fineDetails.reasons.lateReturn')
@@ -151,14 +166,18 @@ export function SubscriptionAndFines({ children, onChanged }: SubscriptionAndFin
               </span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">{t('guardian.subscription.fineDetails.amountDue')}</span>
+              <span className="text-muted-foreground">
+                {t('guardian.subscription.fineDetails.amountDue')}
+              </span>
               <span className="font-semibold text-danger">
                 {formatCurrency(fineDetailsChild.outstanding_fine)}
               </span>
             </div>
             {fineDetailsChild.fine_due_date && (
               <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">{t('guardian.subscription.fineDetails.payBy')}</span>
+                <span className="text-muted-foreground">
+                  {t('guardian.subscription.fineDetails.payBy')}
+                </span>
                 <span className="font-medium text-foreground">
                   {formatDate(fineDetailsChild.fine_due_date)}
                 </span>

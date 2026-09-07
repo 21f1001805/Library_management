@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarCheck, CalendarPlus, CalendarX, Percent, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -146,15 +148,18 @@ export function EventsPage() {
     if (!token) return;
     try {
       await apiDelete(`/events/${event.id}`, token);
-      toast.success(t('events.details.deleteSuccessToast', { title: event.title, defaultValue: `Event "${event.title}" deleted` }));
+      toast.success(
+        t('events.details.deleteSuccessToast', {
+          title: event.title,
+          defaultValue: `Event "${event.title}" deleted`,
+        }),
+      );
       setEvents((prev) => prev.filter((e) => e.id !== event.id));
       setActiveEventId(null);
     } catch (err) {
       toast.error(getErrorMessage(err, t('events.details.deleteError', 'Failed to delete event')));
     }
   }
-
-
 
   const visibleEvents = useMemo(() => {
     // No timeframe filter here — the server already applied it. Sorting stays local
@@ -178,10 +183,12 @@ export function EventsPage() {
     });
   }, [events, eventSort, now]);
 
-  const { page, setPage, totalPages, pageItems: pagedEvents } = usePagedList(
-    visibleEvents,
-    EVENTS_PAGE_SIZE,
-  );
+  const {
+    page,
+    setPage,
+    totalPages,
+    pageItems: pagedEvents,
+  } = usePagedList(visibleEvents, EVENTS_PAGE_SIZE);
 
   if (loading) {
     return (
@@ -192,13 +199,7 @@ export function EventsPage() {
   }
 
   if (loadError) {
-    return (
-      <ErrorState
-        title="Events unavailable"
-        description={loadError}
-        onRetry={fetchEvents}
-      />
-    );
+    return <ErrorState title="Events unavailable" description={loadError} onRetry={fetchEvents} />;
   }
 
   return (
@@ -208,7 +209,10 @@ export function EventsPage() {
         description={t('events.pageDescription')}
         actions={
           canManage ? (
-            <Button leadingIcon={<CalendarPlus className="size-4" />} onClick={() => setCreateOpen(true)}>
+            <Button
+              leadingIcon={<CalendarPlus className="size-4" />}
+              onClick={() => setCreateOpen(true)}
+            >
               {t('events.form.createTitle')}
             </Button>
           ) : undefined

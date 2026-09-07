@@ -1,3 +1,5 @@
+'use client';
+
 import { Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -57,7 +59,12 @@ export function PendingLibraryReviewsModal({ open, onClose }: PendingLibraryRevi
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={t('admin.pendingLibraryReviews.title')} className="max-w-lg">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t('admin.pendingLibraryReviews.title')}
+      className="max-w-lg"
+    >
       {reviews.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           {t('admin.pendingLibraryReviews.empty')}
@@ -75,17 +82,27 @@ export function PendingLibraryReviewsModal({ open, onClose }: PendingLibraryRevi
                     />
                   ))}
                 </div>
-                <span className="text-xs text-muted-foreground">{formatDate(review.created_at)}</span>
+                <span className="text-xs text-muted-foreground">
+                  {formatDate(review.created_at)}
+                </span>
               </div>
               <p className="text-sm text-foreground">&ldquo;{review.comment}&rdquo;</p>
               <p className="text-xs text-muted-foreground">
                 {t('admin.pendingLibraryReviews.from', { name: review.member_name })}
               </p>
               <div className="flex justify-end gap-2">
-                <Button size="sm" variant="danger" onClick={() => setPendingAction({ review, kind: 'reject' })}>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => setPendingAction({ review, kind: 'reject' })}
+                >
                   {t('common.actions.reject')}
                 </Button>
-                <Button size="sm" variant="success" onClick={() => setPendingAction({ review, kind: 'approve' })}>
+                <Button
+                  size="sm"
+                  variant="success"
+                  onClick={() => setPendingAction({ review, kind: 'approve' })}
+                >
                   {t('common.actions.approve')}
                 </Button>
               </div>
@@ -106,10 +123,14 @@ export function PendingLibraryReviewsModal({ open, onClose }: PendingLibraryRevi
         )}
         description={
           pendingAction
-            ? t('admin.pendingLibraryReviews.confirmDescription', { name: pendingAction.review.member_name })
+            ? t('admin.pendingLibraryReviews.confirmDescription', {
+                name: pendingAction.review.member_name,
+              })
             : undefined
         }
-        confirmLabel={t(pendingAction?.kind === 'reject' ? 'common.actions.reject' : 'common.actions.approve')}
+        confirmLabel={t(
+          pendingAction?.kind === 'reject' ? 'common.actions.reject' : 'common.actions.approve',
+        )}
         confirmVariant={pendingAction?.kind === 'reject' ? 'danger' : 'success'}
       />
     </Modal>

@@ -11,9 +11,12 @@ This file only covers running and developing the frontend itself.
 
 ## Stack
 
-- React 19 + TypeScript + Vite
+- React 19 + TypeScript + Next.js (App Router)
+- Bun (package manager, dev/build/test script runner)
 - Tailwind CSS v4
-- React Router v7 (routing, role-based route guards, lazy-loaded routes)
+- Next.js file-based routing + `proxy.ts` for server-side auth/role gating, with
+  `providers/AuthGuard.tsx` (`RequireAuth`/`RequireRole`/`RedirectIfAuthenticated`) as
+  client-side defense in depth
 - TanStack Query (wired up, not yet used for real fetching — see "Current Status")
 - React Hook Form + Zod (forms/validation)
 - Framer Motion (animations, centralized variants in `lib/motion.ts`)
@@ -33,8 +36,7 @@ toast — there's no backend to create a Razorpay order or verify a signature ye
 
 ## Prerequisites
 
-- Node.js 20+
-- npm
+- Bun
 
 ## Setup
 
@@ -42,46 +44,55 @@ From this `frontend/` directory:
 
 ```bash
 cp .env.example .env
-npm install
+bun install
 ```
 
-`.env` only needs `VITE_API_URL` (the backend base URL — unused by the app until
+`.env` only needs `NEXT_PUBLIC_API_URL` (the backend base URL — unused by the app until
 Milestone 3 wires up real API calls).
 
 ## Development
 
 ```bash
-npm run dev
+bun run dev
 ```
 
-Opens the app at http://localhost:5173 with hot module reload.
+Opens the app at http://localhost:3000 with hot reload.
 
 ## Available Scripts
 
-| Script | Description |
-|---|---|
-| `npm run dev` | Start the Vite dev server |
-| `npm run build` | Type-check (`tsc -b`) then production-build to `dist/` |
-| `npm run preview` | Serve the production build locally |
-| `npm run lint` | Run ESLint |
-| `npm run format` | Run Prettier (writes changes) |
-| `npm test` | Run Vitest unit tests |
+| Script           | Description                                 |
+| ---------------- | ------------------------------------------- |
+| `bun run dev`    | Start the Next.js dev server                |
+| `bun run build`  | Type-check and production-build to `.next/` |
+| `bun run start`  | Serve the production build locally          |
+| `bun run lint`   | Run ESLint                                  |
+| `bun run format` | Run Prettier (writes changes)               |
+| `bun run test`   | Run Vitest unit tests                       |
 
 End-to-end tests (Playwright) live in `tests/e2e/` but are run from the **repo root**
-(`npm run test:e2e` there), since the Playwright config also manages starting the dev
+(`bun run test:e2e` there), since the Playwright config also manages starting the dev
 server.
 
 ## Project Structure
 
 ```text
+app/                          # Next.js routes — one folder per URL segment, thin
+│                                page.tsx/layout.tsx wrappers around src/features/*
+├── (public)/                  # Landing, Pricing, Contact, Login/Register/Forgot/Reset
+├── (app)/                     # Dashboard, Books, Reservations, Seat Booking, ... (any
+│                                 signed-in role) + manager/ (manager/librarian only)
+├── admin/ | it-head/ | guardian/   # One dedicated route group per staff role
+├── layout.tsx                 # Root layout — mounts <AppProviders>
+└── not-found.tsx
+
+proxy.ts                      # Server-side session/role gating (Next 16's renamed
+│                                middleware.ts) — redirects before a protected page ships
+
 src/
-├── main.tsx                 # Entry point — renders <AppProviders><AppRouter />
-├── app/
-│   ├── router/                # AppRouter (lazy-loaded route tree) + guards.tsx
-│   └── layouts/                # PublicLayout, UserLayout, AdminLayout, ITHeadLayout,
-│                                 GuardianLayout, AppShellLayout
+├── app/layouts/                # AppShellLayout (shared authenticated shell) + one
+│                                 thin per-role wrapper (AdminLayout, UserLayout, ...)
 ├── providers/                # QueryClientProvider, ThemeProvider, LanguageProvider,
-│                                AuthProvider (mocked)
+│                                AuthProvider (mocked), AuthGuard (RequireAuth/RequireRole)
 ├── components/
 │   ├── ui/                    # Shared primitives: Button, Card, Input, Modal, Table, ...
 │   ├── layout/                 # Header (Logo/DesktopNavigation/MobileNavigation/
@@ -96,7 +107,7 @@ src/
 │   ├── books/ | reservations/ | seat-booking/ | events/ | reviews/
 │   ├── leaderboard/ | notifications/ | profile/ | reading-progress/
 ├── mocks/                    # Mock data per feature, shaped like the future real API
-├── pages/                    # Login, Register, NotFound, PlaceholderPage
+├── screens/                  # Login, Register, ForgotPassword, ResetPassword, NotFound
 ├── i18n/                     # i18next config + locales/*.json (en, hi, pa)
 ├── constants/                # ROUTES, navigation items
 ├── lib/                      # cn(), motion.ts (shared Framer Motion variants),
@@ -111,19 +122,27 @@ primitive, add it to the shared kit rather than hand-rolling it in a feature fol
 
 ## Routing & Roles
 
-Route elements are `React.lazy`-loaded per page (see `app/router/AppRouter.tsx`) and
-wrapped in `<Suspense fallback={<PageLoader />}>`; only layouts and small static pages
-(NotFound, PlaceholderPage) load eagerly. Five top-level layouts, gated by route
-guards in `app/router/guards.tsx`:
+Routes are Next.js App Router segments under `app/`, gated two ways:
 
-- **`PublicLayout`** — Landing, Pricing, Login, Register, Forgot Password
-  (`PublicRoute` bounces already-signed-in users to their dashboard)
-- **`UserLayout`** — Dashboard (role-aware — renders a different component per role),
-  Books, Reservations, Seat Booking, Payment, Events, Community, Profile,
-  Notifications, Reading Progress, Leaderboard, Reviews, Settings (`ProtectedRoute`
-  requires sign-in; any authenticated role can reach these)
-- **`AdminLayout` / `ITHeadLayout` / `GuardianLayout`** — each gated by `RoleRoute`
-  to its specific role (`admin` / `it-head` / `guardian`)
+- **`proxy.ts`** (repo root) — server-side, runs before a protected page ships. Reads
+  the non-httpOnly `is_logged_in`/`session_role` cookies the backend sets on login (see
+  `backend/src/app/core/cookies.py`) and redirects unauthenticated/wrong-role requests
+  immediately, so there's no flash of protected content.
+- **`src/providers/AuthGuard.tsx`** — client-side defense in depth (`RequireAuth`,
+  `RequireRole`, `RedirectIfAuthenticated`), reacting to auth-state changes that happen
+  without a fresh navigation (e.g. the dev-preview role buttons on Login).
+
+Layout groups, each a thin wrapper in `src/app/layouts/` around the shared
+`AppShellLayout`:
+
+- **`(public)`** — Landing, Pricing, Contact, Login, Register, Forgot/Reset Password
+  (`RedirectIfAuthenticated` bounces already-signed-in users to their dashboard)
+- **`(app)`** — Dashboard (role-aware — renders a different component per role),
+  Books, Reservations, Seat Booking, Payment, Events, Community, Profile, Reading
+  Progress, Leaderboard, Reviews, Settings (`RequireAuth`: any authenticated role), plus
+  a nested `manager/` group (`RequireRole(['manager', 'librarian'])`)
+- **`admin/` / `it-head/` / `guardian/`** — each gated by `RequireRole` to its specific
+  role
 
 ## Internationalization
 
@@ -135,9 +154,9 @@ just `en.json`.
 
 ## Environment Variables
 
-| Variable | Purpose |
-|---|---|
-| `VITE_API_URL` | Backend base URL — not yet consumed; reserved for Milestone 3 |
+| Variable              | Purpose                                                       |
+| --------------------- | ------------------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL` | Backend base URL — not yet consumed; reserved for Milestone 3 |
 
 ## Notes for Milestone 3
 

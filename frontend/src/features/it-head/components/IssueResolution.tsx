@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -36,16 +38,23 @@ export function IssueResolution({ tickets, onResolveClick }: IssueResolutionProp
 
     switch (sortValue) {
       case 'oldest':
-        return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        return items.sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        );
       case 'category':
         return items.sort((a, b) => a.category.localeCompare(b.category));
       case 'newest':
       default:
-        return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return items.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
     }
   }, [sortValue, statusFilter, tickets]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(filteredTickets, 4);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
+    filteredTickets,
+    4,
+  );
 
   return (
     <Card className="flex h-full flex-col justify-between">
@@ -103,7 +112,9 @@ export function IssueResolution({ tickets, onResolveClick }: IssueResolutionProp
                     <Badge variant={ticket.status === 'open' ? 'warning' : 'success'}>
                       {t(`itHead.issueResolution.status.${ticket.status}`)}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">{formatRelativeTime(ticket.created_at)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatRelativeTime(ticket.created_at)}
+                    </span>
                   </div>
                   <p className="mt-1 text-foreground">{ticket.description}</p>
                   <div className="mt-2 flex items-center justify-between">

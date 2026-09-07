@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 
 export function useScroll(threshold = 0): boolean {
-  const [scrolled, setScrolled] = useState(() => window.scrollY > threshold);
+  // No window during Next's server render pass — the effect below (client-only) corrects
+  // this immediately after hydration, same as ThemeProvider's resolveIsDark.
+  const [scrolled, setScrolled] = useState(() =>
+    typeof window === 'undefined' ? false : window.scrollY > threshold,
+  );
 
   useEffect(() => {
     function onScroll() {

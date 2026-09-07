@@ -1,8 +1,9 @@
+'use client';
+
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
-import communityIllustration from '@/assets/community.png';
 import { IconBadge, Section, SectionHeading } from '@/components/common';
 import { Card } from '@/components/ui';
 import { cn } from '@/lib/cn';
@@ -14,6 +15,10 @@ import {
 } from '@/mocks/landing';
 
 import { fadeUp, viewportOnce } from '../motion';
+
+// Served straight from public/ (moved out of src/assets, a Vite-only typed-import
+// convention) so both the Vite app and the Next.js app can reference it by plain URL.
+const communityIllustration = '/community.png';
 
 export function Community() {
   const { t } = useTranslation();

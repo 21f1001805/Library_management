@@ -1,3 +1,5 @@
+'use client';
+
 import { GuardianDashboardPage } from '@/features/guardian/pages/GuardianDashboardPage';
 import { useAuth } from '@/providers/AuthProvider';
 

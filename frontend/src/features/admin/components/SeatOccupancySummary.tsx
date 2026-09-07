@@ -1,3 +1,5 @@
+'use client';
+
 import { useTranslation } from 'react-i18next';
 
 import { ProgressBar } from '@/components/common';
@@ -48,7 +50,11 @@ export function SeatOccupancySummary({ slots }: { slots: AdminSeatOccupancySlot[
       </CardHeader>
       <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {slots.map((slot) => (
-          <ProgressBar key={slot.hour} percent={slot.percent_filled} label={formatHour(slot.hour)} />
+          <ProgressBar
+            key={slot.hour}
+            percent={slot.percent_filled}
+            label={formatHour(slot.hour)}
+          />
         ))}
       </CardContent>
     </Card>

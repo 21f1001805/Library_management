@@ -1,5 +1,7 @@
+'use client';
+
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 import { ROUTES } from '@/constants/routes';
 import { cn } from '@/lib/cn';
@@ -13,7 +15,7 @@ import { useHeaderNavLinks } from './NavigationLinks';
 
 export function Header() {
   const { isAuthenticated, role, logout } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -77,7 +79,7 @@ export function Header() {
 
   function handleLogout() {
     logout();
-    navigate(ROUTES.HOME);
+    router.push(ROUTES.HOME);
     setOpen(false);
   }
 

@@ -1,7 +1,9 @@
+'use client';
+
 import { motion, type Variants } from 'framer-motion';
-import { useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 
 import { ROUTES } from '@/constants/routes';
 
@@ -42,7 +44,7 @@ function NavList({ title, links }: { title: string; links: FooterNavLink[] }) {
         {links.map((link) => (
           <motion.li key={link.to} variants={linkVariants}>
             <Link
-              to={link.to}
+              href={link.to}
               onClick={link.onClick}
               className="group relative text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
             >
@@ -74,7 +76,7 @@ export interface FooterProps {
 export function Footer({ sticky = true }: FooterProps) {
   const { t } = useTranslation();
 
-  const location = useLocation();
+  const pathname = usePathname();
 
   const navLinks: FooterNavLink[] = [
     { label: t('landing.footer.home'), to: ROUTES.HOME },
@@ -84,7 +86,7 @@ export function Footer({ sticky = true }: FooterProps) {
 
   // handler: if already on contact page, smooth scroll to the anchor; otherwise navigate to the contact route
   function contactClickHandler(e: React.MouseEvent) {
-    if (location.pathname === ROUTES.CONTACT_US) {
+    if (pathname === ROUTES.CONTACT_US) {
       e.preventDefault();
       const el = document.getElementById('contact-us');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -99,7 +101,11 @@ export function Footer({ sticky = true }: FooterProps) {
     { label: t('landing.footer.community'), to: ROUTES.COMMUNITY },
     { label: t('landing.footer.events'), to: ROUTES.EVENTS },
     // direct to the contact-us section anchor for smooth scroll/navigation
-    { label: t('landing.footer.contact'), to: `${ROUTES.CONTACT_US}#contact-us`, onClick: contactClickHandler },
+    {
+      label: t('landing.footer.contact'),
+      to: `${ROUTES.CONTACT_US}#contact-us`,
+      onClick: contactClickHandler,
+    },
   ];
 
   const content = (

@@ -1,3 +1,5 @@
+'use client';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -55,8 +57,7 @@ export function useWishlist() {
 
   const removeMutation = useMutation({
     mutationFn: removeFromWishlist,
-    onMutate: (bookId: string) =>
-      optimisticallyApply((ids) => ids.filter((id) => id !== bookId)),
+    onMutate: (bookId: string) => optimisticallyApply((ids) => ids.filter((id) => id !== bookId)),
     onError: (error, _bookId, context) => rollback(context, error),
     onSettled: () => void queryClient.invalidateQueries({ queryKey }),
   });

@@ -1,7 +1,15 @@
+'use client';
+
 import { BookOpen, Megaphone, Pencil, Users, Wrench, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { Badge, IconBadge, ProgressBar, type IconBadgeTone, type ProgressBarTone } from '@/components/common';
+import {
+  Badge,
+  IconBadge,
+  ProgressBar,
+  type IconBadgeTone,
+  type ProgressBarTone,
+} from '@/components/common';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { formatCurrency } from '@/lib/format';
 import type { BudgetCategory, ExpenseCategory } from '@/providers/AuthProvider';
@@ -67,10 +75,7 @@ export function BudgetExpenses({ categories, onLogExpense, onEditBudget }: Budge
               })}
             </span>
           </div>
-          <ProgressBar
-            percent={overallPercent}
-            tone={STATUS_TONE[statusFor(overallPercent)].bar}
-          />
+          <ProgressBar percent={overallPercent} tone={STATUS_TONE[statusFor(overallPercent)].bar} />
         </div>
 
         <div className="flex flex-col gap-4">
@@ -108,7 +113,9 @@ export function BudgetExpenses({ categories, onLogExpense, onEditBudget }: Budge
                     {' · '}
                     {remaining >= 0
                       ? t('admin.budget.remaining', { amount: formatCurrency(remaining) })
-                      : t('admin.budget.overBudgetBy', { amount: formatCurrency(Math.abs(remaining)) })}
+                      : t('admin.budget.overBudgetBy', {
+                          amount: formatCurrency(Math.abs(remaining)),
+                        })}
                   </span>
                   <Button size="sm" variant="ghost" onClick={() => onLogExpense(category.category)}>
                     {t('admin.budget.logExpense')}

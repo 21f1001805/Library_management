@@ -1,3 +1,5 @@
+'use client';
+
 import { LifeBuoy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

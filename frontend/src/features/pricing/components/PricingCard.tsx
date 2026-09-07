@@ -1,7 +1,9 @@
+'use client';
+
 import { motion } from 'framer-motion';
 import { CheckCircle2, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 import { AnimatedNumber, Divider } from '@/components/common';
 import { Badge, Button, Card } from '@/components/ui';
@@ -22,7 +24,7 @@ export interface PricingCardProps {
 
 export function PricingCard({ duration, isActive, index, onSelect }: PricingCardProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { isAuthenticated } = useAuth();
   const isHighlighted = duration.badge === 'mostPopular';
   const planLabel = t(`pricing.durations.${duration.plan_id}.label`);
@@ -31,10 +33,12 @@ export function PricingCard({ duration, isActive, index, onSelect }: PricingCard
 
   function handleChoosePlan() {
     if (!isAuthenticated) {
-      navigate(ROUTES.LOGIN);
+      router.push(ROUTES.LOGIN);
       return;
     }
-    navigate(`${ROUTES.PAYMENT}?plan=${duration.plan_id}&label=${encodeURIComponent(planLabel)}`);
+    router.push(
+      `${ROUTES.PAYMENT}?plan=${duration.plan_id}&label=${encodeURIComponent(planLabel)}`,
+    );
   }
 
   return (

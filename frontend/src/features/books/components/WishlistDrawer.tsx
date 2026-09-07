@@ -1,6 +1,8 @@
+'use client';
+
 import { Heart, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 import { Drawer, EmptyState } from '@/components/ui';
 import { ROUTES } from '@/constants/routes';
@@ -33,7 +35,7 @@ export function WishlistDrawer({ open, onClose, books, onRemove }: WishlistDrawe
               className="flex items-center gap-3 rounded-md border border-border p-3"
             >
               <Link
-                to={ROUTES.BOOK_DETAILS.replace(':bookId', book.id)}
+                href={ROUTES.BOOK_DETAILS.replace(':bookId', book.id)}
                 onClick={onClose}
                 className="min-w-0 flex-1"
               >

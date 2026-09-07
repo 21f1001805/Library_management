@@ -1,3 +1,5 @@
+'use client';
+
 import { Clock, TrendingUp, CheckCircle2, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -5,9 +7,17 @@ import { Card } from '@/components/ui';
 import { cn } from '@/lib/cn';
 
 const INSIGHTS: { key: string; icon: LucideIcon; classes: string }[] = [
-  { key: 'highestExpense', icon: TrendingUp, classes: 'border-primary/30 bg-primary/5 text-primary' },
+  {
+    key: 'highestExpense',
+    icon: TrendingUp,
+    classes: 'border-primary/30 bg-primary/5 text-primary',
+  },
   { key: 'pendingApproval', icon: Clock, classes: 'border-warning/30 bg-warning/5 text-warning' },
-  { key: 'financialHealth', icon: CheckCircle2, classes: 'border-success/30 bg-success/5 text-success' },
+  {
+    key: 'financialHealth',
+    icon: CheckCircle2,
+    classes: 'border-success/30 bg-success/5 text-success',
+  },
 ];
 
 export function FinancialInsights() {

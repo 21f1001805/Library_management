@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -149,7 +151,8 @@ export function IssueBookForMemberModal({ open, onClose, onIssued }: IssueBookFo
                         <span className="text-sm font-medium text-foreground">{book.title}</span>
                         <span className="text-xs text-muted-foreground">
                           {book.author}
-                          {!book.available && ` — ${t('managerDashboard.issueBookModal.unavailable')}`}
+                          {!book.available &&
+                            ` — ${t('managerDashboard.issueBookModal.unavailable')}`}
                         </span>
                       </button>
                     </li>

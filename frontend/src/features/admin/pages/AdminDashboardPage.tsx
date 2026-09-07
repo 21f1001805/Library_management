@@ -1,3 +1,5 @@
+'use client';
+
 import {
   ArrowRight,
   BadgeIndianRupee,
@@ -80,10 +82,30 @@ const EXPENSE_CATEGORY_COLORS: Record<ExpenseCategory, string> = {
 };
 
 const REPORTS: { key: ReportKey; labelKey: string; icon: LucideIcon; tone: IconBadgeTone }[] = [
-  { key: 'revenueByPlan', labelKey: 'admin.reports.items.revenueByPlan', icon: IndianRupee, tone: 'success' },
-  { key: 'profitAndLoss', labelKey: 'admin.reports.items.profitAndLoss', icon: BarChart3, tone: 'warning' },
-  { key: 'expenseBreakdown', labelKey: 'admin.reports.items.expenseBreakdown', icon: PieChart, tone: 'primary-tint' },
-  { key: 'membershipGrowth', labelKey: 'admin.reports.items.membershipGrowth', icon: TrendingUp, tone: 'info' },
+  {
+    key: 'revenueByPlan',
+    labelKey: 'admin.reports.items.revenueByPlan',
+    icon: IndianRupee,
+    tone: 'success',
+  },
+  {
+    key: 'profitAndLoss',
+    labelKey: 'admin.reports.items.profitAndLoss',
+    icon: BarChart3,
+    tone: 'warning',
+  },
+  {
+    key: 'expenseBreakdown',
+    labelKey: 'admin.reports.items.expenseBreakdown',
+    icon: PieChart,
+    tone: 'primary-tint',
+  },
+  {
+    key: 'membershipGrowth',
+    labelKey: 'admin.reports.items.membershipGrowth',
+    icon: TrendingUp,
+    tone: 'info',
+  },
 ];
 
 export function AdminDashboardPage() {
@@ -180,7 +202,10 @@ export function AdminDashboardPage() {
     return sortedReports;
   }, [reportFilter, reportSort]);
 
-  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(visibleReports, 5);
+  const { page, setPage, totalPages, paginatedItems, totalItems } = usePagination(
+    visibleReports,
+    5,
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -237,7 +262,9 @@ export function AdminDashboardPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>{t('admin.reports.items.expenseBreakdown')}</CardTitle>
-                  <span className="text-xs font-medium text-muted-foreground">Month-To-Date (MTD)</span>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Month-To-Date (MTD)
+                  </span>
                 </CardHeader>
                 <CardContent>
                   <MultiSegmentPie
@@ -310,8 +337,14 @@ export function AdminDashboardPage() {
                   },
                   options: [
                     { value: 'all', label: t('admin.reports.filters.categoryOptions.all') },
-                    { value: 'financial', label: t('admin.reports.filters.categoryOptions.financial') },
-                    { value: 'membership', label: t('admin.reports.filters.categoryOptions.membership') },
+                    {
+                      value: 'financial',
+                      label: t('admin.reports.filters.categoryOptions.financial'),
+                    },
+                    {
+                      value: 'membership',
+                      label: t('admin.reports.filters.categoryOptions.membership'),
+                    },
                   ],
                 },
               ]}
@@ -336,7 +369,6 @@ export function AdminDashboardPage() {
             />
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-
             <div className="flex flex-col gap-3">
               {paginatedItems.map((report) => (
                 <div
@@ -444,7 +476,9 @@ export function AdminDashboardPage() {
           setIsLogExpenseOpen(false);
         }}
         category={loggingCategory}
-        categoryLabel={loggingCategory ? t(`admin.budget.categories.${loggingCategory}`) : undefined}
+        categoryLabel={
+          loggingCategory ? t(`admin.budget.categories.${loggingCategory}`) : undefined
+        }
         onLogged={() => {
           refresh();
           refreshAuditLog();
@@ -468,7 +502,10 @@ export function AdminDashboardPage() {
         }}
       />
 
-      <AdjustPricingModal open={isAdjustPricingOpen} onClose={() => setIsAdjustPricingOpen(false)} />
+      <AdjustPricingModal
+        open={isAdjustPricingOpen}
+        onClose={() => setIsAdjustPricingOpen(false)}
+      />
 
       <InviteMemberModal
         open={isInviteMemberOpen}

@@ -1,3 +1,5 @@
+'use client';
+
 import { BookOpen, Calendar, CheckCircle2, Clock, Mail } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +13,13 @@ import { getErrorMessage } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { useAuth, type LoanRecord } from '@/providers/AuthProvider';
 
-export function LateReturnFines({ entries, onChanged }: { entries: LoanRecord[]; onChanged: () => void }) {
+export function LateReturnFines({
+  entries,
+  onChanged,
+}: {
+  entries: LoanRecord[];
+  onChanged: () => void;
+}) {
   const { t } = useTranslation();
   const { sendFineReminder, markFinePaid } = useAuth();
   const [statusFilter, setStatusFilter] = useState('all');
@@ -139,7 +147,9 @@ export function LateReturnFines({ entries, onChanged }: { entries: LoanRecord[];
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-2.5">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Calendar className="size-3.5 shrink-0 text-muted-foreground/70" />
-                    <span>{t('itHead.lateFines.dueDate', { date: formatDate(entry.due_date) })}</span>
+                    <span>
+                      {t('itHead.lateFines.dueDate', { date: formatDate(entry.due_date) })}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">

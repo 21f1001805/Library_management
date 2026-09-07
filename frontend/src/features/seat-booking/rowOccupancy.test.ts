@@ -37,7 +37,11 @@ describe('rowOccupancy', () => {
   });
 
   it('treats a seat missing from the schedule as occupied, never available', () => {
-    const seats = [makeSeat('A1', 'available'), makeSeat('A2', 'available'), makeSeat('A3', 'available')];
+    const seats = [
+      makeSeat('A1', 'available'),
+      makeSeat('A2', 'available'),
+      makeSeat('A3', 'available'),
+    ];
     // A4 has no matching record at all.
     expect(rowOccupancy(seats, ROW_A)).toBe('partial');
   });

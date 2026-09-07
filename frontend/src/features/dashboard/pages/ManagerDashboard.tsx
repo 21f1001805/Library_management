@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Armchair,
   BookPlus,
@@ -293,76 +295,81 @@ export function ManagerDashboard() {
 
       <FootfallAnalyticsCard />
 
-      {stats && (() => {
-        const totalNew = stats.member_activity.reduce((sum, m) => sum + m.new_members, 0);
-        const avgGrowth = Math.round(totalNew / Math.max(1, stats.member_activity.length));
-        const latestActive = stats.member_activity[stats.member_activity.length - 1]?.active_members || 500;
-        const retentionRate = Math.min(
-          98,
-          Math.max(82, Math.round((latestActive / Math.max(1, latestActive + totalNew)) * 100 + 45)),
-        );
+      {stats &&
+        (() => {
+          const totalNew = stats.member_activity.reduce((sum, m) => sum + m.new_members, 0);
+          const avgGrowth = Math.round(totalNew / Math.max(1, stats.member_activity.length));
+          const latestActive =
+            stats.member_activity[stats.member_activity.length - 1]?.active_members || 500;
+          const retentionRate = Math.min(
+            98,
+            Math.max(
+              82,
+              Math.round((latestActive / Math.max(1, latestActive + totalNew)) * 100 + 45),
+            ),
+          );
 
-        return (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <MostBorrowedBooks books={stats.most_borrowed_books} />
+          return (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <MostBorrowedBooks books={stats.most_borrowed_books} />
 
-            <Card className="flex flex-col justify-between">
-              <CardHeader>
-                <CardTitle>{t('managerDashboard.memberActivity.title')}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <MultiBarChart
-                  ariaLabel={t('managerDashboard.memberActivity.title')}
-                  data={stats.member_activity.map((m) => ({
-                    label: formatMonth(m.month),
-                    values: { new: m.new_members, active: m.active_members },
-                  }))}
-                  series={[
-                    {
-                      key: 'new',
-                      label: t('managerDashboard.memberActivity.newMembers'),
-                      color: 'var(--color-primary)',
-                    },
-                    {
-                      key: 'active',
-                      label: t('managerDashboard.memberActivity.activeMembers'),
-                      color: 'var(--color-info)',
-                    },
-                  ]}
-                />
+              <Card className="flex flex-col justify-between">
+                <CardHeader>
+                  <CardTitle>{t('managerDashboard.memberActivity.title')}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <MultiBarChart
+                    ariaLabel={t('managerDashboard.memberActivity.title')}
+                    data={stats.member_activity.map((m) => ({
+                      label: formatMonth(m.month),
+                      values: { new: m.new_members, active: m.active_members },
+                    }))}
+                    series={[
+                      {
+                        key: 'new',
+                        label: t('managerDashboard.memberActivity.newMembers'),
+                        color: 'var(--color-primary)',
+                      },
+                      {
+                        key: 'active',
+                        label: t('managerDashboard.memberActivity.activeMembers'),
+                        color: 'var(--color-info)',
+                      },
+                    ]}
+                  />
 
-                <div className="grid grid-cols-2 gap-2.5 rounded-lg border border-border bg-secondary/30 p-2.5">
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-success/10 text-success">
-                      <TrendingUp className="size-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">Avg. Monthly Growth</p>
-                      <p className="text-sm font-semibold text-foreground truncate">
-                        +{avgGrowth}/mo
-                      </p>
+                  <div className="grid grid-cols-2 gap-2.5 rounded-lg border border-border bg-secondary/30 p-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-success/10 text-success">
+                        <TrendingUp className="size-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">Avg. Monthly Growth</p>
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          +{avgGrowth}/mo
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Users className="size-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">Member Retention Rate</p>
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {retentionRate}%
+                        </p>
+                      </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
 
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <Users className="size-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">Member Retention Rate</p>
-                      <p className="text-sm font-semibold text-foreground truncate">
-                        {retentionRate}%
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <SeatUtilizationCard hours={stats.seat_utilization} />
-          </div>
-        );
-      })()}
+              <SeatUtilizationCard hours={stats.seat_utilization} />
+            </div>
+          );
+        })()}
 
       {stats && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

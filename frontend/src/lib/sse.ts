@@ -23,7 +23,8 @@ export function subscribeToSSE(
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
         });
-        if (!response.ok || !response.body) throw new Error(`SSE request failed: ${response.status}`);
+        if (!response.ok || !response.body)
+          throw new Error(`SSE request failed: ${response.status}`);
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();

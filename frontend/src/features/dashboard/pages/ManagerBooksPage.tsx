@@ -1,3 +1,5 @@
+'use client';
+
 import { BookX, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -83,7 +85,9 @@ function StatusCell({ book }: { book: ManagerBookAvailability }) {
       <Badge variant="warning">{t('managerDashboard.books.status.unavailable')}</Badge>
       <span className="text-xs text-muted-foreground">
         {book.expected_available_at
-          ? t('managerDashboard.books.expectedBack', { date: formatDate(book.expected_available_at) })
+          ? t('managerDashboard.books.expectedBack', {
+              date: formatDate(book.expected_available_at),
+            })
           : t('managerDashboard.books.expectedBackUnknown')}
       </span>
     </div>
@@ -344,10 +348,18 @@ export function ManagerBooksPage() {
             <Table className="min-w-full">
               <TableHeader className="bg-secondary/20">
                 <TableRow>
-                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.books.table.title')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.books.table.category')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">{t('managerDashboard.books.table.copies')}</TableHead>
-                  <TableHead className="whitespace-nowrap px-3.5 py-2.5 text-right">{t('managerDashboard.books.table.status')}</TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                    {t('managerDashboard.books.table.title')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                    {t('managerDashboard.books.table.category')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5">
+                    {t('managerDashboard.books.table.copies')}
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap px-3.5 py-2.5 text-right">
+                    {t('managerDashboard.books.table.status')}
+                  </TableHead>
                   {(canAddBooks || canDeleteBooks) && (
                     <TableHead className="whitespace-nowrap px-3.5 py-2.5 text-right">
                       {t('managerDashboard.books.table.actions')}
@@ -359,10 +371,14 @@ export function ManagerBooksPage() {
                 {items.map((book) => (
                   <TableRow key={book.id} className="transition-colors hover:bg-secondary/40">
                     <TableCell className="px-3.5 py-2.5">
-                      <p className="font-semibold text-foreground text-xs sm:text-sm">{book.title}</p>
+                      <p className="font-semibold text-foreground text-xs sm:text-sm">
+                        {book.title}
+                      </p>
                       <p className="text-xs text-muted-foreground">{book.author}</p>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-foreground font-medium">{book.category}</TableCell>
+                    <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs text-foreground font-medium">
+                      {book.category}
+                    </TableCell>
                     <TableCell className="whitespace-nowrap px-3.5 py-2.5 text-xs font-semibold text-foreground">
                       {t('managerDashboard.books.copiesAvailable', {
                         available: book.available_copies,
