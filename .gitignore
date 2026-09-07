@@ -52,3 +52,9 @@ test-results/
 
 # Logs
 *.log
+
+# AI assistant instruction files (auto-generated / local, e.g. by `next dev`)
+CLAUDE.md
+AGENTS.md
+**/CLAUDE.md
+**/AGENTS.md
