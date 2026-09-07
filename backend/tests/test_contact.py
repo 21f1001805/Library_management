@@ -40,6 +40,7 @@ async def _db_connection():
     await prisma.notification.delete_many(
         where={"user": {"email": {"endswith": TEST_EMAIL_DOMAIN}}}
     )
+    await prisma.auditlogentry.delete_many(where={"actor": {"email": {"endswith": TEST_EMAIL_DOMAIN}}})
     await prisma.user.delete_many(where={"email": {"endswith": TEST_EMAIL_DOMAIN}})
     await prisma.disconnect()
 

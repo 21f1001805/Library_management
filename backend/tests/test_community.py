@@ -52,6 +52,7 @@ async def _db_connection():
     await prisma.communitypost.delete_many(
         where={"author": {"email": {"endswith": TEST_EMAIL_DOMAIN}}}
     )
+    await prisma.auditlogentry.delete_many(where={"actor": {"email": {"endswith": TEST_EMAIL_DOMAIN}}})
     await prisma.user.delete_many(where={"email": {"endswith": TEST_EMAIL_DOMAIN}})
     await prisma.disconnect()
 
@@ -131,7 +132,7 @@ async def test_list_posts_shows_new_post(member_user):
     post = await _create_post(member_user, content="Findable post")
     async with _client_as(member_user) as client:
         response = await client.get("/api/v1/community/posts")
-    ids = [p["id"] for p in response.json()]
+    ids = [p["id"] for p in response.json()["items"]]
     assert post["id"] in ids
 
 
@@ -162,7 +163,7 @@ async def test_delete_post_by_moderator(member_user, admin_user):
 
     async with _client_as(member_user) as client:
         listed = await client.get("/api/v1/community/posts")
-    assert all(p["id"] != post["id"] for p in listed.json())
+    assert all(p["id"] != post["id"] for p in listed.json()["items"])
 
 
 async def test_delete_post_by_non_owner_non_moderator_forbidden(member_user, other_member_user):

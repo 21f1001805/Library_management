@@ -1,5 +1,6 @@
 import os
 import uuid
+from datetime import UTC, datetime, timedelta
 
 os.environ["APP_ENV"] = "test"
 
@@ -27,6 +28,9 @@ async def _db_connection():
     await prisma.connect()
     yield
     domain_filter = {"email": {"endswith": TEST_EMAIL_DOMAIN}}
+    await prisma.loan.delete_many(where={"member": domain_filter})
+    await prisma.notification.delete_many(where={"user": domain_filter})
+    await prisma.book.delete_many(where={"title": {"startswith": "Payments Test Book"}})
     await prisma.payment.delete_many(where={"user": domain_filter})
     await prisma.auditlogentry.delete_many(where={"actor": domain_filter})
     await prisma.coupon.delete_many(where={"createdBy": domain_filter})
@@ -129,7 +133,7 @@ async def test_list_my_payments_returns_only_the_caller_s_own_payments(
     response = await client.get("/api/v1/payments/me", headers=member_headers)
 
     assert response.status_code == 200
-    body = response.json()
+    body = response.json()["items"]
     assert len(body) == 1
     assert body[0]["amount"] == 499
     assert body[0]["label"] == "1 Month"
@@ -147,7 +151,7 @@ async def test_list_my_payments_orders_newest_first(client, member_user):
 
     response = await client.get("/api/v1/payments/me", headers=member_headers)
 
-    labels = [p["label"] for p in response.json()]
+    labels = [p["label"] for p in response.json()["items"]]
     assert labels.index("Second") < labels.index("First")
 
 
@@ -223,6 +227,21 @@ async def manager_user():
 
 
 async def test_pay_at_library_notifies_managers(client, member_user, manager_user):
+    # The amount is server-authoritative (computed from real unpaid fines), not taken
+    # from the request body — see payments/router.py:pay_at_library — so this needs a
+    # real overdue loan behind it. 3 days late * FINE_PER_DAY (50) = 150.
+    book = await prisma.book.create(
+        data={"title": "Payments Test Book Fine", "author": "A", "category": "Fiction"}
+    )
+    await prisma.loan.create(
+        data={
+            "bookId": book.id,
+            "memberId": member_user.id,
+            "dueDate": datetime.now(UTC) - timedelta(days=3),
+            "createdById": member_user.id,
+        }
+    )
+
     login = await client.post(
         "/api/v1/auth/login", json={"email": member_user.email, "password": "Password123!"}
     )

@@ -43,6 +43,7 @@ async def _db_connection():
     await prisma.eventmanagerassignment.delete_many(where={"manager": domain_filter})
     await prisma.eventregistration.delete_many(where={"member": domain_filter})
     await prisma.event.delete_many(where={"creator": domain_filter})
+    await prisma.auditlogentry.delete_many(where={"actor": domain_filter})
     await prisma.user.delete_many(where=domain_filter)
     await prisma.disconnect()
 
@@ -117,18 +118,40 @@ async def test_create_event_assigns_valid_managers_including_self(
     assert assigned_ids == {manager_user.id, other_manager_user.id}
 
 
-async def test_create_event_can_assign_a_member_too(manager_user, member_user):
-    body = await _create_event(manager_user, manager_ids=[manager_user.id, member_user.id])
+async def test_create_event_rejects_a_non_manager_id(manager_user, member_user):
+    async with _client_as(manager_user) as client:
+        response = await client.post(
+            "/api/v1/events",
+            json={
+                "title": "Test Event",
+                "description": "A test event",
+                "location": "Main Hall",
+                "date": _future_date(),
+                "capacity": 10,
+                "manager_ids": [manager_user.id, member_user.id],
+            },
+        )
 
-    assigned_ids = {m["id"] for m in body["assigned_managers"]}
-    assert assigned_ids == {manager_user.id, member_user.id}
+    assert response.status_code == 422
+    assert "active manager" in response.json()["detail"]
 
 
-async def test_create_event_drops_a_nonexistent_id(manager_user):
-    body = await _create_event(manager_user, manager_ids=[manager_user.id, str(uuid.uuid4())])
+async def test_create_event_rejects_a_nonexistent_manager_id(manager_user):
+    async with _client_as(manager_user) as client:
+        response = await client.post(
+            "/api/v1/events",
+            json={
+                "title": "Test Event",
+                "description": "A test event",
+                "location": "Main Hall",
+                "date": _future_date(),
+                "capacity": 10,
+                "manager_ids": [manager_user.id, str(uuid.uuid4())],
+            },
+        )
 
-    assigned_ids = {m["id"] for m in body["assigned_managers"]}
-    assert assigned_ids == {manager_user.id}
+    assert response.status_code == 422
+    assert "active manager" in response.json()["detail"]
 
 
 async def test_update_event_replaces_manager_assignments(

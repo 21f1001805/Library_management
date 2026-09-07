@@ -41,6 +41,7 @@ async def _db_connection():
     domain_filter = {"email": {"endswith": TEST_EMAIL_DOMAIN}}
     await prisma.notification.delete_many(where={"user": domain_filter})
     await prisma.supportticket.delete_many(where={"raisedBy": domain_filter})
+    await prisma.auditlogentry.delete_many(where={"actor": domain_filter})
     await prisma.user.delete_many(where=domain_filter)
     await prisma.disconnect()
 

@@ -71,7 +71,7 @@ async def _get_audit_log(user) -> list[dict]:
     async with _client_as(user) as client:
         response = await client.get("/api/v1/admin/audit-log")
     assert response.status_code == 200
-    return response.json()
+    return response.json()["items"]
 
 
 def _find(entries: list[dict], action: str, amount: int) -> dict:

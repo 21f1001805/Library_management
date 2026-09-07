@@ -63,6 +63,7 @@ async def _db_connection():
     await prisma.connect()
     yield
     # Only ever deletes users this file created — never touches book rows.
+    await prisma.auditlogentry.delete_many(where={"actor": {"email": {"endswith": TEST_EMAIL_DOMAIN}}})
     await prisma.user.delete_many(where={"email": {"endswith": TEST_EMAIL_DOMAIN}})
     await prisma.disconnect()
 
@@ -100,6 +101,7 @@ def _book(**overrides) -> Book:
         language="English",
         coverImageUrl=None,
         totalCopies=1,
+        embedding=[],
         createdAt=datetime.now(UTC),
         updatedAt=datetime.now(UTC),
         deletedAt=None,

@@ -39,6 +39,7 @@ async def _make_user(role_name: str):
 async def _db_connection():
     await prisma.connect()
     yield
+    await prisma.auditlogentry.delete_many(where={"actor": {"email": {"endswith": TEST_EMAIL_DOMAIN}}})
     await prisma.user.delete_many(where={"email": {"endswith": TEST_EMAIL_DOMAIN}})
     await prisma.disconnect()
 

@@ -58,6 +58,7 @@ async def _db_connection():
     await prisma.reservation.delete_many(where={"member": domain_filter})
     await prisma.seatbooking.delete_many(where={"member": domain_filter})
     await prisma.book.delete_many(where={"title": {"startswith": TEST_TITLE_MARKER}})
+    await prisma.auditlogentry.delete_many(where={"actor": domain_filter})
     await prisma.user.delete_many(where=domain_filter)
     await prisma.disconnect()
 
@@ -117,8 +118,17 @@ async def test_manager_can_view_dashboard_stats(manager_user):
         "books_issued_today",
         "new_registrations_today",
         "pending_tasks",
+        "library_activity",
+        "most_borrowed_books",
+        "member_activity",
+        "seat_utilization",
+        "overdue_fines",
+        "revenue",
     }
-    assert all(isinstance(value, int) for value in body.values())
+    assert all(
+        isinstance(body[key], int)
+        for key in ("seats_booked_today", "books_issued_today", "new_registrations_today", "pending_tasks")
+    )
 
 
 async def test_dashboard_counts_todays_new_registrations(manager_user):

@@ -45,6 +45,7 @@ async def _db_connection():
     await prisma.notification.delete_many(where={"user": domain_filter})
     await prisma.seatnotifyrequest.delete_many(where={"member": domain_filter})
     await prisma.seatbooking.delete_many(where={"member": domain_filter})
+    await prisma.auditlogentry.delete_many(where={"actor": domain_filter})
     await prisma.user.delete_many(where=domain_filter)
     await prisma.disconnect()
 
@@ -87,9 +88,18 @@ async def test_availability_summary_reflects_a_booking_for_the_current_hour(memb
     now = datetime.now(UTC)
     async with _client_as(member_user) as client:
         before = await client.get("/api/v1/seat-booking/availability")
+        schedule = await client.get(
+            "/api/v1/seat-booking/schedule",
+            params={"date": now.date().isoformat(), "hour": now.hour},
+        )
+        # The dev DB carries realistic seed/demo bookings for today, so don't assume any
+        # particular seat is free this hour — ask the schedule which one actually is.
+        free_seat = next(
+            s["seat_label"] for s in schedule.json()["seats"] if s["status"] == "available"
+        )
         created = await client.post(
             "/api/v1/seat-booking",
-            json={"seat_label": "D8", "date": now.date().isoformat(), "hour": now.hour},
+            json={"seat_label": free_seat, "date": now.date().isoformat(), "hour": now.hour},
         )
         after = await client.get("/api/v1/seat-booking/availability")
     assert created.status_code == 201

@@ -40,6 +40,7 @@ async def _db_connection():
     yield
     domain_filter = {"email": {"endswith": TEST_EMAIL_DOMAIN}}
     await prisma.permissionrequest.delete_many(where={"requestedBy": domain_filter})
+    await prisma.auditlogentry.delete_many(where={"actor": domain_filter})
     await prisma.user.delete_many(where=domain_filter)
     await prisma.disconnect()
 

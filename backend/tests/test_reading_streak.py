@@ -13,7 +13,7 @@ from app.core.security import hash_password
 from app.db.prisma import prisma
 from app.main import create_app
 from app.modules.members import repository
-from app.modules.members.service import _compute_streaks
+from app.modules.members.service import compute_streaks
 
 os.environ.setdefault("DATABASE_URL", get_settings().database_url)
 
@@ -31,6 +31,7 @@ async def _db_connection():
     await prisma.loginactivity.delete_many(
         where={"member": {"email": {"endswith": TEST_EMAIL_DOMAIN}}}
     )
+    await prisma.auditlogentry.delete_many(where={"actor": {"email": {"endswith": TEST_EMAIL_DOMAIN}}})
     await prisma.user.delete_many(where={"email": {"endswith": TEST_EMAIL_DOMAIN}})
     await prisma.disconnect()
 
@@ -129,7 +130,7 @@ async def test_streak_resets_after_a_gap(client, member_user):
 
 
 def test_compute_streaks_empty_set_returns_zeros():
-    assert _compute_streaks(set()) == (0, 0)
+    assert compute_streaks(set()) == (0, 0)
 
 
 def test_compute_streaks_allows_grace_for_missing_today():
@@ -137,7 +138,7 @@ def test_compute_streaks_allows_grace_for_missing_today():
     yesterday = today - timedelta(days=1)
     day_before = today - timedelta(days=2)
 
-    current, longest = _compute_streaks({yesterday, day_before})
+    current, longest = compute_streaks({yesterday, day_before})
 
     assert current == 2
     assert longest == 2
@@ -147,7 +148,7 @@ def test_compute_streaks_breaks_after_two_day_gap():
     today = datetime.now(UTC).date()
     old_day = today - timedelta(days=5)
 
-    current, longest = _compute_streaks({today, old_day})
+    current, longest = compute_streaks({today, old_day})
 
     assert current == 1
     assert longest == 1

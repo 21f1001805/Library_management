@@ -45,6 +45,7 @@ async def _db_connection():
     await prisma.supportticket.delete_many(where={"raisedBy": domain_filter})
     await prisma.permissionrequest.delete_many(where={"requestedBy": domain_filter})
     await prisma.payment.delete_many(where={"user": domain_filter})
+    await prisma.auditlogentry.delete_many(where={"actor": domain_filter})
     await prisma.user.delete_many(where=domain_filter)
     await prisma.book.delete_many(where={"title": {"startswith": TEST_BOOK_TITLE_PREFIX}})
     await prisma.disconnect()
@@ -89,13 +90,27 @@ async def test_dashboard_has_the_right_shape(it_head_user):
 
     assert response.status_code == 200
     body = response.json()
-    assert set(body.keys()) == {"stats", "fee_status"}
+    assert set(body.keys()) == {
+        "stats",
+        "fee_status",
+        "fee_collections",
+        "issue_resolution",
+        "system_activity",
+        "system_activity_summary",
+        "access_by_role",
+        "alerts",
+    }
     assert set(body["stats"].keys()) == {
         "active_members",
+        "active_members_trend",
         "open_issues",
+        "open_issues_delta",
         "pending_permissions",
+        "pending_permissions_delta",
         "fees_outstanding",
+        "fees_outstanding_trend",
         "late_fines_outstanding",
+        "late_fines_outstanding_trend",
     }
 
 

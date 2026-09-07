@@ -25,6 +25,7 @@ def _unique_email() -> str:
 async def _db_connection():
     await prisma.connect()
     yield
+    await prisma.auditlogentry.delete_many(where={"actor": {"email": {"endswith": TEST_EMAIL_DOMAIN}}})
     await prisma.user.delete_many(where={"email": {"endswith": TEST_EMAIL_DOMAIN}})
     await prisma.disconnect()
 
@@ -330,11 +331,13 @@ async def test_forgot_password_unknown_email_returns_204(client):
 
 async def test_forgot_password_sends_email_and_reset_token_changes_password(client, monkeypatch):
     sent = {}
-    monkeypatch.setattr(
-        service,
-        "send_email",
-        lambda to, subject, body: sent.update(to=to, subject=subject, body=body),
-    )
+
+    async def _fake_send_email(to: str, subject: str, body: str) -> None:
+        sent.update(to=to, subject=subject, body=body)
+
+    # auth/service.py imports send_email_async directly (`from app.core.mail import
+    # send_email_async`), so patch that name on this module, not "send_email".
+    monkeypatch.setattr(service, "send_email_async", _fake_send_email)
 
     email = _unique_email()
     await client.post(
@@ -366,11 +369,11 @@ async def test_forgot_password_sends_email_and_reset_token_changes_password(clie
 
 async def test_reset_password_rejects_reused_token(client, monkeypatch):
     sent = {}
-    monkeypatch.setattr(
-        service,
-        "send_email",
-        lambda to, subject, body: sent.update(body=body),
-    )
+
+    async def _fake_send_email(to: str, subject: str, body: str) -> None:
+        sent.update(body=body)
+
+    monkeypatch.setattr(service, "send_email_async", _fake_send_email)
 
     email = _unique_email()
     await client.post(

@@ -43,6 +43,7 @@ async def _db_connection():
     domain_filter = {"email": {"endswith": TEST_EMAIL_DOMAIN}}
     await prisma.loan.delete_many(where={"member": domain_filter})
     await prisma.notification.delete_many(where={"user": domain_filter})
+    await prisma.auditlogentry.delete_many(where={"actor": domain_filter})
     await prisma.user.delete_many(where=domain_filter)
     await prisma.book.delete_many(where={"title": {"startswith": TEST_BOOK_TITLE_PREFIX}})
     await prisma.disconnect()
@@ -60,11 +61,16 @@ async def member_user():
 
 @pytest_asyncio.fixture
 async def book():
+    # totalCopies defaults to 0 (see Book.totalCopies in schema.prisma) — create_loan's
+    # availability check (loans/repository.py:create_if_available) rejects any loan
+    # against a book with no copies, so tests that issue a loan through the API need a
+    # positive count here.
     return await prisma.book.create(
         data={
             "title": f"{TEST_BOOK_TITLE_PREFIX} {uuid.uuid4().hex[:8]}",
             "author": "Author",
             "category": "Fiction",
+            "totalCopies": 3,
         }
     )
 
@@ -239,9 +245,14 @@ async def test_send_reminder_emails_the_borrower(it_head_user, member_user, book
         }
     )
     sent: list[tuple[str, str, str]] = []
-    monkeypatch.setattr(
-        loans_service, "send_email", lambda to, subject, body: sent.append((to, subject, body))
-    )
+
+    async def _fake_send_email(to: str, subject: str, body: str) -> None:
+        sent.append((to, subject, body))
+
+    # loans/service.py imports send_email_async directly (`from app.core.mail import
+    # send_email_async`), so it must be patched on this module, not "send_email" (that
+    # name only exists in app.core.mail, and it's the sync version besides).
+    monkeypatch.setattr(loans_service, "send_email_async", _fake_send_email)
 
     async with _client_as(it_head_user) as client:
         await client.post(f"/api/v1/loans/{loan.id}/remind")

@@ -53,6 +53,7 @@ async def _db_connection():
     await prisma.reservation.delete_many(where={"member": domain_filter})
     await prisma.loan.delete_many(where={"member": domain_filter})
     await prisma.book.delete_many(where={"title": {"startswith": TEST_TITLE_MARKER}})
+    await prisma.auditlogentry.delete_many(where={"actor": domain_filter})
     await prisma.user.delete_many(where=domain_filter)
     await prisma.disconnect()
 
@@ -110,16 +111,9 @@ async def test_reserve_available_book_is_pending_and_does_not_hold_a_copy(
     assert any(n["type"] == "reservation-requested" for n in notifications.json())
 
 
-async def test_reserve_unavailable_book_conflicts(member_user, librarian_user):
-    book_id = await _create_book(librarian_user, total_copies=0)
-
-    async with _client_as(member_user) as client:
-        response = await client.post("/api/v1/reservations", json={"book_id": book_id})
-
-    assert response.status_code == 409
-
-
-async def test_reserve_conflicts_once_all_copies_are_on_loan(member_user, librarian_user):
+async def test_reserving_a_fully_booked_out_book_still_queues(member_user, librarian_user):
+    # Reservations are a request-to-borrow waitlist, not a copy hold — a book with zero
+    # copies available is exactly the normal case for joining the queue, not a conflict.
     manager = await _make_user(Role.MANAGER)
     book_id = await _create_book(librarian_user, total_copies=1)
     other_member = await _make_user(Role.MEMBER)
@@ -132,7 +126,19 @@ async def test_reserve_conflicts_once_all_copies_are_on_loan(member_user, librar
     async with _client_as(member_user) as client:
         response = await client.post("/api/v1/reservations", json={"book_id": book_id})
 
-    assert response.status_code == 409
+    assert response.status_code == 201
+    assert response.json()["status"] == "pending"
+
+
+async def test_reserve_same_book_twice_conflicts(member_user, librarian_user):
+    book_id = await _create_book(librarian_user, total_copies=1)
+
+    async with _client_as(member_user) as client:
+        first = await client.post("/api/v1/reservations", json={"book_id": book_id})
+        second = await client.post("/api/v1/reservations", json={"book_id": book_id})
+
+    assert first.status_code == 201
+    assert second.status_code == 409
 
 
 async def test_list_my_reservations_excludes_cancelled_ones(member_user, librarian_user):

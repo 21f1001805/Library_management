@@ -36,6 +36,7 @@ async def _db_connection():
     await prisma.seatbooking.delete_many(where={"member": domain_filter})
     await prisma.seatnotifyrequest.delete_many(where={"member": domain_filter})
     await prisma.book.delete_many(where={"title": {"startswith": "Guardian Test Book"}})
+    await prisma.auditlogentry.delete_many(where={"actor": domain_filter})
     await prisma.user.delete_many(where=domain_filter)
     await prisma.disconnect()
 
@@ -145,9 +146,15 @@ async def _link(client, admin_token, guardian, member):
     )
 
 
-async def test_pay_child_fines_clears_overdue_loan_and_pays(client):
+async def test_pay_child_fines_notifies_managers(client):
+    # Guardian pay-fines is a "pay cash at the library" request, not a real payment —
+    # only a verified gateway callback or a staff mark-fine-paid action may settle the
+    # loan (see guardian/service.py:pay_child_fines and the identical pattern in
+    # payments/router.py:pay_at_library). So this asserts a manager gets notified,
+    # not that the loan is settled outright.
     admin = await _make_user(Role.ADMIN)
     guardian = await _make_user(Role.GUARDIAN)
+    manager = await _make_user(Role.MANAGER)
     child = await _make_user(Role.MEMBER)
     admin_token = await _login(client, admin)
     await _link(client, admin_token, guardian, child)
@@ -178,14 +185,33 @@ async def test_pay_child_fines_clears_overdue_loan_and_pays(client):
     )
     assert response.status_code == 204
 
-    updated_loan = await prisma.loan.find_unique(where={"id": loan.id})
-    assert updated_loan.finePaid is True
+    # Not settled yet — the loan and the guardian's view of the fine are unchanged
+    # until a manager collects the cash and calls mark-fine-paid.
+    unsettled_loan = await prisma.loan.find_unique(where={"id": loan.id})
+    assert unsettled_loan.finePaid is False
 
     children_after = await client.get(
         "/api/v1/guardian/children", headers={"Authorization": f"Bearer {guardian_token}"}
     )
     child_out_after = next(c for c in children_after.json() if c["id"] == child.id)
-    assert child_out_after["outstanding_fine"] == 0
+    assert child_out_after["outstanding_fine"] == child_out["outstanding_fine"]
+
+    notification = await prisma.notification.find_first(
+        where={"userId": manager.id, "type": "payment-pending"}
+    )
+    assert notification is not None
+    assert child.fullName in notification.message
+
+    # The real settlement path: staff collects the cash, then marks the loan paid.
+    manager_token = await _login(client, manager)
+    settle_response = await client.post(
+        f"/api/v1/loans/{loan.id}/mark-fine-paid",
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert settle_response.status_code == 200
+
+    settled_loan = await prisma.loan.find_unique(where={"id": loan.id})
+    assert settled_loan.finePaid is True
 
 
 async def test_pay_child_fines_with_no_fines_returns_400(client):
@@ -215,9 +241,13 @@ async def test_pay_child_fines_rejects_unlinked_child(client):
     assert response.status_code == 403
 
 
-async def test_renew_child_subscription_creates_membership_payment(client):
+async def test_renew_child_subscription_notifies_managers(client):
+    # Same "cash at the library" request pattern as pay_child_fines above — renewing
+    # doesn't grant membership before payment, it notifies a manager (see
+    # guardian/service.py:renew_child_subscription). No Payment row is created here.
     admin = await _make_user(Role.ADMIN)
     guardian = await _make_user(Role.GUARDIAN)
+    manager = await _make_user(Role.MANAGER)
     child = await _make_user(Role.MEMBER)
     admin_token = await _login(client, admin)
     await _link(client, admin_token, guardian, child)
@@ -230,8 +260,13 @@ async def test_renew_child_subscription_creates_membership_payment(client):
     assert response.status_code == 204
 
     payment = await prisma.payment.find_first(where={"userId": child.id, "planMonths": 1})
-    assert payment is not None
-    assert payment.amount == 499
+    assert payment is None
+
+    notification = await prisma.notification.find_first(
+        where={"userId": manager.id, "type": "payment-pending"}
+    )
+    assert notification is not None
+    assert child.fullName in notification.message
 
 
 async def test_book_seat_for_child(client):
