@@ -4,6 +4,14 @@ generator client {
   recursive_type_depth = 5
 }
 
+// TS/Next.js backend migration in progress — see `frontend/src/server/db.ts`. Generates
+// into frontend's own node_modules so `@prisma/client` there resolves to it (Prisma's
+// standard monorepo pattern: this schema is the single source of truth for both clients).
+generator client_js {
+  provider = "prisma-client-js"
+  output   = "../../frontend/node_modules/.prisma/client"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
