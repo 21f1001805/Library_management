@@ -8,6 +8,8 @@ const schema = z.object({
   APP_ENV: z.string().default('development'),
   DATABASE_URL: z.string().default('postgresql://app:app@localhost:5432/app'),
   REDIS_URL: z.string().default('redis://localhost:6379/0'),
+  CHAT_HISTORY_TTL_SECONDS: z.coerce.number().default(3600),
+  CHAT_HISTORY_MAX_TURNS: z.coerce.number().default(5),
 
   // Auth — must match the FastAPI backend's JWT_SECRET so tokens/cookies are valid
   // against either backend during the module-by-module cutover.
@@ -57,6 +59,8 @@ export const env = schema.parse({
   APP_ENV: process.env.APP_ENV,
   DATABASE_URL: process.env.DATABASE_URL,
   REDIS_URL: process.env.REDIS_URL,
+  CHAT_HISTORY_TTL_SECONDS: process.env.CHAT_HISTORY_TTL_SECONDS,
+  CHAT_HISTORY_MAX_TURNS: process.env.CHAT_HISTORY_MAX_TURNS,
   JWT_SECRET: process.env.JWT_SECRET,
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   FRONTEND_URL: process.env.FRONTEND_URL,
