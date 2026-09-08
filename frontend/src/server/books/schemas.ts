@@ -116,3 +116,50 @@ export interface BookListResponse {
   page: number;
   page_size: number;
 }
+
+export interface BookInsightsOut {
+  summary: string;
+  key_concepts: string[];
+  themes: string[];
+  difficulty: string;
+  technical_difficulty: string;
+  vocabulary_complexity: string;
+  prerequisites: string[];
+  why_read: string;
+}
+
+export const suggestDescriptionRequestSchema = z.object({
+  title: z.string().min(1).max(255),
+  author: z.string().min(1).max(150),
+  category: z.string().max(80).nullable().optional(),
+});
+export type SuggestDescriptionRequestInput = z.infer<typeof suggestDescriptionRequestSchema>;
+
+export interface SuggestDescriptionResponse {
+  description: string;
+}
+
+export const identifyCoverRequestSchema = z.object({
+  // data: URL, same "no object storage yet" convention as community post images —
+  // generous max_length covers a ~5MB image's base64 blow-up.
+  image: z.string().min(1).max(8_000_000),
+});
+export type IdentifyCoverRequestInput = z.infer<typeof identifyCoverRequestSchema>;
+
+// Every field is a best-effort suggestion, never trusted further than a manually typed
+// one — the caller (AddBookModal) only ever pre-fills the form with these and still
+// requires staff to review/submit. title/author/isbn/publisher/published_year/language
+// come from a real book-metadata lookup (Open Library) whenever the cover photo yields
+// enough to search on; only description falls back to the vision model's own reading of
+// the cover when Open Library has none.
+export interface IdentifiedBookFields {
+  title: string | null;
+  author: string | null;
+  isbn: string | null;
+  category: string | null;
+  description: string | null;
+  publisher: string | null;
+  published_year: number | null;
+  language: string | null;
+  verified: boolean;
+}

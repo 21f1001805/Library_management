@@ -1,7 +1,9 @@
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { Prisma } from '@prisma/client';
 
 import { HttpError } from '@/server/http';
 import { Role } from '@/server/constants';
+import { buildChatLlm, logLlmFailure } from '@/server/llm';
 import * as loansService from '@/server/loans/service';
 import * as membersRepository from '@/server/members/repository';
 import { readingProgressToJson } from '@/server/members/schemas';
@@ -20,9 +22,7 @@ import {
   type GuardianLinkCreateInput,
 } from '@/server/guardian/schemas';
 
-// Mirrors backend/src/app/modules/guardian/service.py. send_monthly_reading_digests
-// uses only the deterministic fallback message for now — the LLM-generated version is
-// phase 7 (AI features), same treatment as the review digest and due-soon reminders.
+// Mirrors backend/src/app/modules/guardian/service.py in full.
 const RENEWAL_PLAN_CODE = '1m';
 
 async function validatePair(guardianId: string, memberId: string): Promise<void> {
@@ -228,8 +228,7 @@ function monthBounds(reference: Date): [Date, Date] {
 }
 
 // Deterministic sentence used when the LLM is unavailable — unlike the review digest
-// (supplementary), this monthly touchpoint should still land either way. The
-// LLM-generated version is phase 7; until then this is the only version.
+// (supplementary), this monthly touchpoint should still land either way.
 function fallbackDigestMessage(
   childName: string,
   completedThisMonth: number,
@@ -248,6 +247,41 @@ function fallbackDigestMessage(
     );
   }
   return `${childName} finished ${completedThisMonth} book${plural} this month${genreClause}.`;
+}
+
+const DIGEST_SYSTEM_PROMPT = `You write a one-sentence monthly reading update for a guardian
+about a linked child's reading activity.
+
+Given the child's name, how many books they completed this month, how many they
+completed last month, and their most common genre this month (if any), write exactly
+one warm, plain sentence — like a quick note from a librarian, not a report. Rules:
+- State only the numbers and genre given. Never invent a book title, plot detail, or
+  any fact not provided.
+- If they completed 0 books this month, keep the tone encouraging, not a complaint.
+- Output only the sentence itself — no greeting, no sign-off.`;
+
+async function digestMessage(
+  childName: string,
+  completedThisMonth: number,
+  completedLastMonth: number,
+  topCategory: string | null,
+): Promise<string> {
+  const human =
+    `Child: ${childName}\n` +
+    `Books completed this month: ${completedThisMonth}\n` +
+    `Books completed last month: ${completedLastMonth}\n` +
+    `Most common genre this month: ${topCategory ?? 'none'}`;
+
+  try {
+    const llm = await buildChatLlm();
+    const result = await llm.invoke([new SystemMessage(DIGEST_SYSTEM_PROMPT), new HumanMessage(human)]);
+    const message = String(result.content).trim();
+    if (message) return message;
+  } catch (exc) {
+    logLlmFailure('guardian_digest', exc, { child: childName });
+  }
+
+  return fallbackDigestMessage(childName, completedThisMonth, completedLastMonth, topCategory);
 }
 
 // Notifies each guardian with a one-line reading update for their linked child, at most
@@ -276,7 +310,7 @@ export async function sendMonthlyReadingDigests(): Promise<void> {
         lastMonthStart,
         thisMonthStart,
       );
-      const message = fallbackDigestMessage(
+      const message = await digestMessage(
         link.member.fullName,
         completedThisMonth,
         completedLastMonth,

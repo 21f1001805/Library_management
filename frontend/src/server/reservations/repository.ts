@@ -1,4 +1,4 @@
-import type { Prisma, Reservation } from '@prisma/client';
+import type { Book, Prisma, Reservation } from '@prisma/client';
 
 import { prisma } from '@/server/db';
 
@@ -26,8 +26,8 @@ export async function findById(
 
 // Every reservation this member has ever made, any status — used to build the AI
 // reading profile's category-interest signal, where even a since-cancelled request
-// still reflects a real interest at the time. (Consumer is phase 7.)
-export async function listForMember(memberId: string): Promise<Reservation[]> {
+// still reflects a real interest at the time.
+export async function listForMember(memberId: string): Promise<(Reservation & { book: Book })[]> {
   return prisma.reservation.findMany({
     where: { memberId },
     include: { book: true },

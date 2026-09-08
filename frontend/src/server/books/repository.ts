@@ -46,6 +46,16 @@ export async function saveAiInsights(bookId: string, data: Prisma.InputJsonValue
   await prisma.book.update({ where: { id: bookId }, data: { aiInsights: data } });
 }
 
+export async function saveReviewDigest(
+  bookId: string,
+  opts: { digest: string; reviewCount: number },
+): Promise<void> {
+  await prisma.book.update({
+    where: { id: bookId },
+    data: { reviewDigest: opts.digest, reviewDigestReviewCount: opts.reviewCount },
+  });
+}
+
 export async function listActiveExcluding(bookId: string): Promise<Book[]> {
   return prisma.book.findMany({ where: { deletedAt: null, id: { not: bookId } } });
 }

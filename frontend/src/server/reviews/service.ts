@@ -1,7 +1,9 @@
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { Prisma } from '@prisma/client';
 
 import { HttpError } from '@/server/http';
 import { Role } from '@/server/constants';
+import { buildChatLlm, logLlmFailure } from '@/server/llm';
 import * as booksRepository from '@/server/books/repository';
 import * as repository from '@/server/reviews/repository';
 import type { ReviewWithRelations } from '@/server/reviews/repository';
@@ -14,10 +16,46 @@ import {
   type ReviewUpdateInput,
 } from '@/server/reviews/schemas';
 
-// Mirrors backend/src/app/modules/reviews/service.py. The LLM-generated review digest
-// (_generate_digest) is phase 7 — this returns a cached digest if one already exists on
-// the book row, but never calls an LLM to generate a fresh one yet.
+// Mirrors backend/src/app/modules/reviews/service.py in full.
 const MODERATOR_ROLES = new Set<string>([Role.ADMIN, Role.IT_HEAD]);
+
+const DIGEST_SYSTEM_PROMPT = `You summarize real reader reviews for a library catalog page.
+
+Given a book's title and a list of its reviews (rating + comment), write a 2-3 sentence
+summary of what reviewers actually said — the real throughline of praise and criticism
+across them. Rules:
+- Base this ONLY on the review text given. Never invent an opinion, a plot detail, or a
+  fact that isn't actually present in the reviews.
+- No spoilers.
+- Plain prose only: no headings, no bullet points, no quotation marks around the whole
+  thing, and don't just restate the star rating as a number.
+- Output only the summary text, nothing else.`;
+
+// Bounds prompt size for books with a lot of reviews — the most recent N is a
+// reasonable proxy for "current sentiment" without needing every review ever written.
+const MAX_REVIEWS_IN_DIGEST = 20;
+
+// Best-effort — a stale or missing digest degrades the page, not the endpoint. Unlike
+// suggestDescription (its own dedicated staff action), this is supplementary data
+// riding along with the review list, so a failure here must not turn a normal
+// GET /books/{id}/reviews into an error.
+async function generateDigest(bookTitle: string, reviews: ReviewWithRelations[]): Promise<string | null> {
+  const sample = reviews.slice(0, MAX_REVIEWS_IN_DIGEST);
+  const reviewLines = sample.map((review) => `- ${review.rating}/5: ${review.comment}`).join('\n');
+  const human = `Book: ${bookTitle}\n\nReviews:\n${reviewLines}`;
+
+  let result;
+  try {
+    const llm = await buildChatLlm();
+    result = await llm.invoke([new SystemMessage(DIGEST_SYSTEM_PROMPT), new HumanMessage(human)]);
+  } catch (exc) {
+    logLlmFailure('review_digest', exc, { book: bookTitle, reviews: sample.length });
+    return null;
+  }
+
+  const digest = String(result.content).trim();
+  return digest || null;
+}
 
 function buildBreakdown(reviews: ReviewWithRelations[]): RatingBreakdownEntry[] {
   const total = reviews.length;
@@ -31,17 +69,25 @@ function buildBreakdown(reviews: ReviewWithRelations[]): RatingBreakdownEntry[] 
   }));
 }
 
-async function cachedReviewDigest(bookId: string, total: number): Promise<string | null> {
+async function reviewDigest(
+  bookId: string,
+  reviews: ReviewWithRelations[],
+  total: number,
+): Promise<string | null> {
   if (total === 0) return null;
   const book = await booksRepository.findById(bookId);
   if (!book) return null;
-  // A cache hit is "the digest already covers exactly this many reviews" — any change to
-  // the review count (new review, delete) invalidates it. Generating a fresh one is
-  // phase 7 (LLM-backed); until then a stale/missing digest just stays null.
+  // A cache hit is "the digest already covers exactly this many reviews" — any change
+  // to the review count (new review, edit doesn't change count, delete) invalidates it.
   if (book.reviewDigest !== null && book.reviewDigestReviewCount === total) {
     return book.reviewDigest;
   }
-  return null;
+
+  const digest = await generateDigest(book.title, reviews);
+  if (digest !== null) {
+    await booksRepository.saveReviewDigest(bookId, { digest, reviewCount: total });
+  }
+  return digest;
 }
 
 export async function getBookReviews(bookId: string, viewerId: string): Promise<BookReviewsOut> {
@@ -55,7 +101,7 @@ export async function getBookReviews(bookId: string, viewerId: string): Promise<
     average_rating: average,
     total_reviews: total,
     breakdown: buildBreakdown(reviews),
-    review_digest: await cachedReviewDigest(bookId, total),
+    review_digest: await reviewDigest(bookId, reviews, total),
   };
 }
 

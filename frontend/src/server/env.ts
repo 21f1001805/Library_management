@@ -31,6 +31,26 @@ const schema = z.object({
   // Left blank in dev — Razorpay order creation 503s until test-mode keys are set.
   RAZORPAY_KEY_ID: z.string().default(''),
   RAZORPAY_KEY_SECRET: z.string().default(''),
+
+  // LLM backend: "openai" | "bedrock" | "ollama". Defaults to ollama to match the
+  // Python side's own default — a missing LLM_MODE falls back to the free local model
+  // rather than silently reaching for a paid API.
+  LLM_MODE: z.string().default('ollama'),
+  LLM_DEBUG: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
+  OPENAI_API_KEY: z.string().default(''),
+  OPENAI_MODEL: z.string().default('gpt-4o-mini'),
+  OPENAI_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+  AWS_REGION: z.string().default('us-east-1'),
+  AWS_ACCESS_KEY_ID: z.string().default(''),
+  AWS_SECRET_ACCESS_KEY: z.string().default(''),
+  BEDROCK_MODEL_ID: z.string().default('amazon.nova-lite-v1:0'),
+  BEDROCK_EMBEDDING_MODEL_ID: z.string().default('amazon.titan-embed-text-v2:0'),
+  OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
+  OLLAMA_MODEL: z.string().default('llama3.2:3b'),
+  OLLAMA_EMBEDDING_MODEL: z.string().default('nomic-embed-text'),
 });
 
 export const env = schema.parse({
@@ -48,4 +68,17 @@ export const env = schema.parse({
   SMTP_USE_TLS: process.env.SMTP_USE_TLS,
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
   RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
+  LLM_MODE: process.env.LLM_MODE,
+  LLM_DEBUG: process.env.LLM_DEBUG,
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  OPENAI_MODEL: process.env.OPENAI_MODEL,
+  OPENAI_EMBEDDING_MODEL: process.env.OPENAI_EMBEDDING_MODEL,
+  AWS_REGION: process.env.AWS_REGION,
+  AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
+  AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+  BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID,
+  BEDROCK_EMBEDDING_MODEL_ID: process.env.BEDROCK_EMBEDDING_MODEL_ID,
+  OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+  OLLAMA_MODEL: process.env.OLLAMA_MODEL,
+  OLLAMA_EMBEDDING_MODEL: process.env.OLLAMA_EMBEDDING_MODEL,
 });
