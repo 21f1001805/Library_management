@@ -1,10 +1,47 @@
-import type { Payment } from '@prisma/client';
+import type { Payment, Prisma } from '@prisma/client';
 
 import { prisma } from '@/server/db';
 
-// Minimal read-only subset of backend/src/app/modules/payments/repository.py — the
-// listing queries admin/it_head/guardian dashboards need. Order creation, Razorpay
-// verification, and the webhook flow are phase 6 (billing & growth).
+// Mirrors backend/src/app/modules/payments/repository.py in full — the read-only
+// listing subset was ported in phase 5 for admin/it_head/guardian dashboards; the
+// create/find-by-gateway-id pieces below are what phase 6's order/verify flow needs.
+export async function createPayment(opts: {
+  userId: string;
+  amount: number;
+  label: string;
+  planMonths?: number | null;
+  razorpayPaymentId?: string | null;
+  razorpayOrderId?: string | null;
+  client?: Prisma.TransactionClient;
+}): Promise<Payment> {
+  const db = opts.client ?? prisma;
+  return db.payment.create({
+    data: {
+      userId: opts.userId,
+      amount: opts.amount,
+      label: opts.label,
+      planMonths: opts.planMonths ?? null,
+      razorpayPaymentId: opts.razorpayPaymentId ?? null,
+      razorpayOrderId: opts.razorpayOrderId ?? null,
+    },
+  });
+}
+
+export async function findByRazorpayPaymentId(
+  razorpayPaymentId: string,
+  client?: Prisma.TransactionClient,
+): Promise<Payment | null> {
+  const db = client ?? prisma;
+  return db.payment.findUnique({ where: { razorpayPaymentId } });
+}
+
+export async function findLatestMembershipPayment(userId: string): Promise<Payment | null> {
+  return prisma.payment.findFirst({
+    where: { userId, planMonths: { not: null }, status: 'success' },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
 export async function listMembershipPayments(userId: string): Promise<Payment[]> {
   return prisma.payment.findMany({
     where: { userId, planMonths: { not: null }, status: 'success' },

@@ -27,6 +27,10 @@ const schema = z.object({
     .string()
     .default('true')
     .transform((v) => v !== 'false'),
+
+  // Left blank in dev — Razorpay order creation 503s until test-mode keys are set.
+  RAZORPAY_KEY_ID: z.string().default(''),
+  RAZORPAY_KEY_SECRET: z.string().default(''),
 });
 
 export const env = schema.parse({
@@ -42,4 +46,6 @@ export const env = schema.parse({
   SMTP_PASSWORD: process.env.SMTP_PASSWORD,
   SMTP_FROM: process.env.SMTP_FROM,
   SMTP_USE_TLS: process.env.SMTP_USE_TLS,
+  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
 });
