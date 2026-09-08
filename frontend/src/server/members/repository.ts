@@ -76,3 +76,16 @@ export async function bumpTokenVersion(userId: string): Promise<MemberWithRole> 
     include: MEMBER_INCLUDE,
   });
 }
+
+const READING_PROGRESS_INCLUDE = { book: true } satisfies Prisma.ReadingProgressInclude;
+export type ReadingProgressWithBook = Prisma.ReadingProgressGetPayload<{
+  include: typeof READING_PROGRESS_INCLUDE;
+}>;
+
+export async function listReadingProgress(memberId: string): Promise<ReadingProgressWithBook[]> {
+  return prisma.readingProgress.findMany({
+    where: { memberId },
+    include: READING_PROGRESS_INCLUDE,
+    orderBy: { updatedAt: 'desc' },
+  });
+}

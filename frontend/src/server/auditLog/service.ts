@@ -1,9 +1,9 @@
 import type { Prisma } from '@prisma/client';
 
 import * as repository from '@/server/auditLog/repository';
+import { auditLogEntryToJson, type AuditLogListResponse } from '@/server/auditLog/schemas';
 
-// Mirrors backend/src/app/modules/audit_log/service.py's record(). list_entries() (the
-// admin log viewer) is added alongside audit_log's own router in a later phase.
+// Mirrors backend/src/app/modules/audit_log/service.py.
 export async function record(opts: {
   actorId: string;
   action: string;
@@ -11,4 +11,17 @@ export async function record(opts: {
   client?: Prisma.TransactionClient;
 }): Promise<void> {
   await repository.create(opts);
+}
+
+export async function listEntries(opts: {
+  page: number;
+  pageSize: number;
+}): Promise<AuditLogListResponse> {
+  const [rows, total] = await repository.listRecent(opts);
+  return {
+    items: rows.map(auditLogEntryToJson),
+    total,
+    page: opts.page,
+    page_size: opts.pageSize,
+  };
 }

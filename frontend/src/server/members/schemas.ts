@@ -1,4 +1,4 @@
-import type { MemberWithRole } from '@/server/members/repository';
+import type { MemberWithRole, ReadingProgressWithBook } from '@/server/members/repository';
 
 // Mirrors backend/src/app/modules/members/schemas.py's MemberOut — same field names/
 // shape (snake_case, ISO datetime strings) as FastAPI's Pydantic JSON serialization, so
@@ -29,5 +29,25 @@ export function memberToJson(user: MemberWithRole): MemberOut {
     last_login_at: user.lastLoginAt?.toISOString() ?? null,
     created_at: user.createdAt.toISOString(),
     updated_at: user.updatedAt.toISOString(),
+  };
+}
+
+export interface ReadingProgressOut {
+  id: string;
+  book_id: string;
+  book_title: string;
+  status: string;
+  percent_complete: number;
+  updated_at: string;
+}
+
+export function readingProgressToJson(progress: ReadingProgressWithBook): ReadingProgressOut {
+  return {
+    id: progress.id,
+    book_id: progress.bookId,
+    book_title: progress.book.title,
+    status: progress.status,
+    percent_complete: progress.percentComplete,
+    updated_at: progress.updatedAt.toISOString(),
   };
 }
