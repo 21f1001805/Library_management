@@ -83,8 +83,10 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Everything except Next internals, the favicon, and static-file requests (anything
-    // with a dot in the last path segment) — a proxy matcher without this exclusion can
-    // unintentionally block CSS/JS/images from loading.
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    // with a dot in the last path segment, e.g. /books/1.jpg from public/) — without the
+    // `.*\..*` exclusion, a static asset under a path that also happens to be a protected
+    // page prefix (e.g. /books/*.jpg vs the /books catalog route) gets redirected to
+    // /login for a logged-out visitor instead of being served.
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
 };

@@ -7,11 +7,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:jobs": "bun run src/jobs/index.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "postinstall": "prisma generate --schema=../backend/prisma/schema.prisma --generator client_js",
-    "prisma:generate": "prisma generate --schema=../backend/prisma/schema.prisma --generator client_js"
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

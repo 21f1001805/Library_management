@@ -6,7 +6,8 @@ This is a **single-file, shareable README** for the MAY2026 Team 041 project. Yo
 
 ## 1) Project Summary
 
-**MAY2026 Team 041** is a community library management platform with a FastAPI backend and React frontend.
+**MAY2026 Team 041** is a community library management platform — a single full-stack
+Next.js application (React frontend + its own API routes/services, one deployable app).
 
 It supports:
 - Role-based login and dashboards (Admin, Manager, Librarian, Member, Guardian, IT Head)
@@ -28,30 +29,26 @@ For a feel of the actual UI (landing page, dashboards, catalog, and more), see
 
 ## 2) Tech Stack and What Each Tool Is Used For
 
-### Backend
-- **Python 3.12+** — backend runtime language
-- **FastAPI** — REST API framework
-- **uv** — Python dependency/environment management
-- **Prisma (prisma-client-py)** — ORM, schema, and DB migrations
-- **PostgreSQL** — primary relational database
-- **Redis** — chatbot conversation history store
-- **PyJWT + bcrypt** — JWT authentication and password hashing
-- **google-auth** — Google login token verification
-- **Razorpay SDK** — payment integration for online membership fees
-- **LangChain (+ langchain-openai / langchain-aws / langchain-ollama)** — unified interface
-  to the configured LLM provider, used by the chatbot, book insights, reading-level
-  detection, reading profiles, embedding-based "similar books", and manager AI insights
-- **deep-translator** — UI content translation demo endpoint
-- **slowapi** — rate limiting on AI/LLM-backed endpoints
-- **Uvicorn** — ASGI server (dev and production)
-
-### Frontend
-- **React 19** — frontend UI framework
-- **Next.js (App Router)** — dev server, build tool, and file-based routing
+### App (frontend + its own API routes)
+- **React 19** — UI framework
+- **Next.js (App Router)** — dev server, build tool, file-based routing, and the
+  Route Handlers that serve `/api/v1/*` (the app is its own backend — no separate
+  API server)
 - **Bun** — package manager and script runner
-- **TypeScript** — type-safe frontend development
+- **TypeScript** — type-safe throughout, frontend and server code alike
+- **Prisma** — ORM, schema, and DB migrations (`frontend/prisma/`)
+- **PostgreSQL** — primary relational database
+- **Redis** — rate limiting and chatbot conversation history
+- **jsonwebtoken + bcryptjs** — JWT authentication and password hashing
+- **google-auth-library** — Google login token verification
+- **Razorpay SDK** — payment integration for online membership fees
+- **LangChain.js (+ @langchain/openai / @langchain/aws / @langchain/ollama /
+  @langchain/langgraph)** — unified interface to the configured LLM provider, used by
+  the chatbot (a LangGraph ReAct agent), book insights, reading-level detection,
+  reading profiles, embedding-based "similar books", and manager AI insights
 - **TanStack Query** — server-state caching/fetching
-- **React Hook Form + Zod** — form state and validation
+- **React Hook Form + Zod** — form state and validation (Zod also validates every API
+  route's request/response shapes server-side)
 - **Tailwind CSS v4** — utility-first styling
 - **Framer Motion** — animation
 - **i18next / react-i18next** — multi-language UI (English/Hindi/Punjabi)
@@ -59,12 +56,17 @@ For a feel of the actual UI (landing page, dashboards, catalog, and more), see
 - **Sonner** — toast notifications
 - **Lucide React** — icon library
 
+### Background jobs
+A small persistent Node process (`frontend/src/jobs/`, run via `bun run start:jobs`),
+separate from the Next.js server, for the two always-on daily loops (due-soon loan
+reminders, guardian reading digests) and applying pending migrations/dev-seed data on
+boot — a request-driven Next.js server has no in-process runtime that could host a loop
+outliving any one request.
+
 ### Testing / Dev Tooling
-- **Pytest** — backend test suite
-- **Vitest + Testing Library** — frontend unit/component tests
-- **Playwright** — end-to-end browser tests against a real backend + DB
-- **Ruff + mypy** — backend linting and type checking
-- **ESLint + Prettier** — frontend linting and formatting
+- **Vitest + Testing Library** — unit/component tests
+- **Playwright** — end-to-end browser tests against a real running app + DB
+- **ESLint + Prettier** — linting and formatting
 - **Docker Compose** — local PostgreSQL + Redis
 - **Make** — common developer commands
 
@@ -80,13 +82,15 @@ the platform-agnostic notes on how each piece is meant to be deployed.
 
 ```mermaid
 flowchart LR
-    subgraph Client
-        FE["React 19 + Next.js<br/>Frontend"]
+    subgraph Browser
+        UI["React 19 UI"]
     end
 
-    subgraph Server
-        BE["FastAPI Backend<br/>/api/v1"]
+    subgraph "Next.js app (one deployable unit)"
+        API["Route Handlers<br/>/api/v1/*"]
     end
+
+    JOBS["Job runner<br/>(separate Node process)"]
 
     PG[("PostgreSQL<br/>via Prisma")]
     RD[("Redis")]
@@ -94,17 +98,21 @@ flowchart LR
     GA["Google OAuth"]
     RP["Razorpay"]
 
-    FE -->|"HTTPS + JWT"| BE
-    BE --> PG
-    BE -->|"chat history"| RD
-    BE -->|"chatbot, book insights,<br/>recommendations, AI ops insights"| LLM
-    BE -->|"token verification"| GA
-    BE -->|"membership payments"| RP
+    UI -->|"same-origin + JWT cookie"| API
+    API --> PG
+    API -->|"rate limits + chat history"| RD
+    API -->|"chatbot, book insights,<br/>recommendations, AI ops insights"| LLM
+    API -->|"token verification"| GA
+    API -->|"membership payments"| RP
+    JOBS --> PG
+    JOBS -->|"guardian digests"| LLM
 ```
 
-The frontend never talks to Postgres, Redis, or the LLM provider directly — every
-integration is proxied through the FastAPI backend, which is the only service holding
-credentials for them. Every LLM-backed feature is designed to degrade gracefully (see
+The browser UI never talks to Postgres, Redis, or the LLM provider directly — every
+integration goes through this same Next.js app's own Route Handlers, which are the only
+part of the system holding credentials for them. The separate job-runner process shares
+the same database and LLM provider for its two background loops. Every LLM-backed
+feature is designed to degrade gracefully (see
 [§3.4](#34-ai-feature-request-flow)) rather than break the rest of the app if that
 provider is unreachable.
 
@@ -113,56 +121,51 @@ provider is unreachable.
 ```mermaid
 flowchart TD
     Root["MAY2026-Team-041/"]
-    Root --> Backend["backend/"]
-    Root --> Frontend["frontend/"]
+    Root --> Frontend["frontend/  (the whole app)"]
     Root --> Assets["assets/"]
     Root --> Compose["docker-compose.yml"]
 
-    Backend --> BApp["src/app/"]
-    Backend --> BPrisma["prisma/  (schema.prisma + migrations/)"]
-    Backend --> BTests["tests/"]
-    Backend --> BScripts["scripts/  (seed &amp; backfill jobs)"]
+    Frontend --> FAppDir["app/  (Next.js routes, layouts,<br/>and api/v1/* Route Handlers)"]
+    Frontend --> FPrisma["prisma/  (schema.prisma + migrations/)"]
+    Frontend --> FJobs["src/jobs/  (background loops,<br/>run as a separate process)"]
+    Frontend --> FServer["src/server/  (30 feature modules)"]
+    Frontend --> FSrcRest["src/  (components, features,<br/>providers, i18n — see below)"]
+    Frontend --> FTests["tests/e2e/  (Playwright)"]
 
-    BApp --> BApi["api/  (auth dependency, role guards)"]
-    BApp --> BCore["core/  (config, security, llm)"]
-    BApp --> BDb["db/  (Prisma client, pagination)"]
-    BApp --> BModules["modules/  (30 feature modules)"]
+    FServer --> SM1["catalog &amp; transactions:<br/>books, loans, reservations, seatBooking,<br/>reviews, wishlist, libraryReviews, bookRecords"]
+    FServer --> SM2["staff &amp; ops:<br/>manager, admin, itHead, guardian,<br/>auditLog, permissionRequests, supportTickets"]
+    FServer --> SM3["billing &amp; growth:<br/>payments, pricingPlans, coupons,<br/>billingRequests, leaderboard, events"]
+    FServer --> SM4["AI-backed:<br/>chat, recommendations, translate, llm.ts<br/>(book insights live inside books/)"]
+    FServer --> SM5["seed/  (TS ports of the dev-only<br/>demo-data seed scripts)"]
 
-    BModules --> BM1["catalog &amp; transactions:<br/>books, loans, reservations, seat_booking,<br/>reviews, wishlist, library_reviews, book_records"]
-    BModules --> BM2["staff &amp; ops:<br/>manager, admin, it_head, guardian,<br/>audit_log, permission_requests, support_tickets"]
-    BModules --> BM3["billing &amp; growth:<br/>payments, pricing_plans, coupons,<br/>billing_requests, leaderboard, events"]
-    BModules --> BM4["AI-backed:<br/>chat, recommendations, translate<br/>(book insights live inside books/)"]
-
-    Frontend --> FAppDir["app/  (Next.js routes, layouts, proxy.ts)"]
-    Frontend --> FSrc["src/"]
-    FSrc --> FAppLayouts["app/layouts/  (AppShellLayout + role shells)"]
-    FSrc --> FComponents["components/  (ui/, layout/, common/)"]
-    FSrc --> FFeatures["features/  (21 screen folders)"]
-    FSrc --> FProviders["providers/  (auth, theme, query client, AuthGuard)"]
-    FSrc --> FI18n["i18n/  (en, hi, pa)"]
+    FSrcRest --> FAppLayouts["app/layouts/  (AppShellLayout + role shells)"]
+    FSrcRest --> FComponents["components/  (ui/, layout/, common/)"]
+    FSrcRest --> FFeatures["features/  (21 screen folders)"]
+    FSrcRest --> FProviders["providers/  (auth, theme, query client, AuthGuard)"]
+    FSrcRest --> FI18n["i18n/  (en, hi, pa)"]
 
     FFeatures --> FF1["books, dashboard, reservations,<br/>seat-booking, reading-progress, ..."]
     FFeatures --> FF2["admin, guardian, it-head,<br/>community, events, leaderboard, ..."]
 ```
 
-Every backend module follows the same internal layering, which is what actually keeps a
-30-module codebase navigable — knowing the pattern once means you can find your way
-around any of them:
+Every `src/server/<module>/` follows the same internal layering, which is what actually
+keeps a 30-module codebase navigable — knowing the pattern once means you can find your
+way around any of them. A thin Route Handler in `app/api/v1/...` calls into it:
 
 ```mermaid
 flowchart LR
-    Router["router.py<br/>HTTP routes + auth/role guards"] --> Service["service.py<br/>business logic, orchestration"]
-    Service --> Repository["repository.py<br/>Prisma queries"]
+    RouteHandler["app/api/v1/.../route.ts<br/>HTTP method + auth/role guard"] --> Service["service.ts<br/>business logic, orchestration"]
+    Service --> Repository["repository.ts<br/>Prisma queries"]
     Repository --> DB[("PostgreSQL")]
-    Service --> Schemas["schemas.py<br/>Pydantic request/response shapes"]
+    Service --> Schemas["schemas.ts<br/>Zod request/response shapes"]
 ```
 
 ### 3.3 Database Schema (Core Entities)
 
 The full schema (~30 models — community posts, events, billing, support tickets, audit
 log, and more) lives in
-[`backend/prisma/schema.prisma`](backend/prisma/schema.prisma). The diagram below is the
-core library-workflow subset:
+[`frontend/prisma/schema.prisma`](frontend/prisma/schema.prisma). The diagram below is
+the core library-workflow subset:
 
 ```mermaid
 erDiagram
@@ -263,7 +266,7 @@ the representative example:
 ```mermaid
 sequenceDiagram
     participant U as Browser
-    participant API as FastAPI (/books/{id}/insights)
+    participant API as Next.js Route Handler (/books/{id}/insights)
     participant DB as PostgreSQL
     participant LLM as LLM Provider
 
@@ -294,24 +297,24 @@ editing a book is never blocked on an LLM call.
 ## 4) Local Setup (Quick Start)
 
 ### Prerequisites
-- Python 3.12+
-- uv
 - Bun
 - Docker (for local PostgreSQL + Redis)
+- Optional: [Ollama](https://ollama.com) running locally, if you want AI features
+  (chatbot, book insights, recommendations) working without an OpenAI/Bedrock key
 
 ### Environment setup
 ```bash
 cp .env.example .env
-cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 ```
 
 The root `.env` owns shared infrastructure values (`DATABASE_URL`, Postgres
-credentials/port). Backend-only settings — JWT secret, Google/Razorpay keys, and the
-`LLM_MODE`/provider settings below — live in `backend/.env`.
+credentials/port). Everything else — JWT secret, Google/Razorpay keys, Redis URL, and
+the `LLM_MODE`/provider settings — lives in `frontend/.env` (server-side only, read by
+`frontend/src/server/*`; never exposed to the browser bundle).
 
 ```env
-# backend/.env — AI provider selection (LLM_MODE: openai | bedrock | ollama)
+# frontend/.env — AI provider selection (LLM_MODE: openai | bedrock | ollama)
 LLM_MODE=ollama
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2:3b
@@ -323,48 +326,39 @@ RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
 ```
 
-```env
-# frontend/.env
-NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
-NEXT_PUBLIC_API_PREFIX=/api/v1
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=
-```
-
 ### Install dependencies
 ```bash
 make install
 ```
 
-### Initialize the database
-Generate the Prisma client, then apply migrations. Start PostgreSQL first with Docker
-Compose if it is not already running:
+### Run the app
+One command handles everything — starting Postgres/Redis via Docker, generating the
+Prisma client, applying pending migrations, seeding demo data, and starting both the
+background jobs process and the Next.js dev server:
 ```bash
-docker compose up -d --wait db
+bun run frontend         # from the repo root — the app + its own /api/v1 backend
 ```
+App URL: `http://localhost:3000`
 
-```bash
-make db-generate
-make db-migrate
-```
+Migrations (`prisma migrate deploy`) and demo-data seeding both run automatically on
+every start via the jobs process's `AUTO_MIGRATE`/`AUTO_SEED_DEMO` startup steps
+(§3.4/`frontend/src/jobs/index.ts`) — each step is idempotent (upserts, or checks for its
+own already-seeded rows and skips), so re-running `bun run frontend` on an already-seeded
+database is a fast no-op rather than re-seeding. Ctrl-C stops both the dev server and the
+jobs process together.
 
 > **Port already in use?** If a local PostgreSQL instance is already listening on 5432,
 > Docker Compose will silently bind to the wrong server. Change `POSTGRES_PORT` and
-> `DATABASE_URL` in `.env` to an unused port (e.g. 5433) and re-run the steps above. The
-> same applies to `REDIS_PORT`, the backend's own `--port`, and the frontend dev
-> server's port if you're running this checkout alongside another copy of the same
-> project on one machine.
+> `DATABASE_URL` in `.env` to an unused port (e.g. 5433) and re-run. The same applies to
+> `REDIS_PORT` and the frontend dev server's port if you're running this checkout
+> alongside another copy of the same project on one machine.
 
-### Run backend
+### Authoring a new migration
+`bun run frontend` only *applies* existing migrations — after changing
+`frontend/prisma/schema.prisma`, generate the new migration file with:
 ```bash
-bun run backend          # from the repo root — starts Postgres + Redis, then FastAPI with reload
+make db-migrate
 ```
-Backend URL: `http://localhost:8000`
-
-### Run frontend
-```bash
-bun run frontend         # from the repo root
-```
-Frontend URL: `http://localhost:3000`
 
 ---
 
@@ -376,45 +370,40 @@ Postgres/container/static hosting provider you use.
 
 ### Database
 Any managed PostgreSQL works. Point `DATABASE_URL` at it (include `sslmode=require` if
-the provider needs it) — pending migrations are applied automatically on backend
-startup (`AUTO_MIGRATE`, see `backend/src/app/core/config.py`).
+the provider needs it) — pending migrations are applied automatically on job-runner
+startup (`AUTO_MIGRATE`, see `frontend/src/jobs/index.ts`).
 
 ```env
 DATABASE_URL=postgresql://USER:PASSWORD@HOST/DB?sslmode=require
 ```
 
-### Backend
-Run as a container or process behind a process manager:
+### App (Next.js)
+Build then run its own Node server (or deploy to any Next.js-compatible host):
 ```bash
-uv run uvicorn app.main:app --app-dir src --host 0.0.0.0 --port 8000
+bun --cwd=frontend run build   # outputs frontend/.next
+bun --cwd=frontend run start   # serves the production build, incl. /api/v1/*
 ```
 Required environment variables: `DATABASE_URL`, `JWT_SECRET` (32+ random characters — a
-short/default value is rejected when `APP_ENV=production`). Point `REDIS_URL` at a real
-Redis instance rather than the `localhost` default. Optional: `GOOGLE_CLIENT_ID`,
-`RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET`, and the `LLM_MODE` + provider credentials for
-AI features.
+short/default value is rejected in production), `REDIS_URL` pointed at a real Redis
+instance. Optional: `GOOGLE_CLIENT_ID`, `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET`, and the
+`LLM_MODE` + provider credentials for AI features. Leave `NEXT_PUBLIC_API_URL` unset
+unless the app's own API routes are deployed at a different origin than the frontend.
 
-### Frontend
-Next.js app — build then run its own Node server (or deploy to any Next.js-compatible host):
-```bash
-bun --cwd frontend run build   # outputs frontend/.next
-bun --cwd frontend run start   # serves the production build
-```
-Set `NEXT_PUBLIC_API_URL` (and `NEXT_PUBLIC_API_PREFIX`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`) at
-build time to point at the deployed backend — being `NEXT_PUBLIC_*`, they're baked into the
-client bundle at build time, not read at runtime. In production, the frontend and backend
-need a shared parent domain (or a reverse proxy putting both under one host) for the
-session cookie `proxy.ts` reads to be visible to the Next.js server — see
-`frontend/proxy.ts`'s comments.
+### Background jobs
+Run `bun --cwd=frontend run start:jobs` as its own long-lived process (container,
+systemd unit, etc.) alongside the app, for the two always-on daily loops and
+auto-migrate-on-boot. Set `AUTO_SEED_DEMO=false` in production — the demo-data seed is
+dev-only.
 
 ---
 
 ## 6) Demo Credentials (Seeded)
 
-Run the dev-preview seed once (development/test/e2e environments only):
+Run the dev-preview seed once (development/test/e2e environments only) — either run the
+full job runner (`bun run jobs`, which includes this as its first step) or invoke just
+this one seed function directly:
 ```bash
-cd backend
-uv run python scripts/seed_dev_accounts.py
+cd frontend && bun -e "import('./src/server/seed/seedDevAccounts').then(m => m.seedDevAccounts())"
 ```
 
 | Role      | Email                            | Password        |
@@ -427,49 +416,42 @@ uv run python scripts/seed_dev_accounts.py
 | IT Head   | `it-head@devpreview.internal`     | `DevPreview123!` |
 
 The password can be overridden with the `DEV_SEED_PASSWORD` environment variable. A
-separate, richer catalog + ~5 months of synthetic activity is seeded automatically on
-backend startup in development (`AUTO_SEED_DEMO`, `scripts/seed_demo_data.py`).
+separate, richer catalog + ~5 months of synthetic activity is seeded automatically the
+first time the job runner starts in development (`AUTO_SEED_DEMO`, see
+`frontend/src/server/seed/seedDemoData.ts`).
 
 ---
 
 ## 7) Useful URLs
 
-Local backend:
-- API base: `http://localhost:8000/api/v1`
-- Live health: `http://localhost:8000/health/live`
-- Readiness health: `http://localhost:8000/health/ready`
-- OpenAPI docs: `http://localhost:8000/docs`
-
-Local frontend: `http://localhost:3000`
+Local app: `http://localhost:3000` (UI + `/api/v1/*` API routes, same origin)
 
 ---
 
 ## 8) Troubleshooting
-
-- **Frontend can't connect to backend**
-  - Verify `NEXT_PUBLIC_API_URL` + `NEXT_PUBLIC_API_PREFIX` in `frontend/.env`
-  - Check the backend is running and reachable at that URL
 
 - **Database connection failure / Docker binds the wrong Postgres**
   - Verify `DATABASE_URL` format/credentials in `.env`
   - If a local Postgres is already on port 5432, change `POSTGRES_PORT` and
     `DATABASE_URL` to an unused port and restart
 
-- **`ImportError` on `from prisma.models import X` after pulling changes**
+- **Prisma client out of date after pulling changes**
   - Someone else's schema change leaves your local Prisma client stale. Run
     `make db-generate`. Enabling the repo's git hooks once
     (`git config core.hooksPath .githooks`) does this automatically after every
-    merge/checkout that touches `backend/prisma/schema.prisma`
+    merge/checkout that touches `frontend/prisma/schema.prisma`
 
 - **401/403 errors**
-  - Ensure the JWT is sent as `Authorization: Bearer <token>`
+  - Ensure the JWT is sent as `Authorization: Bearer <token>` (or via the httpOnly
+    cookie set on login)
   - Confirm the logged-in user's role has permission for that endpoint
 
 - **Google login issues**
-  - Keep the same `GOOGLE_CLIENT_ID` in both `backend/.env` and `frontend/.env`
+  - Keep the same `GOOGLE_CLIENT_ID` value in both server-side (`GOOGLE_CLIENT_ID`) and
+    client-side (`NEXT_PUBLIC_GOOGLE_CLIENT_ID`) `frontend/.env` entries
 
 - **Razorpay issues**
-  - Ensure both the backend secret keys and the frontend public key are configured
+  - Ensure `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET` are set in `frontend/.env`
 
 - **AI features (chatbot, book insights, recommendations) show "unavailable"**
   - Expected, not a bug: every AI feature degrades gracefully when the configured
@@ -480,12 +462,6 @@ Local frontend: `http://localhost:3000`
 ---
 
 ## 9) Basic Validation Commands
-
-Backend tests (needs PostgreSQL running):
-```bash
-cd backend
-uv run pytest
-```
 
 Frontend lint, type-check, and build:
 ```bash
@@ -500,13 +476,13 @@ cd frontend
 bun run test
 ```
 
-End-to-end (Playwright, drives a real browser against a real backend + DB):
+End-to-end (Playwright, drives a real browser against the real running app + DB):
 ```bash
 bun run test:e2e:install   # once, to install browser binaries
 make test-e2e
 ```
 
-Or, from the repo root, backend + frontend-unit together:
+Or, from the repo root:
 ```bash
 make test
 ```

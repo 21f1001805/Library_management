@@ -2,13 +2,14 @@
   "name": "may2026-team-041",
   "private": true,
   "scripts": {
-    "backend": "git config core.hooksPath .githooks && python start_backend.py",
-    "frontend": "git config core.hooksPath .githooks && bun --cwd frontend run dev",
+    "frontend": "docker compose up -d --wait db redis && git config core.hooksPath .githooks && bun --cwd=frontend run prisma:generate && concurrently -n JOBS,DEV -k \"bun --cwd=frontend run start:jobs\" \"bun --cwd=frontend run dev\"",
+    "jobs": "docker compose up -d --wait db redis && bun --cwd=frontend run start:jobs",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
-    "@playwright/test": "^1.45.0"
+    "@playwright/test": "^1.45.0",
+    "concurrently": "^10.0.5"
   }
 }

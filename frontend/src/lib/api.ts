@@ -1,4 +1,7 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+// Relative by default — the backend lives in this same Next.js app (app/api/v1/...), so
+// no origin is needed. Set NEXT_PUBLIC_API_URL only to point at a different origin
+// serving the same /api/v1 routes (e.g. a separately-deployed instance).
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 const API_PREFIX = process.env.NEXT_PUBLIC_API_PREFIX ?? '/api/v1';
 
 export function apiUrl(path: string): string {
@@ -56,10 +59,12 @@ async function apiRequest<T>(
     method,
     headers,
     // Sends/receives the httpOnly access_token/refresh_token cookies the backend sets on
-    // login/refresh — required for this cross-origin request (Next.js on :3000, backend on
-    // :8002) to carry them. The bearer `token` argument above still works as a
-    // fallback/override (Authorization takes priority server-side), so nothing else in this
-    // file or its ~110 call sites in AuthProvider needs to change.
+    // login/refresh. Same-origin, so browsers would send them either way — kept explicit
+    // for the NEXT_PUBLIC_API_URL override path, where a request to a different origin is
+    // genuinely cross-origin. The
+    // bearer `token` argument above still works as a fallback/override (Authorization takes
+    // priority server-side), so nothing else in this file or its ~110 call sites in
+    // AuthProvider needs to change.
     credentials: 'include',
     body: body === undefined ? undefined : JSON.stringify(body),
   });

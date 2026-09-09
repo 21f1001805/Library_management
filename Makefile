@@ -1,45 +1,38 @@
-.PHONY: install backend-install frontend-install e2e-install backend-dev frontend-dev db-generate db-migrate lint format test test-backend test-frontend test-e2e clean
+.PHONY: install frontend-install e2e-install dev jobs db-generate db-migrate lint format test test-frontend test-e2e clean
 
-install: backend-install frontend-install e2e-install
-
-backend-install:
-	cd backend && uv sync
+install: frontend-install e2e-install
 
 frontend-install:
-	bun --cwd frontend install
+	bun --cwd=frontend install
 
 e2e-install:
 	bun install
 
-backend-dev:
-	docker compose up -d --wait db
-	cd backend && uv run uvicorn app.main:app --app-dir src --reload --host 127.0.0.1 --port 8000
+dev:
+	docker compose up -d --wait db redis
+	bun --cwd=frontend run dev
 
-frontend-dev:
-	bun --cwd frontend run dev
+jobs:
+	docker compose up -d --wait db redis
+	bun --cwd=frontend run start:jobs
 
 db-generate:
-	cd backend && uv run prisma generate --schema prisma/schema.prisma
+	bun --cwd=frontend run prisma:generate
 
 db-migrate:
-	cd backend && uv run prisma migrate dev --schema prisma/schema.prisma
+	cd frontend && bunx prisma migrate dev --schema prisma/schema.prisma
 
 lint:
-	cd backend && uv run ruff check .
-	bun --cwd frontend run lint
+	bun --cwd=frontend run lint
 
 format:
-	cd backend && uv run ruff format .
-	bun --cwd frontend run format
+	bun --cwd=frontend run format
 	cd frontend && bunx prettier --write ../README.md ../package.json ../playwright.config.ts ../docker-compose.yml ../.prettierrc ../.prettierignore ../.editorconfig ../.gitignore ../.env.example
 
-test: test-backend test-frontend
-
-test-backend: db-generate
-	cd backend && uv run pytest
+test: test-frontend
 
 test-frontend:
-	bun --cwd frontend run test
+	bun --cwd=frontend run test
 
 test-e2e:
 	bun run test:e2e

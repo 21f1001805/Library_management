@@ -6,6 +6,20 @@ import { z } from 'zod';
 // FastAPI setting now.
 const schema = z.object({
   APP_ENV: z.string().default('development'),
+  // Applies pending migrations at startup (the job runner's job, not this Next.js
+  // process) so a freshly pulled branch just runs. Set AUTO_MIGRATE=false if your
+  // deployment applies migrations as its own step.
+  AUTO_MIGRATE: z
+    .string()
+    .default('true')
+    .transform((v) => v !== 'false'),
+  // Dev-only convenience: runs the Python demo-seed scripts on job-runner startup so a
+  // fresh clone has books and activity without anyone seeding by hand. Only takes effect
+  // when APP_ENV=development. Set AUTO_SEED_DEMO=false to opt out.
+  AUTO_SEED_DEMO: z
+    .string()
+    .default('true')
+    .transform((v) => v !== 'false'),
   DATABASE_URL: z.string().default('postgresql://app:app@localhost:5432/app'),
   REDIS_URL: z.string().default('redis://localhost:6379/0'),
   CHAT_HISTORY_TTL_SECONDS: z.coerce.number().default(3600),
@@ -57,6 +71,8 @@ const schema = z.object({
 
 export const env = schema.parse({
   APP_ENV: process.env.APP_ENV,
+  AUTO_MIGRATE: process.env.AUTO_MIGRATE,
+  AUTO_SEED_DEMO: process.env.AUTO_SEED_DEMO,
   DATABASE_URL: process.env.DATABASE_URL,
   REDIS_URL: process.env.REDIS_URL,
   CHAT_HISTORY_TTL_SECONDS: process.env.CHAT_HISTORY_TTL_SECONDS,
