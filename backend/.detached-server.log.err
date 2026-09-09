@@ -1,7 +1,0 @@
-INFO:     Started server process [2912]
-INFO:     Waiting for application startup.
-{"timestamp": "2026-08-19T02:54:30.446143+00:00", "level": "INFO", "logger": "app.main", "message": "database schema already up to date"}
-{"timestamp": "2026-08-19T02:54:30.841901+00:00", "level": "INFO", "logger": "httpx", "message": "HTTP Request: GET http://localhost:54476/status \"HTTP/1.1 200 OK\""}
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
-{"timestamp": "2026-08-19T02:54:30.872077+00:00", "level": "INFO", "logger": "httpx", "message": "HTTP Request: POST http://localhost:54476/ \"HTTP/1.1 200 OK\""}
