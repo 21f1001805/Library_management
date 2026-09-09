@@ -175,3 +175,98 @@ Every payment on record, across all members.
 
 A ledger view over every Razorpay-processed transaction (memberships, renewals, fines)
 across all members, with CSV/PDF export for accounting.
+
+## AI Reading Profile
+
+A personal snapshot of a member's taste, generated from their own activity.
+
+![AI reading profile](screenshots/19-ai-reading-profile.png)
+
+Built by the LLM from that member's own loans, reviews, and reading progress (not a
+fixed questionnaire) — it stays cached on the `User` row and quietly regenerates once
+enough new activity has piled up, so it drifts as taste changes instead of going stale.
+
+## AI Reviews Digest
+
+A one-paragraph summary of what everyone's saying about a book.
+
+![AI reviews digest](screenshots/20-ai-reviews-digest.png)
+
+Summarizes every review left on a book into a couple of sentences; cached per book and
+invalidated once enough new reviews come in, so it doesn't re-run on every page view.
+
+## AI Book Recommendations
+
+"Find My Next Book" — describe a mood and get matches from the real catalog.
+
+![AI book recommendations](screenshots/21-ai-recommendations.png)
+
+Free-text ("cozy mystery, short read") or a 30-second quiz both feed the same engine:
+it embeds the request and ranks it against real book embeddings, so results are always
+titles actually in this library's catalog, never invented ones.
+
+## AI Translate
+
+Live translation of any text into 12 Indian languages.
+
+![AI translate](screenshots/22-ai-translate.png)
+
+A thin wrapper around the same configured LLM — no separate translation API — used
+here as a standalone demo, and inline on community posts via a "Translate" link.
+
+## AI-Suggested Book Description
+
+Staff adding a book can auto-draft its catalog description from just the title/author.
+
+![AI-suggested book description](screenshots/23-ai-suggest-description.png)
+
+One LLM call drafts a description from title + author for staff to edit before saving —
+never auto-published as-is. The cover photo box above it is the same modal's other AI
+feature (identify a book from a photo of its cover), shown here before use.
+
+## Manager Insights
+
+Demand forecasting and late-return risk, computed from real borrowing history.
+
+![Manager insights](screenshots/24-manager-insights.png)
+
+Unlike the sections above, this one isn't an LLM call — it's deterministic trend math
+(this month vs. last month's loan/reservation counts) labeled "AI Insights" in the UI.
+Empty here because there's no notable trend in the current 30-day window of seeded data.
+
+## Wishlist
+
+Save books to come back to later.
+
+![Wishlist](screenshots/25-wishlist.png)
+
+A plain many-to-many save list (`Wishlist` rows) between member and book — no
+recommendation logic involved, just "remember this for later."
+
+## Borrow History
+
+A member's full record of past and current loans.
+
+![Borrow history](screenshots/26-borrow-history.png)
+
+Every `Loan` ever issued to this member, oldest to newest, including ones still
+outstanding — the Member Dashboard only shows what's active right now, this shows all
+of it.
+
+## Admin Members
+
+Every registered account, their plan, and their standing, in one table.
+
+![Admin members](screenshots/27-admin-members.png)
+
+The one place an admin can see plan status, reading progress, and reported-content
+history side by side per member, and deactivate an account directly from the row.
+
+## Support Tickets
+
+Issues raised by members and guardians, triaged by staff.
+
+![Support tickets](screenshots/28-support-tickets.png)
+
+A plain ticket queue (open/resolved/closed) tied to the member who raised it — no AI
+involved here, just a support inbox built into the same app.
